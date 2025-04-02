@@ -7,99 +7,101 @@
     <style>
         body {
             margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #000;
-            color: white;
-            font-family: Arial, sans-serif;
-            height: 100vh;
+            overflow: auto;
             display: flex;
+            justify-content: center;
+            align-items: flex-start;
             flex-direction: column;
+            background-color: #000;
+            height: 300vh;
         }
 
-        /* Canvas container takes all available space */
         .container {
-            flex: 1;
             display: flex;
             flex-direction: row;
-            justify-content: center;
+            justify-content: space-around;
             align-items: center;
             width: 100vw;
+            height: 100vh;
             perspective: 1000px;
-            overflow: hidden;
-            padding-top: 10px; /* Space from top */
         }
 
-        /* Canvas will maintain camera aspect ratio */
         canvas {
+            flex: 1 1 auto;
+            max-width: 50%;
+            max-height: 100%;
             border: 2px solid white;
             border-radius: 10px;
             transform-origin: center;
             transition: transform 0.2s ease;
-            margin: 0 4px;
-            height: auto; /* Auto height based on container */
         }
 
-        /* Control panel at the bottom */
-        .control-panel {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            border-top: 1px solid #333;
+        .controls {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            flex-direction: column;
-            padding: 5px 5px;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
             z-index: 1000;
         }
 
-        /* Control rows */
-        .control-row {
+        .performance-controls {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            justify-content: space-around;
+            flex-direction: row;
+            justify-content: center;
             align-items: center;
-            margin-bottom: 3px; /* Reduced margin */
+            z-index: 1000;
+            color: white;
         }
 
-        /* Control sections */
-        .control-section {
+        .color-controls {
+            position: absolute;
+            bottom: 10px;
+            width: 100vw;
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            z-index: 1000;
+            color: white;
+        }
+
+        .depth-controls {
+            position: absolute;
+            bottom: 160px;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 1000;
+            color: white;
+        }
+
+        .sliders {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 0 5px;
-        }
-
-        /* Control section headers */
-        .section-header {
-            font-size: 0.7rem; /* Smaller font */
-            text-transform: uppercase;
-            margin-bottom: 1px;
-            color: #ccc;
-        }
-
-        /* Control elements */
-        .control-item {
-            display: flex;
-            align-items: center;
-            margin: 1px 0; /* Reduced margin */
+            gap: 2px;
         }
 
         label {
-            font-size: 0.7rem; /* Smaller font */
-            margin-right: 5px;
-            min-width: 45px;
+            font-size: 0.9rem;
         }
 
         input[type="range"] {
-            width: 70px;
-            height: 12px; /* Thinner sliders */
+            width: 100px;
         }
 
-        button {
-            margin: 2px; /* Reduced margin */
-            padding: 5px 8px; /* Smaller padding */
-            font-size: 0.75rem; /* Smaller font */
+        button, input[type="range"] {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 1rem;
             border: none;
             border-radius: 5px;
             background-color: #444;
@@ -107,29 +109,20 @@
             cursor: pointer;
         }
 
-        button:hover {
+        button:hover, input[type="range"]:hover {
             background-color: #666;
         }
 
-        .divider {
-            width: 1px;
-            height: 35px; /* Shorter divider */
-            background-color: #444;
-            margin: 0 2px;
+        #status {
+            position: absolute;
+            top: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 0.8rem;
+            text-align: center;
         }
 
-        /* Toggle button to hide/show controls */
-        #toggleControls {
-            position: fixed;
-            bottom: 5px;
-            right: 5px;
-            z-index: 1001;
-            opacity: 0.7;
-            font-size: 0.7rem;
-            padding: 3px 6px;
-        }
-
-        /* Portrait mode warning */
         @media (orientation: portrait) {
             body::before {
                 content: "Please rotate your device to landscape mode.";
@@ -143,131 +136,65 @@
                 z-index: 1000;
             }
 
-            .container, .control-panel, #toggleControls {
+            .container {
                 display: none;
             }
-        }
 
-        /* Very small screens */
-        @media (max-width: 480px) {
-            button {
-                padding: 3px 6px;
-                font-size: 0.65rem;
+            .controls, .color-controls, .depth-controls, .performance-controls {
+                display: none;
             }
-            
-            input[type="range"] {
-                width: 60px;
-            }
-            
-            label {
-                font-size: 0.65rem;
-                min-width: 40px;
-            }
-        }
-
-        /* Hidden controls class */
-        .controls-hidden .control-panel {
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-        }
-        
-        .control-panel {
-            transform: translateY(0);
-            transition: transform 0.3s ease;
         }
     </style>
 </head>
 <body>
+    <div class="controls">
+        <button id="startButton">Start Camera</button>
+        <button id="switchButton">Switch Camera</button>
+        <label>
+            Tilt: <input id="tiltSlider" type="range" min="0" max="0.7" step="0.01" value="0">
+        </label>
+    </div>
+    <div class="performance-controls">
+        <label for="qualitySlider">Quality: </label>
+        <input id="qualitySlider" type="range" min="0.1" max="1.0" step="0.1" value="0.5">
+        <span id="qualityValue">50%</span>
+    </div>
+    <div id="status">Mode: Parallel View Stereo</div>
     <div class="container">
         <canvas id="canvas1"></canvas>
         <canvas id="canvas2"></canvas>
     </div>
-    
-    <button id="toggleControls">Hide Controls</button>
-    
-    <div class="control-panel">
-        <div class="control-row">
-            <div class="control-section">
-                <div class="section-header">Camera</div>
-                <div class="control-item">
-                    <button id="startButton">Start Camera</button>
-                    <button id="switchButton">Switch Camera</button>
-                </div>
-            </div>
+    <div class="depth-controls">
+        <div class="sliders">
+            <label for="depthIntensity">Depth Intensity</label>
+            <input id="depthIntensity" type="range" min="0" max="20" step="0.5" value="5">
             
-            <div class="divider"></div>
+            <label for="luminosityWeight">Luminosity Weight</label>
+            <input id="luminosityWeight" type="range" min="0" max="1" step="0.05" value="0.7">
             
-            <div class="control-section">
-                <div class="section-header">View</div>
-                <div class="control-item">
-                    <label for="tiltSlider">Tilt</label>
-                    <input id="tiltSlider" type="range" min="0" max="0.7" step="0.01" value="0">
-                </div>
-            </div>
+            <label for="saturationWeight">Saturation Weight</label>
+            <input id="saturationWeight" type="range" min="0" max="1" step="0.05" value="0.3">
             
-            <div class="divider"></div>
-            
-            <div class="control-section">
-                <div class="section-header">Depth</div>
-                <div class="control-item">
-                    <label for="depthIntensity">Intensity</label>
-                    <input id="depthIntensity" type="range" min="0" max="20" step="0.5" value="5">
-                </div>
-                <div class="control-item">
-                    <label for="blurRadius">Blur</label>
-                    <input id="blurRadius" type="range" min="0" max="10" step="1" value="2">
-                </div>
-            </div>
+            <label for="blurRadius">Blur Radius</label>
+            <input id="blurRadius" type="range" min="0" max="10" step="1" value="2">
         </div>
-        
-        <div class="control-row">
-            <div class="control-section">
-                <div class="section-header">Depth Factors</div>
-                <div class="control-item">
-                    <label for="luminosityWeight">Luminosity</label>
-                    <input id="luminosityWeight" type="range" min="0" max="1" step="0.05" value="0.7">
-                </div>
-                <div class="control-item">
-                    <label for="saturationWeight">Saturation</label>
-                    <input id="saturationWeight" type="range" min="0" max="1" step="0.05" value="0.3">
-                </div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="control-section">
-                <div class="section-header">Left Color</div>
-                <div class="control-item">
-                    <label for="redSlider1">Red</label>
-                    <input id="redSlider1" type="range" min="0" max="255" step="1" value="255">
-                </div>
-                <div class="control-item">
-                    <label for="greenSlider1">Green</label>
-                    <input id="greenSlider1" type="range" min="0" max="255" step="1" value="255">
-                </div>
-                <div class="control-item">
-                    <label for="blueSlider1">Blue</label>
-                    <input id="blueSlider1" type="range" min="0" max="255" step="1" value="255">
-                </div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="control-section">
-                <div class="section-header">Right Color</div>
-                <div class="control-item">
-                    <label for="redSlider2">Red</label>
-                    <input id="redSlider2" type="range" min="0" max="255" step="1" value="255">
-                </div>
-                <div class="control-item">
-                    <label for="greenSlider2">Green</label>
-                    <input id="greenSlider2" type="range" min="0" max="255" step="1" value="255">
-                </div>
-                <div class="control-item">
-                    <label for="blueSlider2">Blue</label>
-                    <input id="blueSlider2" type="range" min="0" max="255" step="1" value="255">
-                </div>
-            </div>
+    </div>
+    <div class="color-controls">
+        <div class="sliders">
+            <label for="redSlider1">Red</label>
+            <input id="redSlider1" type="range" min="0" max="255" step="1" value="255">
+            <label for="greenSlider1">Green</label>
+            <input id="greenSlider1" type="range" min="0" max="255" step="1" value="255">
+            <label for="blueSlider1">Blue</label>
+            <input id="blueSlider1" type="range" min="0" max="255" step="1" value="255">
+        </div>
+        <div class="sliders">
+            <label for="redSlider2">Red</label>
+            <input id="redSlider2" type="range" min="0" max="255" step="1" value="255">
+            <label for="greenSlider2">Green</label>
+            <input id="greenSlider2" type="range" min="0" max="255" step="1" value="255">
+            <label for="blueSlider2">Blue</label>
+            <input id="blueSlider2" type="range" min="0" max="255" step="1" value="255">
         </div>
     </div>
 
@@ -277,7 +204,11 @@
         let useFrontCamera = false;
         let depthMapCanvas = document.createElement('canvas');
         let depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
-        let controlsHidden = false;
+        let processingCanvas = document.createElement('canvas');
+        let processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
+        let lastFrameTime = 0;
+        const targetFPS = 30;
+        const frameInterval = 1000 / targetFPS;
         
         async function startCamera() {
             if (currentStream) {
@@ -429,61 +360,56 @@
             const canvas2 = document.getElementById('canvas2');
             const ctx1 = canvas1.getContext('2d', { willReadFrequently: true });
             const ctx2 = canvas2.getContext('2d', { willReadFrequently: true });
-            
-            // Get control panel height for calculations
-            const controlPanel = document.querySelector('.control-panel');
-            let controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
 
             function adjustCanvasSize() {
-                if (!video) return;
+                const aspectRatio = video.videoWidth / video.videoHeight;
                 
-                const videoAspect = video.videoWidth / video.videoHeight;
+                // Output canvas size (full display size)
+                canvas1.width = canvas2.width = window.innerWidth / 2;
+                canvas1.height = canvas2.height = canvas1.width / aspectRatio;
                 
-                // Calculate available space (account for padding)
-                const padding = 20; // top and bottom padding
-                const availableHeight = window.innerHeight - controlPanelHeight - padding;
+                // Get quality factor (0.1 to 1.0)
+                const qualityFactor = parseFloat(document.getElementById('qualitySlider').value);
+                document.getElementById('qualityValue').textContent = Math.round(qualityFactor * 100) + '%';
                 
-                // Use a higher percentage of screen width for each canvas
-                const maxCanvasWidth = Math.floor(window.innerWidth * 0.47); // Increased from 0.49
+                // Processing canvas size (reduced based on quality factor)
+                processingCanvas.width = Math.max(32, Math.floor(canvas1.width * qualityFactor));
+                processingCanvas.height = Math.max(32, Math.floor(canvas1.height * qualityFactor));
                 
-                // Calculate height based on width and aspect ratio
-                let canvasWidth = maxCanvasWidth;
-                let canvasHeight = canvasWidth / videoAspect;
-                
-                // If calculated height exceeds available space, recalculate from height
-                if (canvasHeight > availableHeight) {
-                    canvasHeight = availableHeight;
-                    canvasWidth = canvasHeight * videoAspect;
-                }
-                
-                // Size canvases as large as possible
-                canvas1.width = canvas2.width = Math.floor(canvasWidth);
-                canvas1.height = canvas2.height = Math.floor(canvasHeight);
-                
-                // Adjust the depth map canvas size
-                depthMapCanvas.width = Math.floor(canvasWidth);
-                depthMapCanvas.height = Math.floor(canvasHeight);
+                // Depth map canvas matches processing canvas size
+                depthMapCanvas.width = processingCanvas.width;
+                depthMapCanvas.height = processingCanvas.height;
             }
 
-            function drawFrame() {
-                if (!video || video.paused || video.ended) return;
-
-                // Get latest control panel height in case it changed
-                controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
+            function drawFrame(timestamp) {
+                // Throttle frame rate for better performance
+                if (timestamp - lastFrameTime < frameInterval) {
+                    requestAnimationFrame(drawFrame);
+                    return;
+                }
+                lastFrameTime = timestamp;
                 
+                if (!video || video.paused || video.ended) {
+                    requestAnimationFrame(drawFrame);
+                    return;
+                }
+
                 adjustCanvasSize();
                 
-                // Draw the original frame to the depth map canvas
-                depthMapCtx.drawImage(video, 0, 0, depthMapCanvas.width, depthMapCanvas.height);
+                // Draw video to the processing canvas (smaller size for performance)
+                processingCtx.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
+                
+                // Draw the processing canvas to the depth map canvas
+                depthMapCtx.drawImage(processingCanvas, 0, 0, depthMapCanvas.width, depthMapCanvas.height);
                 
                 // Get the image data to calculate the depth map
-                const imgData = depthMapCtx.getImageData(0, 0, depthMapCanvas.width, depthMapCanvas.height);
+                const imgData = processingCtx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
                 
                 // Generate depth map
-                const depthData = generateDepthMap(imgData, depthMapCanvas.width, depthMapCanvas.height);
+                const depthData = generateDepthMap(imgData, processingCanvas.width, processingCanvas.height);
                 
                 // Create depth map image data
-                const depthImgData = new ImageData(depthData, depthMapCanvas.width, depthMapCanvas.height);
+                const depthImgData = new ImageData(depthData, processingCanvas.width, processingCanvas.height);
                 
                 // Apply stereoscopic 3D effect with the depth map
                 applyStereoscopicEffect(ctx1, ctx2, imgData, depthImgData);
@@ -495,7 +421,7 @@
                 requestAnimationFrame(drawFrame);
             }
 
-            drawFrame();
+            requestAnimationFrame(drawFrame);
         }
         
         function applyStereoscopicEffect(ctx1, ctx2, origImgData, depthImgData) {
@@ -522,8 +448,9 @@
                     const shift = Math.floor(depth * depthIntensity);
                     
                     // Calculate source positions with parallax
-                    const leftSrcX = Math.max(0, Math.min(width - 1, x + shift));
-                    const rightSrcX = Math.max(0, Math.min(width - 1, x - shift));
+                    // CHANGED: Reversed shifts for parallel-view instead of cross-view
+                    const leftSrcX = Math.max(0, Math.min(width - 1, x - shift));
+                    const rightSrcX = Math.max(0, Math.min(width - 1, x + shift));
                     
                     // Get source indices
                     const leftSrcIdx = (y * width + leftSrcX) * 4;
@@ -537,9 +464,26 @@
                 }
             }
             
-            // Put the processed images on the canvases
-            ctx1.putImageData(leftImgData, 0, 0);
-            ctx2.putImageData(rightImgData, 0, 0);
+            // Clear the canvases
+            ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
+            ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
+            
+            // Create temporary canvases for scaling
+            const tempCanvas1 = document.createElement('canvas');
+            const tempCanvas2 = document.createElement('canvas');
+            tempCanvas1.width = tempCanvas2.width = width;
+            tempCanvas1.height = tempCanvas2.height = height;
+            
+            const tempCtx1 = tempCanvas1.getContext('2d');
+            const tempCtx2 = tempCanvas2.getContext('2d');
+            
+            // Put the processed images on the temporary canvases
+            tempCtx1.putImageData(leftImgData, 0, 0);
+            tempCtx2.putImageData(rightImgData, 0, 0);
+            
+            // Scale up to the display size with smooth interpolation
+            ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
+            ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
         }
 
         function applyColorAdjustments(ctx, canvas, redId, greenId, blueId) {
@@ -564,78 +508,24 @@
             canvas2.style.transform = `rotateY(${-tiltValue}rad)`;
         }
 
-        function toggleControls() {
-            const body = document.body;
-            const toggleButton = document.getElementById('toggleControls');
-            
-            controlsHidden = !controlsHidden;
-            
-            if (controlsHidden) {
-                body.classList.add('controls-hidden');
-                toggleButton.textContent = 'Show Controls';
-            } else {
-                body.classList.remove('controls-hidden');
-                toggleButton.textContent = 'Hide Controls';
-            }
-            
-            // Trigger resize to adjust canvas size
-            window.dispatchEvent(new Event('resize'));
-        }
-
         document.getElementById('startButton').addEventListener('click', startCamera);
         document.getElementById('switchButton').addEventListener('click', switchCamera);
         document.getElementById('tiltSlider').addEventListener('input', (event) => {
             const tiltValue = parseFloat(event.target.value);
             applyTilt(tiltValue);
         });
-        document.getElementById('toggleControls').addEventListener('click', toggleControls);
 
-        // Recalculate canvas sizes whenever control values change that might affect layout
-        const controlInputs = document.querySelectorAll('input[type="range"]');
-        controlInputs.forEach(input => {
-            input.addEventListener('change', () => {
-                if (video && !video.paused) {
-                    window.dispatchEvent(new Event('resize'));
-                }
-            });
+        document.getElementById('qualitySlider').addEventListener('input', (event) => {
+            const qualityValue = parseFloat(event.target.value);
+            document.getElementById('qualityValue').textContent = Math.round(qualityValue * 100) + '%';
         });
 
-        // Handle window resize
         window.addEventListener('resize', () => {
-            if (video && !video.paused) {
-                const canvas1 = document.getElementById('canvas1');
-                const canvas2 = document.getElementById('canvas2');
-                if (canvas1 && canvas2) {
-                    const controlPanel = document.querySelector('.control-panel');
-                    const controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
-                    const videoAspect = video.videoWidth / video.videoHeight;
-                    
-                    const padding = 20;
-                    const availableHeight = window.innerHeight - controlPanelHeight - padding;
-                    const maxCanvasWidth = Math.floor(window.innerWidth * 0.47);
-                    
-                    let canvasWidth = maxCanvasWidth;
-                    let canvasHeight = canvasWidth / videoAspect;
-                    
-                    if (canvasHeight > availableHeight) {
-                        canvasHeight = availableHeight;
-                        canvasWidth = canvasHeight * videoAspect;
-                    }
-                    
-                    canvas1.width = canvas2.width = Math.floor(canvasWidth);
-                    canvas1.height = canvas2.height = Math.floor(canvasHeight);
-                    depthMapCanvas.width = Math.floor(canvasWidth);
-                    depthMapCanvas.height = Math.floor(canvasHeight);
-                }
-            }
-        });
-
-        // Automatically start camera if we're in landscape mode
-        window.addEventListener('DOMContentLoaded', () => {
-            if (window.innerWidth > window.innerHeight) {
-                setTimeout(() => {
-                    document.getElementById('startButton').click();
-                }, 500);
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            if (canvas1 && canvas2) {
+                canvas1.width = canvas2.width = window.innerWidth / 2;
+                canvas1.height = canvas2.height = window.innerHeight;
             }
         });
     </script>
