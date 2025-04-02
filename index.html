@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Virtual spectrum with Depth</title>
     <style>
         body {
@@ -38,6 +41,22 @@
             transition: transform 0.2s ease;
             margin: 0 4px;
             height: auto; /* Auto height based on container */
+        }
+
+        /* Hardware acceleration hints */
+        canvas, video {
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000;
+            -webkit-transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+            -webkit-perspective: 1000;
+            will-change: transform;
+        }
+
+        /* Prevent unnecessary repaints */
+        body, .container, .control-panel {
+            will-change: transform;
         }
 
         /* Control panel at the bottom */
@@ -336,6 +355,20 @@
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
         
+        // Try to use OffscreenCanvas for better performance if available
+        if (typeof OffscreenCanvas !== 'undefined') {
+            try {
+                depthMapCanvas = new OffscreenCanvas(1, 1);
+                depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
+                processingCanvas = new OffscreenCanvas(1, 1);
+                processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
+                console.log("Using OffscreenCanvas for better performance");
+            } catch (e) {
+                console.log("OffscreenCanvas initialization failed, using regular canvas");
+                // Fall back to regular canvas (already defined)
+            }
+        }
+        
         async function startCamera() {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
@@ -343,7 +376,10 @@
 
             const constraints = {
                 video: {
-                    facingMode: useFrontCamera ? "user" : "environment"
+                    facingMode: useFrontCamera ? "user" : "environment",
+                    width: { ideal: 640 }, // Lower resolution for better performance
+                    height: { ideal: 480 },
+                    frameRate: { ideal: 24, max: 30 } // Limit frame rate
                 },
                 audio: false
             };
@@ -364,12 +400,19 @@
                 video = document.createElement('video');
                 video.autoplay = true;
                 video.muted = true;
+                video.playsInline = true; // Important for iOS
+                
+                // Hardware acceleration hints
+                video.style.transform = 'translateZ(0)';
+                video.style.webkitTransform = 'translateZ(0)';
+                video.style.backfaceVisibility = 'hidden';
+                video.style.webkitBackfaceVisibility = 'hidden';
             }
 
             video.srcObject = stream;
 
             video.onloadedmetadata = () => {
-                video.play();
+                video.play().catch(err => console.error('Video play error:', err));
                 renderFrames();
             };
         }
@@ -527,15 +570,16 @@
             }
 
             function drawFrame(timestamp) {
+                // Schedule next frame first for better performance
+                const animationId = requestAnimationFrame(drawFrame);
+                
                 // Throttle frame rate for better performance on low-end devices
                 if (timestamp - lastFrameTime < frameInterval) {
-                    requestAnimationFrame(drawFrame);
                     return;
                 }
                 lastFrameTime = timestamp;
                 
                 if (!video || video.paused || video.ended) {
-                    requestAnimationFrame(drawFrame);
                     return;
                 }
 
@@ -565,8 +609,6 @@
                 // Apply color adjustments
                 applyColorAdjustments(ctx1, canvas1, 'redSlider1', 'greenSlider1', 'blueSlider1');
                 applyColorAdjustments(ctx2, canvas2, 'redSlider2', 'greenSlider2', 'blueSlider2');
-
-                requestAnimationFrame(drawFrame);
             }
 
             requestAnimationFrame(drawFrame);
