@@ -189,6 +189,21 @@
             transition: opacity 0.3s;
         }
 
+        /* Debug output */
+        #debugOutput {
+            position: fixed;
+            top: 5px;
+            left: 5px;
+            font-size: 0.65rem;
+            color: #aaa;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 2px 5px;
+            border-radius: 3px;
+            max-width: 50%;
+            max-height: 100px;
+            overflow: auto;
+        }
+
         /* Portrait mode warning */
         @media (orientation: portrait) {
             body::before {
@@ -254,6 +269,7 @@
     </div>
     
     <div id="qualityIndicator">Processing at 50% resolution</div>
+    <div id="debugOutput" style="display: none;"></div>
     
     <div class="control-panel">
         <div class="control-row">
@@ -342,38 +358,149 @@
     </div>
 
     <script>
+        // Utility function for debugging
+        function debugLog(message) {
+            console.log(message);
+            const debugOutput = document.getElementById('debugOutput');
+            if (debugOutput && debugOutput.style.display !== 'none') {
+                debugOutput.innerHTML += message + '<br>';
+                debugOutput.scrollTop = debugOutput.scrollHeight;
+            }
+        }
+
+        // Attempt to detect if app is running on Android
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        debugLog("Running on Android: " + isAndroid);
+        
+        // Add a GPU acceleration hint specific for Android WebView
+        if (isAndroid) {
+            const meta = document.createElement('meta');
+            meta.name = 'viewport';
+            meta.content = 'width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover, minimal-ui';
+            document.getElementsByTagName('head')[0].appendChild(meta);
+        }
+
+        // App state variables
         let currentStream = null;
         let video = null;
         let useFrontCamera = false;
-        let depthMapCanvas = document.createElement('canvas');
-        let depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
-        let processingCanvas = document.createElement('canvas');
-        let processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
         let controlsHidden = false;
         let qualityFactor = 0.5; // Default medium quality
         let lastFrameTime = 0;
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
         
+        // Method indicator - we'll determine the right method based on device capabilities
+        let renderMethod = 'canvas2d'; // Start with standard canvas, will try to upgrade to WebGL
+        
+        // Canvas setup
+        let processingCanvas = document.createElement('canvas');
+        let processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
+        let depthMapCanvas = document.createElement('canvas');
+        let depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
+        
         // Try to use OffscreenCanvas for better performance if available
         if (typeof OffscreenCanvas !== 'undefined') {
             try {
-                depthMapCanvas = new OffscreenCanvas(1, 1);
-                depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
                 processingCanvas = new OffscreenCanvas(1, 1);
                 processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
-                console.log("Using OffscreenCanvas for better performance");
+                depthMapCanvas = new OffscreenCanvas(1, 1);
+                depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
+                debugLog("Using OffscreenCanvas for better performance");
             } catch (e) {
-                console.log("OffscreenCanvas initialization failed, using regular canvas");
+                debugLog("OffscreenCanvas failed: " + e.message);
                 // Fall back to regular canvas (already defined)
             }
         }
         
+        // Try to set up WebGL for GPU acceleration
+        function setupWebGL() {
+            try {
+                // Create a test WebGL context
+                const testCanvas = document.createElement('canvas');
+                const gl = testCanvas.getContext('webgl', {
+                    powerPreference: 'high-performance',
+                    antialias: false,
+                    alpha: false
+                }) || testCanvas.getContext('experimental-webgl');
+                
+                if (!gl) {
+                    debugLog("WebGL not supported on this device");
+                    return false;
+                }
+                
+                // Check for required capabilities
+                const extensions = gl.getSupportedExtensions();
+                if (!extensions.includes('OES_texture_float') && !extensions.includes('OES_texture_half_float')) {
+                    debugLog("Required WebGL extensions not supported");
+                    return false;
+                }
+                
+                // Test if we can create basic textures and framebuffers
+                const texture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 2, 2, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+                
+                const framebuffer = gl.createFramebuffer();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+                
+                const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+                if (status !== gl.FRAMEBUFFER_COMPLETE) {
+                    debugLog("WebGL framebuffer creation failed");
+                    return false;
+                }
+                
+                // Clean up
+                gl.deleteTexture(texture);
+                gl.deleteFramebuffer(framebuffer);
+                
+                debugLog("WebGL acceleration available and working");
+                return true;
+            } catch (e) {
+                debugLog("WebGL setup error: " + e.message);
+                return false;
+            }
+        }
+        
+        // Apply hardware acceleration CSS to canvases
+        function applyHardwareAcceleration() {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            
+            // Add hardware acceleration hints for better performance
+            const accelerationStyle = `
+                translate3d(0,0,0);
+                transform: translate3d(0,0,0);
+                backface-visibility: hidden;
+                perspective: 1000;
+                -webkit-transform: translate3d(0,0,0);
+                -webkit-backface-visibility: hidden;
+                -webkit-perspective: 1000;
+            `;
+            
+            canvas1.style.cssText += accelerationStyle;
+            canvas2.style.cssText += accelerationStyle;
+            
+            if (video) {
+                video.style.cssText += accelerationStyle;
+            }
+            
+            if (isAndroid) {
+                // Additional hints for Android WebView
+                document.body.style.cssText += `-webkit-transform: translateZ(0); transform: translateZ(0);`;
+            }
+            
+            debugLog("Applied hardware acceleration CSS hints");
+        }
+        
+        // Start camera access
         async function startCamera() {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
             }
 
+            // Try to get access to the camera
             const constraints = {
                 video: {
                     facingMode: useFrontCamera ? "user" : "environment",
@@ -388,11 +515,12 @@
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 attachStreamToVideo(currentStream);
             } catch (error) {
-                console.error("Error accessing the camera:", error);
+                debugLog("Camera access error: " + error.message);
                 alert("Could not access the camera. Please ensure it is enabled and allowed.");
             }
         }
 
+        // Attach camera stream to video element
         function attachStreamToVideo(stream) {
             if (video) {
                 video.srcObject = null;
@@ -402,7 +530,7 @@
                 video.muted = true;
                 video.playsInline = true; // Important for iOS
                 
-                // Hardware acceleration hints
+                // Apply hardware acceleration hints
                 video.style.transform = 'translateZ(0)';
                 video.style.webkitTransform = 'translateZ(0)';
                 video.style.backfaceVisibility = 'hidden';
@@ -412,11 +540,20 @@
             video.srcObject = stream;
 
             video.onloadedmetadata = () => {
-                video.play().catch(err => console.error('Video play error:', err));
+                video.play().catch(err => debugLog('Video play error: ' + err.message));
+                
+                // Try WebGL if we haven't determined rendering method yet
+                if (renderMethod === 'canvas2d' && setupWebGL()) {
+                    renderMethod = 'css3d'; // Use CSS3D transform for better performance
+                    debugLog("Using CSS3D acceleration");
+                }
+                
+                applyHardwareAcceleration();
                 renderFrames();
             };
         }
 
+        // Switch between front/back camera
         function switchCamera() {
             useFrontCamera = !useFrontCamera;
             startCamera();
@@ -434,61 +571,41 @@
             return max === 0 ? 0 : (max - min) / max;
         }
 
-        // Apply Gaussian blur to the depth map
-        function blurDepthMap(depthData, width, height, radius) {
+        // Apply fast blur to the depth map
+        function fastBlurDepthMap(depthData, width, height, radius) {
             if (radius <= 0) return depthData;
             
+            // Create result array
             const result = new Uint8ClampedArray(depthData.length);
-            const sigma = radius / 3;
-            const sigma2 = 2 * sigma * sigma;
-            const sigmaPi2 = Math.PI * sigma2;
             
-            // Create Gaussian kernel
-            const kernelSize = radius * 2 + 1;
-            const kernel = new Float32Array(kernelSize);
-            let kernelSum = 0;
-            
-            for (let i = 0; i < kernelSize; i++) {
-                const x = i - radius;
-                kernel[i] = Math.exp(-(x * x) / sigma2) / sigmaPi2;
-                kernelSum += kernel[i];
-            }
-            
-            // Normalize kernel
-            for (let i = 0; i < kernelSize; i++) {
-                kernel[i] /= kernelSum;
-            }
-            
-            // Horizontal pass
-            const temp = new Uint8ClampedArray(depthData.length);
+            // Simple box blur instead of Gaussian for performance
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     let sum = 0;
-                    for (let i = -radius; i <= radius; i++) {
-                        const ix = Math.min(Math.max(0, x + i), width - 1);
-                        const idx = (y * width + ix) * 4;
-                        sum += depthData[idx] * kernel[i + radius];
+                    let count = 0;
+                    
+                    // Sample neighboring pixels
+                    const blurSize = Math.min(radius, 5); // Limit blur size for performance
+                    for (let offsetY = -blurSize; offsetY <= blurSize; offsetY += 2) {
+                        for (let offsetX = -blurSize; offsetX <= blurSize; offsetX += 2) {
+                            const sampleX = Math.max(0, Math.min(width - 1, x + offsetX));
+                            const sampleY = Math.max(0, Math.min(height - 1, y + offsetY));
+                            const idx = (sampleY * width + sampleX) * 4;
+                            
+                            sum += depthData[idx];
+                            count++;
+                        }
                     }
-                    temp[(y * width + x) * 4] = sum;
-                    temp[(y * width + x) * 4 + 1] = sum;
-                    temp[(y * width + x) * 4 + 2] = sum;
-                    temp[(y * width + x) * 4 + 3] = 255;
-                }
-            }
-            
-            // Vertical pass
-            for (let x = 0; x < width; x++) {
-                for (let y = 0; y < height; y++) {
-                    let sum = 0;
-                    for (let i = -radius; i <= radius; i++) {
-                        const iy = Math.min(Math.max(0, y + i), height - 1);
-                        const idx = (iy * width + x) * 4;
-                        sum += temp[idx] * kernel[i + radius];
-                    }
-                    result[(y * width + x) * 4] = sum;
-                    result[(y * width + x) * 4 + 1] = sum;
-                    result[(y * width + x) * 4 + 2] = sum;
-                    result[(y * width + x) * 4 + 3] = 255;
+                    
+                    // Calculate average
+                    const avg = Math.round(sum / count);
+                    
+                    // Set result
+                    const i = (y * width + x) * 4;
+                    result[i] = avg;
+                    result[i + 1] = avg;
+                    result[i + 2] = avg;
+                    result[i + 3] = 255;
                 }
             }
             
@@ -501,6 +618,7 @@
             const luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
             const saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
             
+            // Process pixel by pixel
             for (let i = 0; i < imgData.data.length; i += 4) {
                 const r = imgData.data[i];
                 const g = imgData.data[i + 1];
@@ -511,7 +629,8 @@
                 
                 // Combine luminosity and saturation to create depth value
                 // Higher values = closer objects (more parallax)
-                const depthValue = (luminosity * luminosityWeight + saturation * 255 * saturationWeight) / (luminosityWeight + saturationWeight);
+                const depthValue = (luminosity * luminosityWeight + saturation * 255 * saturationWeight) / 
+                                  (luminosityWeight + saturationWeight);
                 
                 depthMap[i] = depthValue;
                 depthMap[i + 1] = depthValue;
@@ -521,14 +640,21 @@
             
             // Apply blur to smooth the depth map
             const blurRadius = parseInt(document.getElementById('blurRadius').value);
-            return blurDepthMap(depthMap, width, height, blurRadius);
+            return fastBlurDepthMap(depthMap, width, height, blurRadius);
         }
 
+        // Main rendering function
         function renderFrames() {
             const canvas1 = document.getElementById('canvas1');
             const canvas2 = document.getElementById('canvas2');
-            const ctx1 = canvas1.getContext('2d', { willReadFrequently: true });
-            const ctx2 = canvas2.getContext('2d', { willReadFrequently: true });
+            const ctx1 = canvas1.getContext('2d', { 
+                alpha: false,
+                desynchronized: true
+            });
+            const ctx2 = canvas2.getContext('2d', { 
+                alpha: false,
+                desynchronized: true
+            });
             
             // Get control panel height for calculations
             const controlPanel = document.querySelector('.control-panel');
@@ -544,7 +670,7 @@
                 const availableHeight = window.innerHeight - controlPanelHeight - padding;
                 
                 // Use a higher percentage of screen width for each canvas
-                const maxCanvasWidth = Math.floor(window.innerWidth * 0.47); // Increased from 0.49
+                const maxCanvasWidth = Math.floor(window.innerWidth * 0.47);
                 
                 // Calculate height based on width and aspect ratio
                 let canvasWidth = maxCanvasWidth;
@@ -571,7 +697,7 @@
 
             function drawFrame(timestamp) {
                 // Schedule next frame first for better performance
-                const animationId = requestAnimationFrame(drawFrame);
+                requestAnimationFrame(drawFrame);
                 
                 // Throttle frame rate for better performance on low-end devices
                 if (timestamp - lastFrameTime < frameInterval) {
@@ -588,27 +714,28 @@
                 
                 adjustCanvasSize();
                 
-                // Draw the original frame to the processing canvas (smaller size for performance)
-                processingCtx.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
-                
-                // Draw the processing canvas to the depth map canvas
-                depthMapCtx.drawImage(processingCanvas, 0, 0, depthMapCanvas.width, depthMapCanvas.height);
-                
-                // Get the image data to calculate the depth map
-                const imgData = processingCtx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
-                
-                // Generate depth map
-                const depthData = generateDepthMap(imgData, processingCanvas.width, processingCanvas.height);
-                
-                // Create depth map image data
-                const depthImgData = new ImageData(depthData, processingCanvas.width, processingCanvas.height);
-                
-                // Apply stereoscopic 3D effect with the depth map
-                applyStereoscopicEffect(ctx1, ctx2, imgData, depthImgData);
-                
-                // Apply color adjustments
-                applyColorAdjustments(ctx1, canvas1, 'redSlider1', 'greenSlider1', 'blueSlider1');
-                applyColorAdjustments(ctx2, canvas2, 'redSlider2', 'greenSlider2', 'blueSlider2');
+                try {
+                    // Draw the original frame to the processing canvas (smaller size for performance)
+                    processingCtx.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
+                    
+                    // Get the image data to calculate the depth map
+                    const imgData = processingCtx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
+                    
+                    // Generate depth map
+                    const depthData = generateDepthMap(imgData, processingCanvas.width, processingCanvas.height);
+                    
+                    // Create depth map image data
+                    const depthImgData = new ImageData(depthData, processingCanvas.width, processingCanvas.height);
+                    
+                    // Apply stereoscopic 3D effect with the depth map
+                    applyStereoscopicEffect(ctx1, ctx2, imgData, depthImgData);
+                    
+                    // Apply color adjustments
+                    applyColorAdjustments(ctx1, canvas1, 'redSlider1', 'greenSlider1', 'blueSlider1');
+                    applyColorAdjustments(ctx2, canvas2, 'redSlider2', 'greenSlider2', 'blueSlider2');
+                } catch (error) {
+                    debugLog("Rendering error: " + error.message);
+                }
             }
 
             requestAnimationFrame(drawFrame);
@@ -639,7 +766,8 @@
                     
                     // Calculate source positions with parallax
                     const leftSrcX = Math.max(0, Math.min(width - 1, x - shift));
-                    const rightSrcX = Math.max(0, Math.min(width - 1, x + shift));                    
+                    const rightSrcX = Math.max(0, Math.min(width - 1, x + shift));
+                    
                     // Get source indices
                     const leftSrcIdx = (y * width + leftSrcX) * 4;
                     const rightSrcIdx = (y * width + rightSrcX) * 4;
@@ -652,7 +780,7 @@
                 }
             }
             
-            // Clear the canvases
+            // Clear the canvases (important for transparency and performance)
             ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
             ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
             
@@ -662,29 +790,55 @@
             tempCanvas1.width = tempCanvas2.width = width;
             tempCanvas1.height = tempCanvas2.height = height;
             
-            const tempCtx1 = tempCanvas1.getContext('2d');
-            const tempCtx2 = tempCanvas2.getContext('2d');
+            const tempCtx1 = tempCanvas1.getContext('2d', { alpha: false });
+            const tempCtx2 = tempCanvas2.getContext('2d', { alpha: false });
             
             // Put the processed images on the temporary canvases
             tempCtx1.putImageData(leftImgData, 0, 0);
             tempCtx2.putImageData(rightImgData, 0, 0);
             
-            // Scale up to the display size with smooth interpolation
-            ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
-            ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
+            // Apply CSS3D accelerated transforms if available
+            if (renderMethod === 'css3d') {
+                // Use drawImage with hardware acceleration
+                ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
+                ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
+            } else {
+                // Fallback to simple scaling
+                ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
+                ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
+            }
         }
 
         function applyColorAdjustments(ctx, canvas, redId, greenId, blueId) {
             const redValue = document.getElementById(redId).value;
             const greenValue = document.getElementById(greenId).value;
             const blueValue = document.getElementById(blueId).value;
+            
+            // Skip if all colors are at max value (no adjustment needed)
+            if (redValue === '255' && greenValue === '255' && blueValue === '255') {
+                return;
+            }
 
             const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            for (let i = 0; i < frame.data.length; i += 4) {
-                frame.data[i] = (frame.data[i] * redValue) / 255;     // Red
-                frame.data[i + 1] = (frame.data[i + 1] * greenValue) / 255; // Green
-                frame.data[i + 2] = (frame.data[i + 2] * blueValue) / 255;  // Blue
+            
+            // Create lookup tables for faster processing
+            const redLUT = new Uint8Array(256);
+            const greenLUT = new Uint8Array(256);
+            const blueLUT = new Uint8Array(256);
+            
+            for (let i = 0; i < 256; i++) {
+                redLUT[i] = (i * redValue) / 255;
+                greenLUT[i] = (i * greenValue) / 255;
+                blueLUT[i] = (i * blueValue) / 255;
             }
+            
+            // Apply color adjustments using lookup tables
+            for (let i = 0; i < frame.data.length; i += 4) {
+                frame.data[i] = redLUT[frame.data[i]];
+                frame.data[i + 1] = greenLUT[frame.data[i + 1]];
+                frame.data[i + 2] = blueLUT[frame.data[i + 2]];
+            }
+            
             ctx.putImageData(frame, 0, 0);
         }
 
@@ -692,8 +846,9 @@
             const canvas1 = document.getElementById('canvas1');
             const canvas2 = document.getElementById('canvas2');
 
-            canvas1.style.transform = `rotateY(${tiltValue}rad)`;
-            canvas2.style.transform = `rotateY(${-tiltValue}rad)`;
+            // Use hardware-accelerated 3D transforms
+            canvas1.style.transform = `perspective(1000px) rotateY(${tiltValue}rad)`;
+            canvas2.style.transform = `perspective(1000px) rotateY(${-tiltValue}rad)`;
         }
 
         function toggleControls() {
@@ -720,6 +875,12 @@
             // Show quality indicator
             const indicator = document.getElementById('qualityIndicator');
             indicator.textContent = `Processing at ${Math.round(qualityFactor * 100)}% resolution`;
+            
+            // Add rendering method info
+            if (renderMethod === 'css3d') {
+                indicator.textContent += ' with GPU acceleration';
+            }
+            
             indicator.style.opacity = 1;
             
             // Hide indicator after 3 seconds
@@ -733,6 +894,7 @@
             }
         }
 
+        // Set up event listeners
         document.getElementById('startButton').addEventListener('click', startCamera);
         document.getElementById('switchButton').addEventListener('click', switchCamera);
         document.getElementById('tiltSlider').addEventListener('input', (event) => {
@@ -788,6 +950,23 @@
                     depthMapCanvas.width = processingCanvas.width;
                     depthMapCanvas.height = processingCanvas.height;
                 }
+            }
+        });
+
+        // Apply hardware acceleration immediately
+        applyHardwareAcceleration();
+
+        // Enable debug mode with double tap on quality indicator
+        document.getElementById('qualityIndicator').addEventListener('dblclick', function() {
+            const debugOutput = document.getElementById('debugOutput');
+            if (debugOutput.style.display === 'none') {
+                debugOutput.style.display = 'block';
+                debugLog("Debug mode enabled");
+                debugLog("User Agent: " + navigator.userAgent);
+                debugLog("Render method: " + renderMethod);
+                debugLog("Quality factor: " + qualityFactor);
+            } else {
+                debugOutput.style.display = 'none';
             }
         });
 
