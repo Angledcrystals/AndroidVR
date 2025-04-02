@@ -118,12 +118,19 @@
             margin: 0 2px;
         }
 
-        /* Toggle button to hide/show controls - REPOSITIONED */
-        #toggleControls {
+        /* Top controls container */
+        .top-controls {
             position: fixed;
             top: 5px;
             right: 5px;
             z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Toggle button to hide/show controls - REPOSITIONED */
+        #toggleControls {
             opacity: 0.7;
             font-size: 0.7rem;
             padding: 3px 6px;
@@ -132,6 +139,35 @@
 
         #toggleControls:hover {
             opacity: 1;
+        }
+
+        /* Quality selector */
+        #qualitySelect {
+            opacity: 0.7;
+            font-size: 0.7rem;
+            padding: 3px 6px;
+            background-color: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 5px;
+        }
+
+        #qualitySelect:hover {
+            opacity: 1;
+        }
+
+        /* Quality indicator */
+        #qualityIndicator {
+            position: fixed;
+            top: 40px;
+            right: 5px;
+            font-size: 0.65rem;
+            color: #aaa;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 2px 5px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         /* Portrait mode warning */
@@ -148,7 +184,7 @@
                 z-index: 1000;
             }
 
-            .container, .control-panel, #toggleControls {
+            .container, .control-panel, .top-controls, #qualityIndicator {
                 display: none;
             }
         }
@@ -188,7 +224,17 @@
         <canvas id="canvas2"></canvas>
     </div>
     
-    <button id="toggleControls">Hide Controls</button>
+    <div class="top-controls">
+        <select id="qualitySelect">
+            <option value="1.0">High Quality</option>
+            <option value="0.5" selected>Medium Quality</option>
+            <option value="0.25">Low Quality</option>
+            <option value="0.1">Very Low Quality</option>
+        </select>
+        <button id="toggleControls">Hide Controls</button>
+    </div>
+    
+    <div id="qualityIndicator">Processing at 50% resolution</div>
     
     <div class="control-panel">
         <div class="control-row">
@@ -282,7 +328,13 @@
         let useFrontCamera = false;
         let depthMapCanvas = document.createElement('canvas');
         let depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
+        let processingCanvas = document.createElement('canvas');
+        let processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
         let controlsHidden = false;
+        let qualityFactor = 0.5; // Default medium quality
+        let lastFrameTime = 0;
+        const targetFPS = 30;
+        const frameInterval = 1000 / targetFPS;
         
         async function startCamera() {
             if (currentStream) {
@@ -465,30 +517,47 @@
                 canvas1.width = canvas2.width = Math.floor(canvasWidth);
                 canvas1.height = canvas2.height = Math.floor(canvasHeight);
                 
-                // Adjust the depth map canvas size
-                depthMapCanvas.width = Math.floor(canvasWidth);
-                depthMapCanvas.height = Math.floor(canvasHeight);
+                // Set processing canvas size based on quality factor
+                processingCanvas.width = Math.max(32, Math.floor(canvasWidth * qualityFactor));
+                processingCanvas.height = Math.max(32, Math.floor(canvasHeight * qualityFactor));
+                
+                // Adjust the depth map canvas size to match processing canvas
+                depthMapCanvas.width = processingCanvas.width;
+                depthMapCanvas.height = processingCanvas.height;
             }
 
-            function drawFrame() {
-                if (!video || video.paused || video.ended) return;
+            function drawFrame(timestamp) {
+                // Throttle frame rate for better performance on low-end devices
+                if (timestamp - lastFrameTime < frameInterval) {
+                    requestAnimationFrame(drawFrame);
+                    return;
+                }
+                lastFrameTime = timestamp;
+                
+                if (!video || video.paused || video.ended) {
+                    requestAnimationFrame(drawFrame);
+                    return;
+                }
 
                 // Get latest control panel height in case it changed
                 controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
                 
                 adjustCanvasSize();
                 
-                // Draw the original frame to the depth map canvas
-                depthMapCtx.drawImage(video, 0, 0, depthMapCanvas.width, depthMapCanvas.height);
+                // Draw the original frame to the processing canvas (smaller size for performance)
+                processingCtx.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
+                
+                // Draw the processing canvas to the depth map canvas
+                depthMapCtx.drawImage(processingCanvas, 0, 0, depthMapCanvas.width, depthMapCanvas.height);
                 
                 // Get the image data to calculate the depth map
-                const imgData = depthMapCtx.getImageData(0, 0, depthMapCanvas.width, depthMapCanvas.height);
+                const imgData = processingCtx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
                 
                 // Generate depth map
-                const depthData = generateDepthMap(imgData, depthMapCanvas.width, depthMapCanvas.height);
+                const depthData = generateDepthMap(imgData, processingCanvas.width, processingCanvas.height);
                 
                 // Create depth map image data
-                const depthImgData = new ImageData(depthData, depthMapCanvas.width, depthMapCanvas.height);
+                const depthImgData = new ImageData(depthData, processingCanvas.width, processingCanvas.height);
                 
                 // Apply stereoscopic 3D effect with the depth map
                 applyStereoscopicEffect(ctx1, ctx2, imgData, depthImgData);
@@ -500,7 +569,7 @@
                 requestAnimationFrame(drawFrame);
             }
 
-            drawFrame();
+            requestAnimationFrame(drawFrame);
         }
         
         function applyStereoscopicEffect(ctx1, ctx2, origImgData, depthImgData) {
@@ -541,9 +610,26 @@
                 }
             }
             
-            // Put the processed images on the canvases
-            ctx1.putImageData(leftImgData, 0, 0);
-            ctx2.putImageData(rightImgData, 0, 0);
+            // Clear the canvases
+            ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
+            ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
+            
+            // Create temporary canvases for scaling
+            const tempCanvas1 = document.createElement('canvas');
+            const tempCanvas2 = document.createElement('canvas');
+            tempCanvas1.width = tempCanvas2.width = width;
+            tempCanvas1.height = tempCanvas2.height = height;
+            
+            const tempCtx1 = tempCanvas1.getContext('2d');
+            const tempCtx2 = tempCanvas2.getContext('2d');
+            
+            // Put the processed images on the temporary canvases
+            tempCtx1.putImageData(leftImgData, 0, 0);
+            tempCtx2.putImageData(rightImgData, 0, 0);
+            
+            // Scale up to the display size with smooth interpolation
+            ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
+            ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
         }
 
         function applyColorAdjustments(ctx, canvas, redId, greenId, blueId) {
@@ -585,6 +671,25 @@
             // Trigger resize to adjust canvas size
             window.dispatchEvent(new Event('resize'));
         }
+        
+        function setQuality(value) {
+            qualityFactor = parseFloat(value);
+            
+            // Show quality indicator
+            const indicator = document.getElementById('qualityIndicator');
+            indicator.textContent = `Processing at ${Math.round(qualityFactor * 100)}% resolution`;
+            indicator.style.opacity = 1;
+            
+            // Hide indicator after 3 seconds
+            setTimeout(() => {
+                indicator.style.opacity = 0;
+            }, 3000);
+            
+            // Trigger resize to adjust canvas size
+            if (video && !video.paused) {
+                window.dispatchEvent(new Event('resize'));
+            }
+        }
 
         document.getElementById('startButton').addEventListener('click', startCamera);
         document.getElementById('switchButton').addEventListener('click', switchCamera);
@@ -593,6 +698,12 @@
             applyTilt(tiltValue);
         });
         document.getElementById('toggleControls').addEventListener('click', toggleControls);
+        document.getElementById('qualitySelect').addEventListener('change', (event) => {
+            setQuality(event.target.value);
+        });
+
+        // Initialize quality setting from select dropdown
+        setQuality(document.getElementById('qualitySelect').value);
 
         // Recalculate canvas sizes whenever control values change that might affect layout
         const controlInputs = document.querySelectorAll('input[type="range"]');
@@ -628,8 +739,12 @@
                     
                     canvas1.width = canvas2.width = Math.floor(canvasWidth);
                     canvas1.height = canvas2.height = Math.floor(canvasHeight);
-                    depthMapCanvas.width = Math.floor(canvasWidth);
-                    depthMapCanvas.height = Math.floor(canvasHeight);
+                    
+                    processingCanvas.width = Math.max(32, Math.floor(canvasWidth * qualityFactor));
+                    processingCanvas.height = Math.max(32, Math.floor(canvasHeight * qualityFactor));
+                    
+                    depthMapCanvas.width = processingCanvas.width;
+                    depthMapCanvas.height = processingCanvas.height;
                 }
             }
         });
