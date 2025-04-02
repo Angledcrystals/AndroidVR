@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Stereo Image Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header with upload controls */
+        .header {
+            padding: 10px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-bottom: 1px solid #333;
+            z-index: 1000;
+        }
+
+        /* Canvas container takes all available space */
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            perspective: 1000px;
+            overflow: hidden;
+            padding-top: 10px; /* Space from top */
+        }
+
+        /* Canvas will maintain aspect ratio */
+        canvas {
+            border: 2px solid white;
+            border-radius: 10px;
+            transform-origin: center;
+            transition: transform 0.2s ease;
+            margin: 0 4px;
+            height: auto; /* Auto height based on container */
+        }
+
+        /* Control panel at the bottom */
+        .control-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-top: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            padding: 5px 5px;
+            z-index: 1000;
+        }
+
+        /* Control rows */
+        .control-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 3px; /* Reduced margin */
+        }
+
+        /* Control sections */
+        .control-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 5px;
+        }
+
+        /* Control section headers */
+        .section-header {
+            font-size: 0.7rem; /* Smaller font */
+            text-transform: uppercase;
+            margin-bottom: 1px;
+            color: #ccc;
+        }
+
+        /* Control elements */
+        .control-item {
+            display: flex;
+            align-items: center;
+            margin: 1px 0; /* Reduced margin */
+        }
+
+        label {
+            font-size: 0.7rem; /* Smaller font */
+            margin-right: 5px;
+            min-width: 45px;
+        }
+
+        input[type="range"] {
+            width: 70px;
+            height: 12px; /* Thinner sliders */
+        }
+
+        button {
+            margin: 2px; /* Reduced margin */
+            padding: 5px 8px; /* Smaller padding */
+            font-size: 0.75rem; /* Smaller font */
+            border: none;
+            border-radius: 5px;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #666;
+        }
+
+        .divider {
+            width: 1px;
+            height: 35px; /* Shorter divider */
+            background-color: #444;
+            margin: 0 2px;
+        }
+
+        /* Top controls container */
+        .top-controls {
+            position: fixed;
+            top: 5px;
+            right: 5px;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Toggle button to hide/show controls */
+        #toggleControls {
+            opacity: 0.7;
+            font-size: 0.7rem;
+            padding: 3px 6px;
+            background-color: #333;
+        }
+
+        #toggleControls:hover {
+            opacity: 1;
+        }
+
+        /* Quality selector */
+        #qualitySelect {
+            opacity: 0.7;
+            font-size: 0.7rem;
+            padding: 3px 6px;
+            background-color: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 5px;
+        }
+
+        #qualitySelect:hover {
+            opacity: 1;
+        }
+
+        /* Quality indicator */
+        #qualityIndicator {
+            position: fixed;
+            top: 40px;
+            right: 5px;
+            font-size: 0.65rem;
+            color: #aaa;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 2px 5px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* Hidden controls class */
+        .controls-hidden .control-panel {
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .control-panel {
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        /* Upload button styling */
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-container input {
+            display: none;
+        }
+
+        .upload-label {
+            padding: 8px 16px;
+            background-color: #444;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .upload-label:hover {
+            background-color: #666;
+        }
+
+        /* Depth map preview */
+        #depthPreview {
+            width: 150px;
+            height: auto;
+            border: 1px solid #333;
+            display: none;
+            margin-top: 5px;
+        }
+
+        /* Download buttons container */
+        .download-container {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        /* Very small screens */
+        @media (max-width: 480px) {
+            button {
+                padding: 3px 6px;
+                font-size: 0.65rem;
+            }
+            
+            input[type="range"] {
+                width: 60px;
+            }
+            
+            label {
+                font-size: 0.65rem;
+                min-width: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="upload-container">
+            <label for="imageInput" class="upload-label">Upload Image</label>
+            <input type="file" id="imageInput" accept="image/*">
+            <span id="fileName"></span>
+            <div class="download-container">
+                <button id="downloadLeft">Download Left</button>
+                <button id="downloadRight">Download Right</button>
+                <button id="toggleDepthMap">Show Depth Map</button>
+            </div>
+            <canvas id="depthPreview"></canvas>
+        </div>
+    </div>
+    
+    <div class="container">
+        <canvas id="canvas1"></canvas>
+        <canvas id="canvas2"></canvas>
+    </div>
+    
+    <div class="top-controls">
+        <select id="qualitySelect">
+            <option value="1.0">High Quality</option>
+            <option value="0.5" selected>Medium Quality</option>
+            <option value="0.25">Low Quality</option>
+            <option value="0.1">Very Low Quality</option>
+        </select>
+        <button id="toggleControls">Hide Controls</button>
+    </div>
+    
+    <div id="qualityIndicator">Processing at 50% resolution</div>
+    
+    <div class="control-panel">
+        <div class="control-row">
+            <div class="control-section">
+                <div class="section-header">Process</div>
+                <div class="control-item">
+                    <button id="processButton">Re-Process Image</button>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="control-section">
+                <div class="section-header">View</div>
+                <div class="control-item">
+                    <label for="tiltSlider">Tilt</label>
+                    <input id="tiltSlider" type="range" min="0" max="0.7" step="0.01" value="0">
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="control-section">
+                <div class="section-header">Depth</div>
+                <div class="control-item">
+                    <label for="depthIntensity">Intensity</label>
+                    <input id="depthIntensity" type="range" min="0" max="20" step="0.5" value="5">
+                </div>
+                <div class="control-item">
+                    <label for="blurRadius">Blur</label>
+                    <input id="blurRadius" type="range" min="0" max="10" step="1" value="2">
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-row">
+            <div class="control-section">
+                <div class="section-header">Depth Factors</div>
+                <div class="control-item">
+                    <label for="luminosityWeight">Luminosity</label>
+                    <input id="luminosityWeight" type="range" min="0" max="1" step="0.05" value="0.7">
+                </div>
+                <div class="control-item">
+                    <label for="saturationWeight">Saturation</label>
+                    <input id="saturationWeight" type="range" min="0" max="1" step="0.05" value="0.3">
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="control-section">
+                <div class="section-header">Left Color</div>
+                <div class="control-item">
+                    <label for="redSlider1">Red</label>
+                    <input id="redSlider1" type="range" min="0" max="255" step="1" value="255">
+                </div>
+                <div class="control-item">
+                    <label for="greenSlider1">Green</label>
+                    <input id="greenSlider1" type="range" min="0" max="255" step="1" value="255">
+                </div>
+                <div class="control-item">
+                    <label for="blueSlider1">Blue</label>
+                    <input id="blueSlider1" type="range" min="0" max="255" step="1" value="255">
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="control-section">
+                <div class="section-header">Right Color</div>
+                <div class="control-item">
+                    <label for="redSlider2">Red</label>
+                    <input id="redSlider2" type="range" min="0" max="255" step="1" value="255">
+                </div>
+                <div class="control-item">
+                    <label for="greenSlider2">Green</label>
+                    <input id="greenSlider2" type="range" min="0" max="255" step="1" value="255">
+                </div>
+                <div class="control-item">
+                    <label for="blueSlider2">Blue</label>
+                    <input id="blueSlider2" type="range" min="0" max="255" step="1" value="255">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let sourceImage = null;
+        let depthMapCanvas = document.createElement('canvas');
+        let depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
+        let processingCanvas = document.createElement('canvas');
+        let processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
+        let controlsHidden = false;
+        let qualityFactor = 0.5; // Default medium quality
+        let showDepthMap = false;
+        
+        // Handle file input
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                document.getElementById('fileName').textContent = file.name;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    sourceImage = new Image();
+                    sourceImage.onload = function() {
+                        processImage();
+                    };
+                    sourceImage.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Re-process image button
+        document.getElementById('processButton').addEventListener('click', function() {
+            if (sourceImage) {
+                processImage();
+            }
+        });
+        
+        // Toggle depth map visibility
+        document.getElementById('toggleDepthMap').addEventListener('click', function() {
+            showDepthMap = !showDepthMap;
+            const depthPreview = document.getElementById('depthPreview');
+            
+            if (showDepthMap) {
+                depthPreview.style.display = 'block';
+                this.textContent = 'Hide Depth Map';
+            } else {
+                depthPreview.style.display = 'none';
+                this.textContent = 'Show Depth Map';
+            }
+        });
+        
+        // Download buttons
+        document.getElementById('downloadLeft').addEventListener('click', function() {
+            downloadCanvas('canvas1', 'left-stereo.png');
+        });
+        
+        document.getElementById('downloadRight').addEventListener('click', function() {
+            downloadCanvas('canvas2', 'right-stereo.png');
+        });
+        
+        function downloadCanvas(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Process the uploaded image
+        function processImage() {
+            if (!sourceImage) return;
+            
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            const depthPreview = document.getElementById('depthPreview');
+            
+            // Set canvas sizes based on image dimensions and quality factor
+            adjustCanvasSize(canvas1, canvas2, depthPreview);
+            
+            // Process the image and create stereo pair
+            const ctx1 = canvas1.getContext('2d', { willReadFrequently: true });
+            const ctx2 = canvas2.getContext('2d', { willReadFrequently: true });
+            
+            // Draw the source image to the processing canvas
+            processingCtx.clearRect(0, 0, processingCanvas.width, processingCanvas.height);
+            processingCtx.drawImage(sourceImage, 0, 0, processingCanvas.width, processingCanvas.height);
+            
+            // Get the image data to calculate the depth map
+            const imgData = processingCtx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
+            
+            // Generate depth map
+            const depthData = generateDepthMap(imgData, processingCanvas.width, processingCanvas.height);
+            
+            // Create depth map image data
+            const depthImgData = new ImageData(depthData, processingCanvas.width, processingCanvas.height);
+            
+            // Display depth map preview if enabled
+            if (showDepthMap) {
+                const depthPreviewCtx = depthPreview.getContext('2d');
+                depthPreviewCtx.putImageData(depthImgData, 0, 0);
+            }
+            
+            // Apply stereoscopic 3D effect with the depth map
+            applyStereoscopicEffect(ctx1, ctx2, imgData, depthImgData);
+            
+            // Apply color adjustments
+            applyColorAdjustments(ctx1, canvas1, 'redSlider1', 'greenSlider1', 'blueSlider1');
+            applyColorAdjustments(ctx2, canvas2, 'redSlider2', 'greenSlider2', 'blueSlider2');
+            
+            // Apply tilt
+            const tiltValue = parseFloat(document.getElementById('tiltSlider').value);
+            applyTilt(tiltValue);
+        }
+        
+        function adjustCanvasSize(canvas1, canvas2, depthPreview) {
+            if (!sourceImage) return;
+            
+            const imgWidth = sourceImage.width;
+            const imgHeight = sourceImage.height;
+            const imgAspect = imgWidth / imgHeight;
+            
+            // Get control panel height for calculations
+            const controlPanel = document.querySelector('.control-panel');
+            const headerHeight = document.querySelector('.header').offsetHeight;
+            let controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
+            
+            // Calculate available space
+            const padding = 20; // top and bottom padding
+            const availableHeight = window.innerHeight - controlPanelHeight - headerHeight - padding;
+            
+            // Use a higher percentage of screen width for each canvas
+            const maxCanvasWidth = Math.floor(window.innerWidth * 0.47);
+            
+            // Calculate height based on width and aspect ratio
+            let canvasWidth = maxCanvasWidth;
+            let canvasHeight = canvasWidth / imgAspect;
+            
+            // If calculated height exceeds available space, recalculate from height
+            if (canvasHeight > availableHeight) {
+                canvasHeight = availableHeight;
+                canvasWidth = canvasHeight * imgAspect;
+            }
+            
+            // Size canvases
+            canvas1.width = canvas2.width = Math.floor(canvasWidth);
+            canvas1.height = canvas2.height = Math.floor(canvasHeight);
+            
+            // Set processing canvas size based on quality factor
+            processingCanvas.width = Math.max(32, Math.floor(imgWidth * qualityFactor));
+            processingCanvas.height = Math.max(32, Math.floor(imgHeight * qualityFactor));
+            
+            // Adjust the depth map canvas size to match processing canvas
+            depthMapCanvas.width = processingCanvas.width;
+            depthMapCanvas.height = processingCanvas.height;
+            
+            // Set depth preview canvas size
+            depthPreview.width = processingCanvas.width;
+            depthPreview.height = processingCanvas.height;
+        }
+        
+        // Calculate luminosity of a pixel
+        function getLuminosity(r, g, b) {
+            return 0.299 * r + 0.587 * g + 0.114 * b;
+        }
+
+        // Calculate saturation of a pixel
+        function getSaturation(r, g, b) {
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            return max === 0 ? 0 : (max - min) / max;
+        }
+
+        // Apply Gaussian blur to the depth map
+        function blurDepthMap(depthData, width, height, radius) {
+            if (radius <= 0) return depthData;
+            
+            const result = new Uint8ClampedArray(depthData.length);
+            const sigma = radius / 3;
+            const sigma2 = 2 * sigma * sigma;
+            const sigmaPi2 = Math.PI * sigma2;
+            
+            // Create Gaussian kernel
+            const kernelSize = radius * 2 + 1;
+            const kernel = new Float32Array(kernelSize);
+            let kernelSum = 0;
+            
+            for (let i = 0; i < kernelSize; i++) {
+                const x = i - radius;
+                kernel[i] = Math.exp(-(x * x) / sigma2) / sigmaPi2;
+                kernelSum += kernel[i];
+            }
+            
+            // Normalize kernel
+            for (let i = 0; i < kernelSize; i++) {
+                kernel[i] /= kernelSum;
+            }
+            
+            // Horizontal pass
+            const temp = new Uint8ClampedArray(depthData.length);
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    let sum = 0;
+                    for (let i = -radius; i <= radius; i++) {
+                        const ix = Math.min(Math.max(0, x + i), width - 1);
+                        const idx = (y * width + ix) * 4;
+                        sum += depthData[idx] * kernel[i + radius];
+                    }
+                    temp[(y * width + x) * 4] = sum;
+                    temp[(y * width + x) * 4 + 1] = sum;
+                    temp[(y * width + x) * 4 + 2] = sum;
+                    temp[(y * width + x) * 4 + 3] = 255;
+                }
+            }
+            
+            // Vertical pass
+            for (let x = 0; x < width; x++) {
+                for (let y = 0; y < height; y++) {
+                    let sum = 0;
+                    for (let i = -radius; i <= radius; i++) {
+                        const iy = Math.min(Math.max(0, y + i), height - 1);
+                        const idx = (iy * width + x) * 4;
+                        sum += temp[idx] * kernel[i + radius];
+                    }
+                    result[(y * width + x) * 4] = sum;
+                    result[(y * width + x) * 4 + 1] = sum;
+                    result[(y * width + x) * 4 + 2] = sum;
+                    result[(y * width + x) * 4 + 3] = 255;
+                }
+            }
+            
+            return result;
+        }
+
+        // Generate depth map from image data
+        function generateDepthMap(imgData, width, height) {
+            const depthMap = new Uint8ClampedArray(imgData.data.length);
+            const luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
+            const saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
+            
+            for (let i = 0; i < imgData.data.length; i += 4) {
+                const r = imgData.data[i];
+                const g = imgData.data[i + 1];
+                const b = imgData.data[i + 2];
+                
+                const luminosity = getLuminosity(r, g, b);
+                const saturation = getSaturation(r, g, b);
+                
+                // Combine luminosity and saturation to create depth value
+                // Higher values = closer objects (more parallax)
+                const depthValue = (luminosity * luminosityWeight + saturation * 255 * saturationWeight) / (luminosityWeight + saturationWeight);
+                
+                depthMap[i] = depthValue;
+                depthMap[i + 1] = depthValue;
+                depthMap[i + 2] = depthValue;
+                depthMap[i + 3] = 255;
+            }
+            
+            // Apply blur to smooth the depth map
+            const blurRadius = parseInt(document.getElementById('blurRadius').value);
+            return blurDepthMap(depthMap, width, height, blurRadius);
+        }
+        
+        function applyStereoscopicEffect(ctx1, ctx2, origImgData, depthImgData) {
+            const width = depthImgData.width;
+            const height = depthImgData.height;
+            
+            // Create output images for left and right eyes
+            const leftImgData = new ImageData(width, height);
+            const rightImgData = new ImageData(width, height);
+            
+            // Get depth intensity factor from slider
+            const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
+            
+            // Apply parallax shift based on depth map
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    
+                    // Get depth value (0-255)
+                    const depth = depthImgData.data[idx] / 255;
+                    
+                    // Calculate parallax shift based on depth
+                    // Objects with higher depth value (closer) have more shift
+                    const shift = Math.floor(depth * depthIntensity);
+                    
+                    // Calculate source positions with parallax
+                    const leftSrcX = Math.max(0, Math.min(width - 1, x - shift));
+                    const rightSrcX = Math.max(0, Math.min(width - 1, x + shift));                    
+                    
+                    // Get source indices
+                    const leftSrcIdx = (y * width + leftSrcX) * 4;
+                    const rightSrcIdx = (y * width + rightSrcX) * 4;
+                    
+                    // Copy pixels with shift
+                    for (let c = 0; c < 4; c++) {
+                        leftImgData.data[idx + c] = origImgData.data[leftSrcIdx + c];
+                        rightImgData.data[idx + c] = origImgData.data[rightSrcIdx + c];
+                    }
+                }
+            }
+            
+            // Clear the canvases
+            ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
+            ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
+            
+            // Create temporary canvases for scaling
+            const tempCanvas1 = document.createElement('canvas');
+            const tempCanvas2 = document.createElement('canvas');
+            tempCanvas1.width = tempCanvas2.width = width;
+            tempCanvas1.height = tempCanvas2.height = height;
+            
+            const tempCtx1 = tempCanvas1.getContext('2d');
+            const tempCtx2 = tempCanvas2.getContext('2d');
+            
+            // Put the processed images on the temporary canvases
+            tempCtx1.putImageData(leftImgData, 0, 0);
+            tempCtx2.putImageData(rightImgData, 0, 0);
+            
+            // Scale up to the display size with smooth interpolation
+            ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
+            ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
+        }
+
+        function applyColorAdjustments(ctx, canvas, redId, greenId, blueId) {
+            const redValue = document.getElementById(redId).value;
+            const greenValue = document.getElementById(greenId).value;
+            const blueValue = document.getElementById(blueId).value;
+
+            const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < frame.data.length; i += 4) {
+                frame.data[i] = (frame.data[i] * redValue) / 255;     // Red
+                frame.data[i + 1] = (frame.data[i + 1] * greenValue) / 255; // Green
+                frame.data[i + 2] = (frame.data[i + 2] * blueValue) / 255;  // Blue
+            }
+            ctx.putImageData(frame, 0, 0);
+        }
+
+        function applyTilt(tiltValue) {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+
+            canvas1.style.transform = `rotateY(${tiltValue}rad)`;
+            canvas2.style.transform = `rotateY(${-tiltValue}rad)`;
+        }
+
+        function toggleControls() {
+            const body = document.body;
+            const toggleButton = document.getElementById('toggleControls');
+            
+            controlsHidden = !controlsHidden;
+            
+            if (controlsHidden) {
+                body.classList.add('controls-hidden');
+                toggleButton.textContent = 'Show Controls';
+            } else {
+                body.classList.remove('controls-hidden');
+                toggleButton.textContent = 'Hide Controls';
+            }
+            
+            // If we have an image, reprocess to adjust canvas size
+            if (sourceImage) {
+                processImage();
+            }
+        }
+        
+        function setQuality(value) {
+            qualityFactor = parseFloat(value);
+            
+            // Show quality indicator
+            const indicator = document.getElementById('qualityIndicator');
+            indicator.textContent = `Processing at ${Math.round(qualityFactor * 100)}% resolution`;
+            indicator.style.opacity = 1;
+            
+            // Hide indicator after 3 seconds
+            setTimeout(() => {
+                indicator.style.opacity = 0;
+            }, 3000);
+            
+            // If we have an image, reprocess with new quality
+            if (sourceImage) {
+                processImage();
+            }
+        }
+
+        // Event listeners for controls
+        document.getElementById('tiltSlider').addEventListener('input', (event) => {
+            const tiltValue = parseFloat(event.target.value);
+            applyTilt(tiltValue);
+        });
+        
+        document.getElementById('toggleControls').addEventListener('click', toggleControls);
+        
+        document.getElementById('qualitySelect').addEventListener('change', (event) => {
+            setQuality(event.target.value);
+        });
+
+        // Initialize quality setting from select dropdown
+        setQuality(document.getElementById('qualitySelect').value);
+
+        // Reprocess image whenever control values change
+        const controlInputs = document.querySelectorAll('input[type="range"]');
+        controlInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                if (sourceImage) {
+                    processImage();
+                }
+            });
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (sourceImage) {
+                processImage();
+            }
+        });
+    </script>
+</body>
+</html>
