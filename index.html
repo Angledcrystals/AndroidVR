@@ -27,6 +27,7 @@
             width: 100vw;
             perspective: 1000px;
             overflow: hidden;
+            padding-top: 10px; /* Space from top */
         }
 
         /* Canvas will maintain camera aspect ratio */
@@ -36,8 +37,7 @@
             transform-origin: center;
             transition: transform 0.2s ease;
             margin: 0 4px;
-            max-height: 100%;
-            max-width: 49%;
+            height: auto; /* Auto height based on container */
         }
 
         /* Control panel at the bottom */
@@ -50,7 +50,7 @@
             border-top: 1px solid #333;
             display: flex;
             flex-direction: column;
-            padding: 10px 5px;
+            padding: 5px 5px;
             z-index: 1000;
         }
 
@@ -59,7 +59,7 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            margin-bottom: 5px;
+            margin-bottom: 3px; /* Reduced margin */
         }
 
         /* Control sections */
@@ -72,9 +72,9 @@
 
         /* Control section headers */
         .section-header {
-            font-size: 0.8rem;
+            font-size: 0.7rem; /* Smaller font */
             text-transform: uppercase;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
             color: #ccc;
         }
 
@@ -82,24 +82,24 @@
         .control-item {
             display: flex;
             align-items: center;
-            margin: 2px 0;
+            margin: 1px 0; /* Reduced margin */
         }
 
         label {
-            font-size: 0.75rem;
+            font-size: 0.7rem; /* Smaller font */
             margin-right: 5px;
-            min-width: 50px;
+            min-width: 45px;
         }
 
         input[type="range"] {
             width: 70px;
-            height: 15px;
+            height: 12px; /* Thinner sliders */
         }
 
         button {
-            margin: 3px;
-            padding: 6px 10px;
-            font-size: 0.8rem;
+            margin: 2px; /* Reduced margin */
+            padding: 5px 8px; /* Smaller padding */
+            font-size: 0.75rem; /* Smaller font */
             border: none;
             border-radius: 5px;
             background-color: #444;
@@ -113,9 +113,20 @@
 
         .divider {
             width: 1px;
-            height: 40px;
+            height: 35px; /* Shorter divider */
             background-color: #444;
             margin: 0 2px;
+        }
+
+        /* Toggle button to hide/show controls */
+        #toggleControls {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            z-index: 1001;
+            opacity: 0.7;
+            font-size: 0.7rem;
+            padding: 3px 6px;
         }
 
         /* Portrait mode warning */
@@ -132,7 +143,7 @@
                 z-index: 1000;
             }
 
-            .container, .control-panel {
+            .container, .control-panel, #toggleControls {
                 display: none;
             }
         }
@@ -140,8 +151,8 @@
         /* Very small screens */
         @media (max-width: 480px) {
             button {
-                padding: 4px 6px;
-                font-size: 0.7rem;
+                padding: 3px 6px;
+                font-size: 0.65rem;
             }
             
             input[type="range"] {
@@ -149,9 +160,20 @@
             }
             
             label {
-                font-size: 0.7rem;
+                font-size: 0.65rem;
                 min-width: 40px;
             }
+        }
+
+        /* Hidden controls class */
+        .controls-hidden .control-panel {
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .control-panel {
+            transform: translateY(0);
+            transition: transform 0.3s ease;
         }
     </style>
 </head>
@@ -160,6 +182,8 @@
         <canvas id="canvas1"></canvas>
         <canvas id="canvas2"></canvas>
     </div>
+    
+    <button id="toggleControls">Hide Controls</button>
     
     <div class="control-panel">
         <div class="control-row">
@@ -253,6 +277,7 @@
         let useFrontCamera = false;
         let depthMapCanvas = document.createElement('canvas');
         let depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
+        let controlsHidden = false;
         
         async function startCamera() {
             if (currentStream) {
@@ -407,18 +432,19 @@
             
             // Get control panel height for calculations
             const controlPanel = document.querySelector('.control-panel');
-            const controlPanelHeight = controlPanel.offsetHeight;
+            let controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
 
             function adjustCanvasSize() {
                 if (!video) return;
                 
                 const videoAspect = video.videoWidth / video.videoHeight;
                 
-                // Calculate available space
-                const availableHeight = window.innerHeight - controlPanelHeight - 20; // 20px for padding
+                // Calculate available space (account for padding)
+                const padding = 20; // top and bottom padding
+                const availableHeight = window.innerHeight - controlPanelHeight - padding;
                 
-                // Calculate maximum width for each canvas (49% to leave small gap)
-                const maxCanvasWidth = Math.floor(window.innerWidth * 0.49);
+                // Use a higher percentage of screen width for each canvas
+                const maxCanvasWidth = Math.floor(window.innerWidth * 0.47); // Increased from 0.49
                 
                 // Calculate height based on width and aspect ratio
                 let canvasWidth = maxCanvasWidth;
@@ -430,18 +456,21 @@
                     canvasWidth = canvasHeight * videoAspect;
                 }
                 
-                // Set canvas dimensions to maintain aspect ratio
-                canvas1.width = canvas2.width = canvasWidth;
-                canvas1.height = canvas2.height = canvasHeight;
+                // Size canvases as large as possible
+                canvas1.width = canvas2.width = Math.floor(canvasWidth);
+                canvas1.height = canvas2.height = Math.floor(canvasHeight);
                 
-                // Also adjust the depth map canvas size
-                depthMapCanvas.width = canvasWidth;
-                depthMapCanvas.height = canvasHeight;
+                // Adjust the depth map canvas size
+                depthMapCanvas.width = Math.floor(canvasWidth);
+                depthMapCanvas.height = Math.floor(canvasHeight);
             }
 
             function drawFrame() {
                 if (!video || video.paused || video.ended) return;
 
+                // Get latest control panel height in case it changed
+                controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
+                
                 adjustCanvasSize();
                 
                 // Draw the original frame to the depth map canvas
@@ -494,8 +523,7 @@
                     
                     // Calculate source positions with parallax
                     const leftSrcX = Math.max(0, Math.min(width - 1, x - shift));
-                    const rightSrcX = Math.max(0, Math.min(width - 1, x + shift));
-                    
+                    const rightSrcX = Math.max(0, Math.min(width - 1, x + shift));                    
                     // Get source indices
                     const leftSrcIdx = (y * width + leftSrcX) * 4;
                     const rightSrcIdx = (y * width + rightSrcX) * 4;
@@ -535,41 +563,38 @@
             canvas2.style.transform = `rotateY(${-tiltValue}rad)`;
         }
 
+        function toggleControls() {
+            const body = document.body;
+            const toggleButton = document.getElementById('toggleControls');
+            
+            controlsHidden = !controlsHidden;
+            
+            if (controlsHidden) {
+                body.classList.add('controls-hidden');
+                toggleButton.textContent = 'Show Controls';
+            } else {
+                body.classList.remove('controls-hidden');
+                toggleButton.textContent = 'Hide Controls';
+            }
+            
+            // Trigger resize to adjust canvas size
+            window.dispatchEvent(new Event('resize'));
+        }
+
         document.getElementById('startButton').addEventListener('click', startCamera);
         document.getElementById('switchButton').addEventListener('click', switchCamera);
         document.getElementById('tiltSlider').addEventListener('input', (event) => {
             const tiltValue = parseFloat(event.target.value);
             applyTilt(tiltValue);
         });
+        document.getElementById('toggleControls').addEventListener('click', toggleControls);
 
         // Recalculate canvas sizes whenever control values change that might affect layout
         const controlInputs = document.querySelectorAll('input[type="range"]');
         controlInputs.forEach(input => {
             input.addEventListener('change', () => {
                 if (video && !video.paused) {
-                    const canvas1 = document.getElementById('canvas1');
-                    const canvas2 = document.getElementById('canvas2');
-                    if (canvas1 && canvas2) {
-                        const controlPanel = document.querySelector('.control-panel');
-                        const controlPanelHeight = controlPanel.offsetHeight;
-                        const videoAspect = video.videoWidth / video.videoHeight;
-                        
-                        const availableHeight = window.innerHeight - controlPanelHeight - 20;
-                        const maxCanvasWidth = Math.floor(window.innerWidth * 0.49);
-                        
-                        let canvasWidth = maxCanvasWidth;
-                        let canvasHeight = canvasWidth / videoAspect;
-                        
-                        if (canvasHeight > availableHeight) {
-                            canvasHeight = availableHeight;
-                            canvasWidth = canvasHeight * videoAspect;
-                        }
-                        
-                        canvas1.width = canvas2.width = canvasWidth;
-                        canvas1.height = canvas2.height = canvasHeight;
-                        depthMapCanvas.width = canvasWidth;
-                        depthMapCanvas.height = canvasHeight;
-                    }
+                    window.dispatchEvent(new Event('resize'));
                 }
             });
         });
@@ -581,11 +606,12 @@
                 const canvas2 = document.getElementById('canvas2');
                 if (canvas1 && canvas2) {
                     const controlPanel = document.querySelector('.control-panel');
-                    const controlPanelHeight = controlPanel.offsetHeight;
+                    const controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
                     const videoAspect = video.videoWidth / video.videoHeight;
                     
-                    const availableHeight = window.innerHeight - controlPanelHeight - 20;
-                    const maxCanvasWidth = Math.floor(window.innerWidth * 0.49);
+                    const padding = 20;
+                    const availableHeight = window.innerHeight - controlPanelHeight - padding;
+                    const maxCanvasWidth = Math.floor(window.innerWidth * 0.47);
                     
                     let canvasWidth = maxCanvasWidth;
                     let canvasHeight = canvasWidth / videoAspect;
@@ -595,10 +621,10 @@
                         canvasWidth = canvasHeight * videoAspect;
                     }
                     
-                    canvas1.width = canvas2.width = canvasWidth;
-                    canvas1.height = canvas2.height = canvasHeight;
-                    depthMapCanvas.width = canvasWidth;
-                    depthMapCanvas.height = canvasHeight;
+                    canvas1.width = canvas2.width = Math.floor(canvasWidth);
+                    canvas1.height = canvas2.height = Math.floor(canvasHeight);
+                    depthMapCanvas.width = Math.floor(canvasWidth);
+                    depthMapCanvas.height = Math.floor(canvasHeight);
                 }
             }
         });
