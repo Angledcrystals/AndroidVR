@@ -13,7 +13,9 @@
             align-items: flex-start;
             flex-direction: column;
             background-color: #000;
-            height: 300vh;
+            height: 100vh; /* Changed from 300vh to prevent excessive scrolling on mobile */
+            color: white;
+            font-family: Arial, sans-serif;
         }
 
         .container {
@@ -22,52 +24,63 @@
             justify-content: space-around;
             align-items: center;
             width: 100vw;
-            height: 100vh;
+            height: 60vh; /* Reduced height for better fit on mobile */
             perspective: 1000px;
+            margin-top: 60px; /* Space for top controls */
         }
 
         canvas {
             flex: 1 1 auto;
-            max-width: 50%;
+            max-width: 48%; /* Slightly reduced to prevent overflow */
             max-height: 100%;
             border: 2px solid white;
             border-radius: 10px;
             transform-origin: center;
             transition: transform 0.2s ease;
+            margin: 0 4px; /* Add some spacing between canvases */
         }
 
         .controls {
-            position: absolute;
+            position: fixed; /* Changed from absolute to fixed */
             top: 5px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
+            right: 0;
             display: flex;
             flex-direction: row;
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+            padding: 5px 0;
         }
 
         .color-controls {
-            position: absolute;
+            position: fixed; /* Changed from absolute to fixed */
             bottom: 10px;
-            width: 100vw;
+            left: 0;
+            right: 0;
             display: flex;
             justify-content: space-around;
-            gap: 20px;
+            gap: 10px; /* Reduced gap */
             z-index: 1000;
             color: white;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+            padding: 5px 0;
         }
 
         .depth-controls {
-            position: absolute;
-            bottom: 160px;
-            width: 100vw;
+            position: fixed; /* Changed from absolute to fixed */
+            bottom: 140px; /* Adjusted position */
+            left: 0;
+            right: 0;
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 10px; /* Reduced gap */
             z-index: 1000;
             color: white;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+            padding: 5px 0;
         }
 
         .sliders {
@@ -78,17 +91,19 @@
         }
 
         label {
-            font-size: 0.9rem;
+            font-size: 0.8rem; /* Smaller font for mobile */
+            margin-bottom: 0;
         }
 
         input[type="range"] {
-            width: 100px;
+            width: 80px; /* Smaller sliders for mobile */
+            margin: 2px;
         }
 
-        button, input[type="range"] {
-            margin: 5px;
-            padding: 10px 20px;
-            font-size: 1rem;
+        button {
+            margin: 3px;
+            padding: 8px 15px; /* Smaller buttons */
+            font-size: 0.9rem;
             border: none;
             border-radius: 5px;
             background-color: #444;
@@ -98,6 +113,26 @@
 
         button:hover, input[type="range"]:hover {
             background-color: #666;
+        }
+
+        /* Media queries for different devices */
+        @media (max-width: 600px) {
+            .container {
+                height: 50vh;
+            }
+            
+            .depth-controls {
+                bottom: 120px;
+            }
+            
+            input[type="range"] {
+                width: 60px;
+            }
+            
+            button {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
         }
 
         @media (orientation: portrait) {
@@ -137,16 +172,17 @@
     </div>
     <div class="depth-controls">
         <div class="sliders">
-            <label for="depthIntensity">Depth Intensity</label>
+            <label for="depthIntensity">Depth</label>
             <input id="depthIntensity" type="range" min="0" max="20" step="0.5" value="5">
             
-            <label for="luminosityWeight">Luminosity Weight</label>
+            <label for="luminosityWeight">Luminosity</label>
             <input id="luminosityWeight" type="range" min="0" max="1" step="0.05" value="0.7">
-            
-            <label for="saturationWeight">Saturation Weight</label>
+        </div>
+        <div class="sliders">
+            <label for="saturationWeight">Saturation</label>
             <input id="saturationWeight" type="range" min="0" max="1" step="0.05" value="0.3">
             
-            <label for="blurRadius">Blur Radius</label>
+            <label for="blurRadius">Blur</label>
             <input id="blurRadius" type="range" min="0" max="10" step="1" value="2">
         </div>
     </div>
@@ -328,9 +364,12 @@
             const ctx2 = canvas2.getContext('2d', { willReadFrequently: true });
 
             function adjustCanvasSize() {
+                // Handle mobile screen sizes
+                let canvasWidth = Math.floor(window.innerWidth / 2) - 10; // Adjust for margins
                 const aspectRatio = video.videoWidth / video.videoHeight;
-                canvas1.width = canvas2.width = window.innerWidth / 2;
-                canvas1.height = canvas2.height = canvas1.width / aspectRatio;
+                
+                canvas1.width = canvas2.width = canvasWidth;
+                canvas1.height = canvas2.height = Math.floor(canvasWidth / aspectRatio);
                 
                 // Also adjust the depth map canvas size
                 depthMapCanvas.width = canvas1.width;
@@ -440,12 +479,41 @@
             applyTilt(tiltValue);
         });
 
+        // Handle orientation changes
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (video && !video.paused) {
+                    const canvas1 = document.getElementById('canvas1');
+                    const canvas2 = document.getElementById('canvas2');
+                    if (canvas1 && canvas2) {
+                        canvas1.width = canvas2.width = window.innerWidth / 2 - 10;
+                        const aspectRatio = video.videoWidth / video.videoHeight;
+                        canvas1.height = canvas2.height = (window.innerWidth / 2 - 10) / aspectRatio;
+                    }
+                }
+            }, 300); // Short delay to allow orientation to complete
+        });
+
+        // Also handle resize events
         window.addEventListener('resize', () => {
-            const canvas1 = document.getElementById('canvas1');
-            const canvas2 = document.getElementById('canvas2');
-            if (canvas1 && canvas2) {
-                canvas1.width = canvas2.width = window.innerWidth / 2;
-                canvas1.height = canvas2.height = window.innerHeight;
+            if (video && !video.paused) {
+                const canvas1 = document.getElementById('canvas1');
+                const canvas2 = document.getElementById('canvas2');
+                if (canvas1 && canvas2) {
+                    let canvasWidth = Math.floor(window.innerWidth / 2) - 10;
+                    const aspectRatio = video.videoWidth / video.videoHeight;
+                    canvas1.width = canvas2.width = canvasWidth;
+                    canvas1.height = canvas2.height = Math.floor(canvasWidth / aspectRatio);
+                }
+            }
+        });
+
+        // Automatically start camera if we're in landscape mode
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.innerWidth > window.innerHeight) {
+                setTimeout(() => {
+                    document.getElementById('startButton').click();
+                }, 500);
             }
         });
     </script>
