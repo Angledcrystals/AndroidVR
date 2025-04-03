@@ -250,6 +250,19 @@
             transform: translateY(0);
             transition: transform 0.3s ease;
         }
+        
+        /* Firefox-specific CSS fixes */
+        @-moz-document url-prefix() {
+            video {
+                transform-origin: center center;
+                will-change: transform;
+            }
+            
+            canvas {
+                transform-origin: center center;
+                will-change: transform;
+            }
+        }
     </style>
 </head>
 <body>
@@ -368,9 +381,19 @@
             }
         }
 
-        // Attempt to detect if app is running on Android
+        // Browser detection
+        const isFirefox = navigator.userAgent.indexOf("Firefox") > -1;
         const isAndroid = /Android/i.test(navigator.userAgent);
-        debugLog("Running on Android: " + isAndroid);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isMobile = isAndroid || isIOS;
+        
+        // Log useful browser information
+        debugLog("Browser Detection:");
+        debugLog("- Firefox: " + isFirefox);
+        debugLog("- Android: " + isAndroid);
+        debugLog("- iOS: " + isIOS);
+        debugLog("- Mobile: " + isMobile);
+        debugLog("- User Agent: " + navigator.userAgent);
         
         // Add a GPU acceleration hint specific for Android WebView
         if (isAndroid) {
@@ -389,6 +412,7 @@
         let lastFrameTime = 0;
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
+        let detectedCameras = []; // Store detected cameras for Firefox
         
         // Method indicator - we'll determine the right method based on device capabilities
         let renderMethod = 'canvas2d'; // Start with standard canvas, will try to upgrade to WebGL
@@ -463,6 +487,75 @@
             }
         }
         
+        // Function to enumerate available cameras
+        async function enumerateCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                debugLog(`Found ${videoDevices.length} camera(s)`);
+                
+                // Store all video devices found
+                detectedCameras = videoDevices;
+                
+                // Log camera details
+                videoDevices.forEach((device, index) => {
+                    debugLog(`Camera ${index+1}: ${device.label || 'Unnamed camera'} (${device.deviceId.substring(0, 8)}...)`);
+                });
+                
+                return videoDevices;
+            } catch (error) {
+                debugLog("Error enumerating cameras: " + error.message);
+                return [];
+            }
+        }
+        
+        // Function to detect and identify front and back cameras
+        function identifyCameras(videoDevices) {
+            if (videoDevices.length === 0) return { front: null, back: null };
+            
+            let probableBackCamera = null;
+            let probableFrontCamera = null;
+            
+            // Keywords that might be found in camera labels
+            const backCameraKeywords = ['back', 'rear', 'environment', 'main', '1'];
+            const frontCameraKeywords = ['front', 'user', 'face', 'selfie', '0'];
+            
+            // Try to identify front and back cameras by label
+            videoDevices.forEach(device => {
+                const label = (device.label || '').toLowerCase();
+                
+                // Look for keywords in camera labels
+                if (backCameraKeywords.some(keyword => label.includes(keyword))) {
+                    probableBackCamera = device.deviceId;
+                }
+                if (frontCameraKeywords.some(keyword => label.includes(keyword))) {
+                    probableFrontCamera = device.deviceId;
+                }
+            });
+            
+            // If we couldn't identify by keywords but have multiple cameras
+            if (videoDevices.length > 1 && (!probableBackCamera || !probableFrontCamera)) {
+                // In Firefox on Android, often the first camera is front, second is back
+                if (isFirefox && isAndroid) {
+                    debugLog("Using Firefox-specific camera detection logic for Android");
+                    if (!probableFrontCamera) probableFrontCamera = videoDevices[0].deviceId;
+                    if (!probableBackCamera) probableBackCamera = videoDevices[1].deviceId;
+                } else {
+                    // General assumption for other browsers
+                    if (!probableFrontCamera) probableFrontCamera = videoDevices[0].deviceId;
+                    if (!probableBackCamera) probableBackCamera = videoDevices[videoDevices.length - 1].deviceId;
+                }
+            } else if (videoDevices.length === 1) {
+                // If we only have one camera, use it for both
+                probableFrontCamera = probableBackCamera = videoDevices[0].deviceId;
+            }
+            
+            debugLog(`Identified front camera: ${probableFrontCamera ? 'Yes' : 'No'}`);
+            debugLog(`Identified back camera: ${probableBackCamera ? 'Yes' : 'No'}`);
+            
+            return { front: probableFrontCamera, back: probableBackCamera };
+        }
+        
         // Apply hardware acceleration CSS to canvases
         function applyHardwareAcceleration() {
             const canvas1 = document.getElementById('canvas1');
@@ -494,29 +587,147 @@
             debugLog("Applied hardware acceleration CSS hints");
         }
         
+        // Function to correct video orientation (especially for Firefox)
+        function correctVideoOrientation(videoElement, stream) {
+            // Get video tracks
+            const videoTrack = stream.getVideoTracks()[0];
+            
+            if (isFirefox && videoTrack) {
+                debugLog("Applying Firefox-specific orientation correction");
+                
+                // For Firefox, we need to apply manual rotation based on device orientation
+                const handleOrientationChange = () => {
+                    // Get current orientation
+                    const orientation = window.screen.orientation ? 
+                        window.screen.orientation.angle : window.orientation || 0;
+                    
+                    let rotation = 0;
+                    
+                    // Map orientation to rotation values
+                    switch (orientation) {
+                        case 90:
+                            rotation = 270;
+                            break;
+                        case -90:
+                        case 270:
+                            rotation = 90;
+                            break;
+                        case 180:
+                            rotation = 180;
+                            break;
+                        default:
+                            rotation = 0;
+                    }
+                    
+                    debugLog(`Firefox orientation correction: screen angle=${orientation}, applying rotation=${rotation}`);
+                    
+                    // Apply rotation as CSS transform
+                    // Need to combine acceleration style with rotation for Firefox
+                    videoElement.style.transform = `translateZ(0) rotate(${rotation}deg)`;
+                    
+                    // If we're in landscape mode, we may need to adjust canvas/video sizes
+                    if (rotation === 90 || rotation === 270) {
+                        debugLog("Firefox: correcting for landscape orientation");
+                        
+                        // Force layout recalculation
+                        window.dispatchEvent(new Event('resize'));
+                    }
+                };
+                
+                // Add event listener for orientation changes
+                window.addEventListener('orientationchange', handleOrientationChange);
+                
+                // Initial correction
+                handleOrientationChange();
+            }
+        }
+        
         // Start camera access
         async function startCamera() {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
             }
 
-            // Try to get access to the camera
-            const constraints = {
-                video: {
-                    facingMode: useFrontCamera ? "user" : "environment",
-                    width: { ideal: 640 }, // Lower resolution for better performance
-                    height: { ideal: 480 },
-                    frameRate: { ideal: 24, max: 30 } // Limit frame rate
-                },
-                audio: false
-            };
-
             try {
+                // First, enumerate cameras to get device IDs
+                const videoDevices = await enumerateCameras();
+                const cameras = identifyCameras(videoDevices);
+                
+                // Set up initial constraints
+                let constraints = {
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        frameRate: { ideal: 24, max: 30 }
+                    },
+                    audio: false
+                };
+                
+                // Decide which camera to use based on front/back selection
+                if (useFrontCamera && cameras.front) {
+                    debugLog("Using identified front camera");
+                    constraints.video.deviceId = { exact: cameras.front };
+                } else if (!useFrontCamera && cameras.back) {
+                    debugLog("Using identified back camera");
+                    constraints.video.deviceId = { exact: cameras.back };
+                } else {
+                    // Fallback to using facingMode
+                    debugLog("Using facingMode fallback: " + (useFrontCamera ? "user" : "environment"));
+                    constraints.video.facingMode = useFrontCamera ? "user" : "environment";
+                }
+                
+                debugLog("Requesting camera with constraints: " + JSON.stringify(constraints.video));
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 attachStreamToVideo(currentStream);
+                
             } catch (error) {
-                debugLog("Camera access error: " + error.message);
-                alert("Could not access the camera. Please ensure it is enabled and allowed.");
+                debugLog("Primary camera access error: " + error.message);
+                
+                // For Firefox, try alternate approach if first attempt failed
+                if (isFirefox) {
+                    debugLog("Trying Firefox-specific fallback approach");
+                    
+                    try {
+                        // If we have identified cameras, try the opposite camera as a test
+                        // (sometimes labels can be misleading)
+                        if (detectedCameras.length > 1) {
+                            // Try the second camera in Firefox (often this is the rear camera)
+                            const fallbackId = detectedCameras[useFrontCamera ? 1 : 0].deviceId;
+                            
+                            debugLog("Trying Firefox fallback camera: " + fallbackId.substring(0, 8) + "...");
+                            
+                            const fallbackConstraints = {
+                                video: {
+                                    deviceId: { exact: fallbackId },
+                                    width: { ideal: 640 },
+                                    height: { ideal: in480 },
+                                    frameRate: { ideal: 24, max: 30 }
+                                },
+                                audio: false
+                            };
+                            
+                            currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                            attachStreamToVideo(currentStream);
+                            
+                            // If we reached here, toggle the front camera flag to match reality
+                            useFrontCamera = !useFrontCamera;
+                            
+                        } else {
+                            // If all else fails, try with minimum constraints
+                            debugLog("Firefox last resort: minimal constraints");
+                            currentStream = await navigator.mediaDevices.getUserMedia({ 
+                                video: true, 
+                                audio: false 
+                            });
+                            attachStreamToVideo(currentStream);
+                        }
+                    } catch (fallbackError) {
+                        debugLog("All Firefox fallbacks failed: " + fallbackError.message);
+                        alert("Could not access the camera. Please ensure it is enabled and allowed.");
+                    }
+                } else {
+                    alert("Could not access the camera. Please ensure it is enabled and allowed.");
+                }
             }
         }
 
@@ -542,6 +753,9 @@
             video.onloadedmetadata = () => {
                 video.play().catch(err => debugLog('Video play error: ' + err.message));
                 
+                // Apply Firefox-specific orientation correction
+                correctVideoOrientation(video, stream);
+                
                 // Try WebGL if we haven't determined rendering method yet
                 if (renderMethod === 'canvas2d' && setupWebGL()) {
                     renderMethod = 'css3d'; // Use CSS3D transform for better performance
@@ -556,6 +770,7 @@
         // Switch between front/back camera
         function switchCamera() {
             useFrontCamera = !useFrontCamera;
+            debugLog("Switching to " + (useFrontCamera ? "front" : "rear") + " camera");
             startCamera();
         }
 
@@ -961,14 +1176,32 @@
             const debugOutput = document.getElementById('debugOutput');
             if (debugOutput.style.display === 'none') {
                 debugOutput.style.display = 'block';
+                debugOutput.innerHTML = ''; // Clear previous debug messages
                 debugLog("Debug mode enabled");
                 debugLog("User Agent: " + navigator.userAgent);
                 debugLog("Render method: " + renderMethod);
                 debugLog("Quality factor: " + qualityFactor);
+                debugLog("Firefox: " + isFirefox);
+                debugLog("Android: " + isAndroid);
+                debugLog("Mobile: " + isMobile);
             } else {
                 debugOutput.style.display = 'none';
             }
         });
+
+        // Firefox-specific orientation change handler
+        if (isFirefox) {
+            window.addEventListener('orientationchange', function() {
+                debugLog("Orientation change detected in Firefox");
+                // Force redraw after orientation change
+                setTimeout(() => {
+                    if (video && !video.paused) {
+                        correctVideoOrientation(video, currentStream);
+                        window.dispatchEvent(new Event('resize'));
+                    }
+                }, 300);
+            });
+        }
 
         // Automatically start camera if we're in landscape mode
         window.addEventListener('DOMContentLoaded', () => {
