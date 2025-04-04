@@ -31,6 +31,7 @@
             perspective: 1000px;
             overflow: hidden;
             padding-top: 10px; /* Space from top */
+            position: relative; /* For absolute positioning in flicker mode */
         }
 
         /* Canvas will maintain camera aspect ratio */
@@ -41,6 +42,8 @@
             transition: transform 0.2s ease;
             margin: 0 4px;
             height: auto; /* Auto height based on container */
+            position: relative; /* For flicker mode */
+            will-change: transform, left, right; /* Hint for GPU acceleration */
         }
 
         /* Hardware acceleration hints */
@@ -189,6 +192,20 @@
             transition: opacity 0.3s;
         }
 
+        /* Flicker indicator */
+        #flickerIndicator {
+            position: fixed;
+            top: 70px;
+            right: 5px;
+            font-size: 0.65rem;
+            color: #f55;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 2px 5px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
         /* Debug output */
         #debugOutput {
             position: fixed;
@@ -263,6 +280,24 @@
                 will-change: transform;
             }
         }
+        
+        /* Flicker mode specific styles - for position swapping */
+        .flicker-active .container {
+            position: relative;
+        }
+        
+        .flicker-active canvas {
+            position: absolute;
+            transition: none; /* Disable transitions for flicker mode */
+        }
+        
+        .canvas-left {
+            left: calc(25% - 50px);
+        }
+        
+        .canvas-right {
+            left: calc(75% - 50px);
+        }
     </style>
 </head>
 <body>
@@ -282,6 +317,7 @@
     </div>
     
     <div id="qualityIndicator">Processing at 50% resolution</div>
+    <div id="flickerIndicator">3D Flicker Mode Active</div>
     <div id="debugOutput" style="display: none;"></div>
     
     <div class="control-panel">
@@ -301,6 +337,13 @@
                 <div class="control-item">
                     <label for="tiltSlider">Tilt</label>
                     <input id="tiltSlider" type="range" min="0" max="0.7" step="0.01" value="0">
+                </div>
+                <div class="control-item">
+                    <button id="toggleFlickerMode">Enable 3D Flicker</button>
+                </div>
+                <div class="control-item" id="flickerSpeedContainer" style="display: none;">
+                    <label for="flickerSpeedSlider">Speed</label>
+                    <input id="flickerSpeedSlider" type="range" min="8" max="60" step="1" value="16">
                 </div>
             </div>
             
@@ -413,6 +456,16 @@
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
         let detectedCameras = []; // Store detected cameras for Firefox
+        
+        // New variables for flicker mode
+        let flickerMode = false;
+        let flickerFrame = 0; // 0 = normal, 1 = swapped
+        let flickerInterval = null;
+        let flickerSpeed = 16; // milliseconds (about 60fps)
+        let originalCanvasPositions = {
+            canvas1: { left: 0, margin: 0, transform: '' },
+            canvas2: { left: 0, margin: 0, transform: '' }
+        };
         
         // Method indicator - we'll determine the right method based on device capabilities
         let renderMethod = 'canvas2d'; // Start with standard canvas, will try to upgrade to WebGL
@@ -700,7 +753,7 @@
                                 video: {
                                     deviceId: { exact: fallbackId },
                                     width: { ideal: 640 },
-                                    height: { ideal: in480 },
+                                    height: { ideal: 480 },
                                     frameRate: { ideal: 24, max: 30 }
                                 },
                                 audio: false
@@ -858,6 +911,185 @@
             return fastBlurDepthMap(depthMap, width, height, blurRadius);
         }
 
+        // Toggle flicker mode
+        function toggleFlickerMode() {
+            flickerMode = !flickerMode;
+            const toggleButton = document.getElementById('toggleFlickerMode');
+            const flickerSpeedContainer = document.getElementById('flickerSpeedContainer');
+            const flickerIndicator = document.getElementById('flickerIndicator');
+            const container = document.querySelector('.container');
+            
+            if (flickerMode) {
+                // Save canvas original styles
+                saveCanvasPositions();
+                
+                // Enable flicker mode
+                toggleButton.textContent = 'Disable 3D Flicker';
+                flickerSpeedContainer.style.display = 'flex';
+                container.classList.add('flicker-active');
+                
+                // Set up initial positions
+                positionCanvasesForFlicker(0);
+                
+                // Start the flicker animation
+                startFlickerAnimation();
+                
+                // Show the indicator
+                flickerIndicator.style.opacity = 1;
+                flickerIndicator.textContent = `3D Flicker Mode: ${Math.round(1000/flickerSpeed)} Hz`;
+                
+                debugLog("3D Flicker mode enabled at " + Math.round(1000/flickerSpeed) + " Hz");
+            } else {
+                // Disable flicker mode
+                toggleButton.textContent = 'Enable 3D Flicker';
+                flickerSpeedContainer.style.display = 'none';
+                container.classList.remove('flicker-active');
+                
+                // Stop the flicker animation
+                stopFlickerAnimation();
+                
+                // Hide the indicator
+                flickerIndicator.style.opacity = 0;
+                
+                // Restore original canvas positions
+                restoreCanvasPositions();
+                
+                debugLog("3D Flicker mode disabled");
+            }
+        }
+        
+        // Save original canvas positions before flicker mode
+        function saveCanvasPositions() {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            
+            originalCanvasPositions = {
+                canvas1: {
+                    position: canvas1.style.position,
+                    left: canvas1.style.left,
+                    margin: canvas1.style.margin,
+                    transform: canvas1.style.transform,
+                    display: canvas1.style.display
+                },
+                canvas2: {
+                    position: canvas2.style.position,
+                    left: canvas2.style.left,
+                    margin: canvas2.style.margin,
+                    transform: canvas2.style.transform,
+                    display: canvas2.style.display
+                }
+            };
+            
+            debugLog("Saved original canvas positions");
+        }
+        
+        // Restore original canvas positions after flicker mode
+        function restoreCanvasPositions() {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            
+            // Restore original styles
+            canvas1.style.position = originalCanvasPositions.canvas1.position;
+            canvas1.style.left = originalCanvasPositions.canvas1.left;
+            canvas1.style.margin = originalCanvasPositions.canvas1.margin;
+            canvas1.style.transform = originalCanvasPositions.canvas1.transform;
+            canvas1.style.display = originalCanvasPositions.canvas1.display;
+            
+            canvas2.style.position = originalCanvasPositions.canvas2.position;
+            canvas2.style.left = originalCanvasPositions.canvas2.left;
+            canvas2.style.margin = originalCanvasPositions.canvas2.margin;
+            canvas2.style.transform = originalCanvasPositions.canvas2.transform;
+            canvas2.style.display = originalCanvasPositions.canvas2.display;
+            
+            // Apply tilt if there is any
+            const tiltValue = parseFloat(document.getElementById('tiltSlider').value);
+            if (tiltValue > 0) {
+                applyTilt(tiltValue);
+            }
+            
+            debugLog("Restored original canvas positions");
+        }
+        
+        // Position canvases for flicker mode
+        function positionCanvasesForFlicker(state) {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            const container = document.querySelector('.container');
+            
+            // Make sure canvases are visible
+            canvas1.style.display = 'block';
+            canvas2.style.display = 'block';
+            
+            // Set absolute positioning
+            canvas1.style.position = 'absolute';
+            canvas2.style.position = 'absolute';
+            
+            // Calculate positions based on container width
+            const containerWidth = container.offsetWidth;
+            const canvasWidth = canvas1.offsetWidth;
+            
+            // Position based on state (0 = normal, 1 = swapped)
+            if (state === 0) {
+                // Normal positions
+                canvas1.style.left = `${(containerWidth / 4) - (canvasWidth / 2)}px`;
+                canvas2.style.left = `${(3 * containerWidth / 4) - (canvasWidth / 2)}px`;
+            } else {
+                // Swapped positions
+                canvas1.style.left = `${(3 * containerWidth / 4) - (canvasWidth / 2)}px`;
+                canvas2.style.left = `${(containerWidth / 4) - (canvasWidth / 2)}px`;
+            }
+            
+            // Remove margins and transforms
+            canvas1.style.margin = '0';
+            canvas2.style.margin = '0';
+            canvas1.style.transform = 'none';
+            canvas2.style.transform = 'none';
+        }
+        
+        // Start flicker animation
+        function startFlickerAnimation() {
+            // Clear any existing interval
+            stopFlickerAnimation();
+            
+            // Initialize flicker frame counter
+            flickerFrame = 0;
+            
+            // Start the interval for position swapping
+            flickerInterval = setInterval(() => {
+                // Toggle between normal and swapped positions
+                flickerFrame = 1 - flickerFrame;
+                positionCanvasesForFlicker(flickerFrame);
+            }, flickerSpeed);
+            
+            debugLog(`Started flicker animation at ${Math.round(1000/flickerSpeed)} Hz`);
+        }
+        
+        // Stop flicker animation
+        function stopFlickerAnimation() {
+            if (flickerInterval) {
+                clearInterval(flickerInterval);
+                flickerInterval = null;
+                debugLog("Stopped flicker animation");
+            }
+        }
+        
+        // Update flicker speed
+        function updateFlickerSpeed() {
+            const speedSlider = document.getElementById('flickerSpeedSlider');
+            flickerSpeed = parseInt(speedSlider.value);
+            
+            // Update the flicker if active
+            if (flickerMode && flickerInterval) {
+                startFlickerAnimation(); // Restarts with new speed
+                
+                // Update the indicator
+                const flickerIndicator = document.getElementById('flickerIndicator');
+                flickerIndicator.textContent = `3D Flicker Mode: ${Math.round(1000/flickerSpeed)} Hz`;
+                
+                debugLog("Flicker speed updated to " + Math.round(1000/flickerSpeed) + " Hz");
+            }
+        }
+
         // Main rendering function
         function renderFrames() {
             const canvas1 = document.getElementById('canvas1');
@@ -908,6 +1140,11 @@
                 // Adjust the depth map canvas size to match processing canvas
                 depthMapCanvas.width = processingCanvas.width;
                 depthMapCanvas.height = processingCanvas.height;
+                
+                // If in flicker mode, update positions
+                if (flickerMode) {
+                    positionCanvasesForFlicker(flickerFrame);
+                }
             }
 
             function drawFrame(timestamp) {
@@ -1061,6 +1298,9 @@
             const canvas1 = document.getElementById('canvas1');
             const canvas2 = document.getElementById('canvas2');
 
+            // If in flicker mode, don't apply tilt
+            if (flickerMode) return;
+
             // Use hardware-accelerated 3D transforms
             canvas1.style.transform = `perspective(1000px) rotateY(${tiltValue}rad)`;
             canvas2.style.transform = `perspective(1000px) rotateY(${-tiltValue}rad)`;
@@ -1120,6 +1360,10 @@
         document.getElementById('qualitySelect').addEventListener('change', (event) => {
             setQuality(event.target.value);
         });
+        
+        // Add flicker mode controls
+        document.getElementById('toggleFlickerMode').addEventListener('click', toggleFlickerMode);
+        document.getElementById('flickerSpeedSlider').addEventListener('input', updateFlickerSpeed);
 
         // Initialize quality setting from select dropdown
         setQuality(document.getElementById('qualitySelect').value);
@@ -1164,6 +1408,11 @@
                     
                     depthMapCanvas.width = processingCanvas.width;
                     depthMapCanvas.height = processingCanvas.height;
+                    
+                    // Update positions if in flicker mode
+                    if (flickerMode) {
+                        positionCanvasesForFlicker(flickerFrame);
+                    }
                 }
             }
         });
