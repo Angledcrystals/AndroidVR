@@ -13,3 +13,7 @@ The result is a depth matrix.
 Here are the suggested values for creating depth in AndroidVR.
 
 ![image](https://github.com/user-attachments/assets/c45c08fe-7890-419c-9065-44ff2574c8e7)
+
+**Notice**
+
+Be VERY careful about using 3D flicker mode, this mode is intended for people who have mono vision and should not be used by those who have binocular vision due to the cognitive strain it puts on the user when input is received through both eyes.
