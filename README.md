@@ -20,12 +20,10 @@ Be VERY careful about using 3D flicker mode, this mode is intended for people wh
 
 **Transfer to Natural Vision**
 
-The effect you're describing is a form of cross-modal perceptual learning, and research suggests:
+**Temporary effects**: 10-30 minutes of aftereffects might occur immediately after 1-2 hour sessions
 
-    **Temporary effects**: 10-30 minutes of aftereffects might occur immediately after 1-2 hour sessions
+**Initial transfer**: Minor involuntary interpretation might begin after 15-20 hours of cumulative exposure (across multiple days)
 
-    **Initial transfer**: Minor involuntary interpretation might begin after 15-20 hours of cumulative exposure (across multiple days)
+**Measurable adaptation**: 30-50 hours of training over 3-6 weeks would be needed for your brain to begin consistently applying these cues in natural environments
 
-    **Measurable adaptation**: 30-50 hours of training over 3-6 weeks would be needed for your brain to begin consistently applying these cues in natural environments
-
-    **Robust integration**: 100+ hours over 2-4 months for substantial, persistent effects when not using the app
+**Robust integration**: 100+ hours over 2-4 months for substantial, persistent effects when not using the app
