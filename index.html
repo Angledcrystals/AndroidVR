@@ -452,12 +452,19 @@
         let lastFrameTime = 0;
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
-        let detectedCameras = []; // Store detected cameras for Firefox
+        
+        // NEW: Improved camera tracking
+        let detectedCameras = {
+            front: null,
+            back: null,
+            current: null,
+            all: []
+        };
         
         // Window size variables
         let canvasSizeFactor = 1.0; // Default canvas size factor
         
-        // New variables for flicker mode
+        // Variables for flicker mode
         let flickerMode = false;
         let flickerFrame = 0; // 0 = normal, 1 = swapped
         let flickerInterval = null;
@@ -540,20 +547,66 @@
             }
         }
         
-        // Function to enumerate available cameras
+        // UPDATED: Improved camera enumeration
         async function enumerateCameras() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
                 debugLog(`Found ${videoDevices.length} camera(s)`);
                 
-                // Store all video devices found
-                detectedCameras = videoDevices;
+                detectedCameras.all = videoDevices;
                 
-                // Log camera details
+                // Reset camera assignments for fresh detection
+                detectedCameras.front = null;
+                detectedCameras.back = null;
+                
+                // Try to identify front/back cameras by label
                 videoDevices.forEach((device, index) => {
-                    debugLog(`Camera ${index+1}: ${device.label || 'Unnamed camera'} (${device.deviceId.substring(0, 8)}...)`);
+                    const label = (device.label || '').toLowerCase();
+                    debugLog(`Camera ${index+1}: ${label || 'Unnamed'} (${device.deviceId.substring(0, 8)}...)`);
+                    
+                    // Look for keywords that typically indicate front/back cameras
+                    if (/back|rear|environment|main/i.test(label)) {
+                        detectedCameras.back = device.deviceId;
+                        debugLog(`Identified back camera by label: ${label}`);
+                    }
+                    if (/front|user|face|selfie/i.test(label)) {
+                        detectedCameras.front = device.deviceId;
+                        debugLog(`Identified front camera by label: ${label}`);
+                    }
                 });
+                
+                // If we couldn't identify by keywords but have multiple cameras
+                if (videoDevices.length > 1) {
+                    // Different assumptions based on platform
+                    if (isAndroid) {
+                        // On Android, camera 0 is often back camera, camera 1 is front
+                        if (!detectedCameras.back) {
+                            detectedCameras.back = videoDevices[0]?.deviceId;
+                            debugLog("Using Android assumption: first camera is back camera");
+                        }
+                        if (!detectedCameras.front) {
+                            detectedCameras.front = videoDevices[1]?.deviceId;
+                            debugLog("Using Android assumption: second camera is front camera");
+                        }
+                    } else {
+                        // On iOS/others, camera 0 is often front, camera 1 is back
+                        if (!detectedCameras.front) {
+                            detectedCameras.front = videoDevices[0]?.deviceId;
+                            debugLog("Using iOS/default assumption: first camera is front camera");
+                        }
+                        if (!detectedCameras.back) {
+                            detectedCameras.back = videoDevices[1]?.deviceId;
+                            debugLog("Using iOS/default assumption: second camera is back camera");
+                        }
+                    }
+                } else if (videoDevices.length === 1) {
+                    // If only one camera, use it for both
+                    detectedCameras.front = detectedCameras.back = videoDevices[0].deviceId;
+                    debugLog("Only one camera found, using it for both front and back");
+                }
+                
+                debugLog(`Camera detection results - Front: ${detectedCameras.front ? 'Found' : 'Not found'}, Back: ${detectedCameras.back ? 'Found' : 'Not found'}`);
                 
                 return videoDevices;
             } catch (error) {
@@ -562,84 +615,109 @@
             }
         }
         
-        // Function to detect and identify front and back cameras
-        function identifyCameras(videoDevices) {
-            if (videoDevices.length === 0) return { front: null, back: null };
-            
-            let probableBackCamera = null;
-            let probableFrontCamera = null;
-            
-            // Keywords that might be found in camera labels
-            const backCameraKeywords = ['back', 'rear', 'environment', 'main', '1'];
-            const frontCameraKeywords = ['front', 'user', 'face', 'selfie', '0'];
-            
-            // Try to identify front and back cameras by label
-            videoDevices.forEach(device => {
-                const label = (device.label || '').toLowerCase();
+        // UPDATED: Advanced camera access with multiple strategies
+        async function tryAccessCamera(preferredId) {
+            const strategies = [
+                // Strategy 1: Try with specific device ID if available
+                async () => {
+                    if (!preferredId) throw new Error("No device ID available");
+                    
+                    debugLog("Strategy 1: Using specific device ID");
+                    return navigator.mediaDevices.getUserMedia({
+                        video: {
+                            deviceId: { exact: preferredId },
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            frameRate: { ideal: 24, max: 30 }
+                        },
+                        audio: false
+                    });
+                },
                 
-                // Look for keywords in camera labels
-                if (backCameraKeywords.some(keyword => label.includes(keyword))) {
-                    probableBackCamera = device.deviceId;
+                // Strategy 2: Try with facingMode constraint
+                async () => {
+                    debugLog("Strategy 2: Using facingMode");
+                    return navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: useFrontCamera ? "user" : "environment",
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            frameRate: { ideal: 24, max: 30 }
+                        },
+                        audio: false
+                    });
+                },
+                
+                // Strategy 3: Try with any camera but remember which one we got
+                async () => {
+                    debugLog("Strategy 3: Using any available camera");
+                    return navigator.mediaDevices.getUserMedia({ 
+                        video: true, 
+                        audio: false 
+                    });
                 }
-                if (frontCameraKeywords.some(keyword => label.includes(keyword))) {
-                    probableFrontCamera = device.deviceId;
-                }
-            });
+            ];
             
-            // If we couldn't identify by keywords but have multiple cameras
-            if (videoDevices.length > 1 && (!probableBackCamera || !probableFrontCamera)) {
-                // In Firefox on Android, often the first camera is front, second is back
-                if (isFirefox && isAndroid) {
-                    debugLog("Using Firefox-specific camera detection logic for Android");
-                    if (!probableFrontCamera) probableFrontCamera = videoDevices[0].deviceId;
-                    if (!probableBackCamera) probableBackCamera = videoDevices[1].deviceId;
-                } else {
-                    // General assumption for other browsers
-                    if (!probableFrontCamera) probableFrontCamera = videoDevices[0].deviceId;
-                    if (!probableBackCamera) probableBackCamera = videoDevices[videoDevices.length - 1].deviceId;
+            // Try each strategy in sequence
+            for (let i = 0; i < strategies.length; i++) {
+                try {
+                    const stream = await strategies[i]();
+                    
+                    // If we got a stream, remember which camera we're using
+                    if (stream && stream.getVideoTracks().length > 0) {
+                        const track = stream.getVideoTracks()[0];
+                        const settings = track.getSettings();
+                        detectedCameras.current = settings.deviceId;
+                        
+                        // Learn from this successful access
+                        if (useFrontCamera) {
+                            detectedCameras.front = settings.deviceId;
+                        } else {
+                            detectedCameras.back = settings.deviceId;
+                        }
+                        
+                        debugLog(`Successfully accessed camera: ${track.label || "unnamed"}`);
+                        
+                        return stream;
+                    }
+                } catch (error) {
+                    debugLog(`Strategy ${i+1} failed: ${error.message}`);
+                    // Continue to next strategy
                 }
-            } else if (videoDevices.length === 1) {
-                // If we only have one camera, use it for both
-                probableFrontCamera = probableBackCamera = videoDevices[0].deviceId;
             }
             
-            debugLog(`Identified front camera: ${probableFrontCamera ? 'Yes' : 'No'}`);
-            debugLog(`Identified back camera: ${probableBackCamera ? 'Yes' : 'No'}`);
-            
-            return { front: probableFrontCamera, back: probableBackCamera };
+            throw new Error("All camera access strategies failed");
         }
         
-        // Apply hardware acceleration CSS to canvases
-        function applyHardwareAcceleration() {
-            const canvas1 = document.getElementById('canvas1');
-            const canvas2 = document.getElementById('canvas2');
-            
-            // Add hardware acceleration hints for better performance
-            const accelerationStyle = `
-                translate3d(0,0,0);
-                transform: translate3d(0,0,0);
-                backface-visibility: hidden;
-                perspective: 1000;
-                -webkit-transform: translate3d(0,0,0);
-                -webkit-backface-visibility: hidden;
-                -webkit-perspective: 1000;
-            `;
-            
-            canvas1.style.cssText += accelerationStyle;
-            canvas2.style.cssText += accelerationStyle;
-            
-            if (video) {
-                video.style.cssText += accelerationStyle;
+        // UPDATED: Improved start camera function
+        async function startCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
             }
-            
-            if (isAndroid) {
-                // Additional hints for Android WebView
-                document.body.style.cssText += `-webkit-transform: translateZ(0); transform: translateZ(0);`;
+
+            try {
+                // First ensure we have camera info
+                if (detectedCameras.all.length === 0) {
+                    await enumerateCameras();
+                }
+                
+                const cameraId = useFrontCamera ? detectedCameras.front : detectedCameras.back;
+                
+                debugLog(`Attempting to use ${useFrontCamera ? "front" : "back"} camera with ID: ${cameraId || "none"}`);
+                
+                // Try to access the camera with multiple strategies
+                const stream = await tryAccessCamera(cameraId);
+                
+                // Attach stream to video element
+                attachStreamToVideo(stream);
+                currentStream = stream;
+                
+            } catch (error) {
+                debugLog(`Camera access completely failed: ${error.message}`);
+                alert("Could not access the camera after multiple attempts. Please ensure camera permissions are granted.");
             }
-            
-            debugLog("Applied hardware acceleration CSS hints");
         }
-        
+
         // Function to correct video orientation (especially for Firefox)
         function correctVideoOrientation(videoElement, stream) {
             // Get video tracks
@@ -695,95 +773,6 @@
             }
         }
         
-        // Start camera access
-        async function startCamera() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-            }
-
-            try {
-                // First, enumerate cameras to get device IDs
-                const videoDevices = await enumerateCameras();
-                const cameras = identifyCameras(videoDevices);
-                
-                // Set up initial constraints
-                let constraints = {
-                    video: {
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
-                        frameRate: { ideal: 24, max: 30 }
-                    },
-                    audio: false
-                };
-                
-                // Decide which camera to use based on front/back selection
-                if (useFrontCamera && cameras.front) {
-                    debugLog("Using identified front camera");
-                    constraints.video.deviceId = { exact: cameras.front };
-                } else if (!useFrontCamera && cameras.back) {
-                    debugLog("Using identified back camera");
-                    constraints.video.deviceId = { exact: cameras.back };
-                } else {
-                    // Fallback to using facingMode
-                    debugLog("Using facingMode fallback: " + (useFrontCamera ? "user" : "environment"));
-                    constraints.video.facingMode = useFrontCamera ? "user" : "environment";
-                }
-                
-                debugLog("Requesting camera with constraints: " + JSON.stringify(constraints.video));
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                attachStreamToVideo(currentStream);
-                
-            } catch (error) {
-                debugLog("Primary camera access error: " + error.message);
-                
-                // For Firefox, try alternate approach if first attempt failed
-                if (isFirefox) {
-                    debugLog("Trying Firefox-specific fallback approach");
-                    
-                    try {
-                        // If we have identified cameras, try the opposite camera as a test
-                        // (sometimes labels can be misleading)
-                        if (detectedCameras.length > 1) {
-                            // Try the second camera in Firefox (often this is the rear camera)
-                            const fallbackId = detectedCameras[useFrontCamera ? 1 : 0].deviceId;
-                            
-                            debugLog("Trying Firefox fallback camera: " + fallbackId.substring(0, 8) + "...");
-                            
-                            const fallbackConstraints = {
-                                video: {
-                                    deviceId: { exact: fallbackId },
-                                    width: { ideal: 640 },
-                                    height: { ideal: 480 },
-                                    frameRate: { ideal: 24, max: 30 }
-                                },
-                                audio: false
-                            };
-                            
-                            currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-                            attachStreamToVideo(currentStream);
-                            
-                            // If we reached here, toggle the front camera flag to match reality
-                            useFrontCamera = !useFrontCamera;
-                            
-                        } else {
-                            // If all else fails, try with minimum constraints
-                            debugLog("Firefox last resort: minimal constraints");
-                            currentStream = await navigator.mediaDevices.getUserMedia({ 
-                                video: true, 
-                                audio: false 
-                            });
-                            attachStreamToVideo(currentStream);
-                        }
-                    } catch (fallbackError) {
-                        debugLog("All Firefox fallbacks failed: " + fallbackError.message);
-                        alert("Could not access the camera. Please ensure it is enabled and allowed.");
-                    }
-                } else {
-                    alert("Could not access the camera. Please ensure it is enabled and allowed.");
-                }
-            }
-        }
-
         // Attach camera stream to video element
         function attachStreamToVideo(stream) {
             if (video) {
@@ -817,14 +806,73 @@
                 
                 applyHardwareAcceleration();
                 renderFrames();
+                
+                // Store camera info from track settings
+                try {
+                    const videoTrack = stream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        const settings = videoTrack.getSettings();
+                        debugLog(`Active camera - Label: ${videoTrack.label}, Width: ${settings.width}, Height: ${settings.height}, FPS: ${settings.frameRate}`);
+                    }
+                } catch (e) {
+                    // Ignore errors reading camera info
+                }
             };
         }
 
-        // Switch between front/back camera
+        // UPDATED: Improved switch camera function
         function switchCamera() {
             useFrontCamera = !useFrontCamera;
-            debugLog("Switching to " + (useFrontCamera ? "front" : "rear") + " camera");
+            debugLog(`Switching to ${useFrontCamera ? "front" : "rear"} camera`);
+            
+            // If the currently active camera is the one we want to switch to, force re-enumeration
+            if (detectedCameras.current === (useFrontCamera ? detectedCameras.front : detectedCameras.back)) {
+                debugLog("Camera already active or incorrectly tracked, forcing re-enumeration");
+                // Force re-enumeration to get fresh camera list
+                detectedCameras.all = [];
+                
+                // For Firefox, we're more aggressive in forcing a refresh
+                if (isFirefox) {
+                    // Swap our understanding of which camera is which
+                    const temp = detectedCameras.front;
+                    detectedCameras.front = detectedCameras.back;
+                    detectedCameras.back = temp;
+                    debugLog("Firefox: Swapped front/back camera assignments");
+                }
+            }
+            
             startCamera();
+        }
+
+        // Apply hardware acceleration CSS to canvases
+        function applyHardwareAcceleration() {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            
+            // Add hardware acceleration hints for better performance
+            const accelerationStyle = `
+                translate3d(0,0,0);
+                transform: translate3d(0,0,0);
+                backface-visibility: hidden;
+                perspective: 1000;
+                -webkit-transform: translate3d(0,0,0);
+                -webkit-backface-visibility: hidden;
+                -webkit-perspective: 1000;
+            `;
+            
+            canvas1.style.cssText += accelerationStyle;
+            canvas2.style.cssText += accelerationStyle;
+            
+            if (video) {
+                video.style.cssText += accelerationStyle;
+            }
+            
+            if (isAndroid) {
+                // Additional hints for Android WebView
+                document.body.style.cssText += `-webkit-transform: translateZ(0); transform: translateZ(0);`;
+            }
+            
+            debugLog("Applied hardware acceleration CSS hints");
         }
 
         // Calculate luminosity of a pixel
