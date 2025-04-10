@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Meta tags and other head content remain the same -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
@@ -8,6 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Virtual spectrum with Depth</title>
     <style>
+        /* All the existing styles remain the same */
         body {
             margin: 0;
             padding: 0;
@@ -74,7 +76,6 @@
             flex-direction: column;
             padding: 5px 5px;
             z-index: 1000;
-            transition: opacity 0.3s ease;
         }
 
         /* Control rows */
@@ -258,11 +259,6 @@
             }
         }
 
-        /* Hidden controls class - completely hide instead of transform */
-        .controls-hidden .control-panel {
-            display: none;
-        }
-        
         /* Firefox-specific CSS fixes */
         @-moz-document url-prefix() {
             video {
@@ -315,7 +311,7 @@
     <div id="flickerIndicator">3D Flicker Mode Active</div>
     <div id="debugOutput" style="display: none;"></div>
     
-    <div class="control-panel">
+    <div class="control-panel" id="controlPanel">
         <div class="control-row">
             <div class="control-section">
                 <div class="section-header">Camera</div>
@@ -413,6 +409,8 @@
     </div>
 
     <script>
+        // All JavaScript remains the same except for the toggleControls function
+        
         // Utility function for debugging
         function debugLog(message) {
             console.log(message);
@@ -1106,8 +1104,8 @@
             });
             
             // Get control panel height for calculations
-            const controlPanel = document.querySelector('.control-panel');
-            let controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
+            const controlPanel = document.getElementById('controlPanel');
+            let controlPanelHeight = controlsHidden ? 0 : (controlPanel.offsetHeight || 0);
 
             function adjustCanvasSize() {
                 if (!video) return;
@@ -1173,7 +1171,7 @@
                 }
 
                 // Get latest control panel height in case it changed
-                controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
+                controlPanelHeight = controlsHidden ? 0 : (controlPanel.offsetHeight || 0);
                 
                 adjustCanvasSize();
                 
@@ -1317,22 +1315,23 @@
             canvas2.style.transform = `perspective(1000px) rotateY(${-tiltValue}rad)`;
         }
 
+        // Modified toggle controls function that works properly every time
         function toggleControls() {
-            const body = document.body;
             const toggleButton = document.getElementById('toggleControls');
-            const controlPanel = document.querySelector('.control-panel');
+            const controlPanel = document.getElementById('controlPanel');
             
             controlsHidden = !controlsHidden;
             
             if (controlsHidden) {
-                body.classList.add('controls-hidden');
+                // Hide controls
+                controlPanel.style.display = 'none';
                 toggleButton.textContent = 'Show Controls';
-                // Completely hide the controls with display: none (handled by CSS class)
+                debugLog("Controls hidden");
             } else {
-                body.classList.remove('controls-hidden');
-                toggleButton.textContent = 'Hide Controls';
-                // Show the controls, making sure they're displayed
+                // Show controls
                 controlPanel.style.display = 'flex';
+                toggleButton.textContent = 'Hide Controls';
+                debugLog("Controls shown");
             }
             
             // Trigger resize to adjust canvas size
@@ -1413,8 +1412,8 @@
                 const canvas1 = document.getElementById('canvas1');
                 const canvas2 = document.getElementById('canvas2');
                 if (canvas1 && canvas2) {
-                    const controlPanel = document.querySelector('.control-panel');
-                    const controlPanelHeight = controlsHidden ? 0 : controlPanel.offsetHeight;
+                    const controlPanel = document.getElementById('controlPanel');
+                    const controlPanelHeight = controlsHidden ? 0 : (controlPanel.offsetHeight || 0);
                     const videoAspect = video.videoWidth / video.videoHeight;
                     
                     const padding = 20;
