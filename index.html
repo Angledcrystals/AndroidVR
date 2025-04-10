@@ -339,6 +339,10 @@
                     <input id="tiltSlider" type="range" min="0" max="0.7" step="0.01" value="0">
                 </div>
                 <div class="control-item">
+                    <label for="sizeSlider">Size</label>
+                    <input id="sizeSlider" type="range" min="0.2" max="1.8" step="0.05" value="1.0">
+                </div>
+                <div class="control-item">
                     <button id="toggleFlickerMode">Enable 3D Flicker</button>
                 </div>
                 <div class="control-item" id="flickerSpeedContainer" style="display: none;">
@@ -456,6 +460,9 @@
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
         let detectedCameras = []; // Store detected cameras for Firefox
+        
+        // Window size variables
+        let canvasSizeFactor = 1.0; // Default canvas size factor
         
         // New variables for flicker mode
         let flickerMode = false;
@@ -1116,8 +1123,9 @@
                 const padding = 20; // top and bottom padding
                 const availableHeight = window.innerHeight - controlPanelHeight - padding;
                 
-                // Use a higher percentage of screen width for each canvas
-                const maxCanvasWidth = Math.floor(window.innerWidth * 0.47);
+                // Apply canvasSizeFactor to set size scaling
+                // Use a higher percentage of screen width for each canvas but apply the size factor
+                const maxCanvasWidth = Math.floor(window.innerWidth * 0.47 * canvasSizeFactor);
                 
                 // Calculate height based on width and aspect ratio
                 let canvasWidth = maxCanvasWidth;
@@ -1144,6 +1152,14 @@
                 // If in flicker mode, update positions
                 if (flickerMode) {
                     positionCanvasesForFlicker(flickerFrame);
+                }
+                
+                // Apply tilt if there is any and not in flicker mode
+                if (!flickerMode) {
+                    const tiltValue = parseFloat(document.getElementById('tiltSlider').value);
+                    if (tiltValue > 0) {
+                        applyTilt(tiltValue);
+                    }
                 }
             }
 
@@ -1348,6 +1364,15 @@
                 window.dispatchEvent(new Event('resize'));
             }
         }
+        
+        // Update canvas size based on slider
+        function updateCanvasSize(value) {
+            canvasSizeFactor = parseFloat(value);
+            debugLog(`Canvas size factor set to ${canvasSizeFactor}`);
+            
+            // Trigger resize to adjust canvas dimensions
+            window.dispatchEvent(new Event('resize'));
+        }
 
         // Set up event listeners
         document.getElementById('startButton').addEventListener('click', startCamera);
@@ -1359,6 +1384,11 @@
         document.getElementById('toggleControls').addEventListener('click', toggleControls);
         document.getElementById('qualitySelect').addEventListener('change', (event) => {
             setQuality(event.target.value);
+        });
+        
+        // Add size slider listener
+        document.getElementById('sizeSlider').addEventListener('input', (event) => {
+            updateCanvasSize(event.target.value);
         });
         
         // Add flicker mode controls
@@ -1390,7 +1420,7 @@
                     
                     const padding = 20;
                     const availableHeight = window.innerHeight - controlPanelHeight - padding;
-                    const maxCanvasWidth = Math.floor(window.innerWidth * 0.47);
+                    const maxCanvasWidth = Math.floor(window.innerWidth * 0.47 * canvasSizeFactor);
                     
                     let canvasWidth = maxCanvasWidth;
                     let canvasHeight = canvasWidth / videoAspect;
