@@ -27,3 +27,53 @@ Be VERY careful about using 3D flicker mode, this mode is intended for people wh
 **Measurable adaptation**: 30-50 hours of training over 3-6 weeks would be needed for your brain to begin consistently applying these cues in natural environments
 
 **Robust integration**: 100+ hours over 2-4 months for substantial, persistent effects when not using the app
+
+### Function Summary: VRwizard
+
+VRwizard is a 2D system designed to simulate a 3D depth perception experience using visual cues such as luminosity and saturation. It allows users to experience depth without the traditional complexities and risks associated with fully immersive 3D virtual reality, maintaining alignment with real-world sensory input to ensure user safety and comfort.
+
+---
+
+### Key Functions:
+
+1. **Depth Perception Simulation**
+   - **Function**: Simulates depth through manipulation of visual cues (luminosity, saturation).
+   - **Purpose**: Trains the brain to interpret depth in a 2D system, enhancing spatial awareness and visual processing.
+
+2. **Visual Alignment with Real-World Input**
+   - **Function**: Aligns the virtual depth cues with real-world sensory feedback (e.g., movement, position).
+   - **Purpose**: Ensures users stay grounded in their physical environment, reducing the risk of disorientation and confusion.
+
+3. **User Interaction with Virtual Depth**
+   - **Function**: Allows users to interact with the depth simulation by adjusting tilt or other input methods.
+   - **Purpose**: Engages the user in actively processing depth, reinforcing neural pathways for visual-motor coordination and spatial navigation.
+
+4. **Safe Virtual Experience Design**
+   - **Function**: Minimizes cognitive load and overstimulation by offering a controlled, non-immersive environment.
+   - **Purpose**: Provides a safer alternative to traditional VR experiences by reducing the risk of sensory overload and mental fatigue.
+
+5. **Grounded User Experience**
+   - **Function**: Keeps the user's experience aligned with their physical reality, preventing confusion between the virtual and real worlds.
+   - **Purpose**: Ensures that users maintain a clear sense of spatial orientation, preventing any loss of connection with the real world.
+
+6. **Neurological Training**
+   - **Function**: Stimulates neuroplasticity by encouraging the brain to adapt to new visual depth cues and spatial relationships.
+   - **Purpose**: Enhances cognitive functions related to visual processing, spatial awareness, and motor coordination.
+
+7. **Mindfulness and Cognitive Clarity**
+   - **Function**: Promotes focus and attention through the grounded, low-stress nature of the tool.
+   - **Purpose**: Helps users stay mentally present, encouraging mindfulness and reducing mental clutter or distractions.
+
+### Purpose & Objective:
+- **VRwizard** is designed to condition users’ brains to process visual depth more effectively, using a non-traditional method that minimizes cognitive strain. The system serves as a safe environment for improving spatial awareness, visual processing, and overall cognitive function while staying grounded in real-world input to prevent any perceptual confusion or disorientation.
+
+### Key Benefits:
+- Improved depth perception and spatial awareness.
+- Enhanced cognitive processing, focus, and mental clarity.
+- Safe exploration of virtual depth with minimal risk of overstimulation or confusion.
+- Low-risk, controlled environment for cognitive and perceptual development.
+
+### Safety Features:
+- Aligned with real-world sensory input to maintain spatial awareness.
+- Minimal cognitive load to reduce the risk of mental fatigue and overstimulation.
+- User safety features designed to prevent disorientation, motion sickness, and confusion.
