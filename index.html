@@ -74,6 +74,7 @@
             flex-direction: column;
             padding: 5px 5px;
             z-index: 1000;
+            transition: opacity 0.3s ease;
         }
 
         /* Control rows */
@@ -257,15 +258,9 @@
             }
         }
 
-        /* Hidden controls class */
+        /* Hidden controls class - completely hide instead of transform */
         .controls-hidden .control-panel {
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-        }
-        
-        .control-panel {
-            transform: translateY(0);
-            transition: transform 0.3s ease;
+            display: none;
         }
         
         /* Firefox-specific CSS fixes */
@@ -1325,15 +1320,19 @@
         function toggleControls() {
             const body = document.body;
             const toggleButton = document.getElementById('toggleControls');
+            const controlPanel = document.querySelector('.control-panel');
             
             controlsHidden = !controlsHidden;
             
             if (controlsHidden) {
                 body.classList.add('controls-hidden');
                 toggleButton.textContent = 'Show Controls';
+                // Completely hide the controls with display: none (handled by CSS class)
             } else {
                 body.classList.remove('controls-hidden');
                 toggleButton.textContent = 'Hide Controls';
+                // Show the controls, making sure they're displayed
+                controlPanel.style.display = 'flex';
             }
             
             // Trigger resize to adjust canvas size
