@@ -17,6 +17,7 @@ Here are the suggested values for creating depth in AndroidVR.
 ![image](https://github.com/user-attachments/assets/c45c08fe-7890-419c-9065-44ff2574c8e7)
 
 **How does this tool use a Square Wave?**
+
 The essential part of the quantization is in this line:
 JavaScript
 
