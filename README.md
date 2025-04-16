@@ -16,6 +16,47 @@ Here are the suggested values for creating depth in AndroidVR.
 
 ![image](https://github.com/user-attachments/assets/c45c08fe-7890-419c-9065-44ff2574c8e7)
 
+**How does this tool use a Square Wave?**
+The essential part of the quantization is in this line:
+JavaScript
+
+const quantizedDepth = Math.floor(depth / stepSize) * stepSize;
+
+This creates a stair-step function which is mathematically equivalent to a square wave transform:
+
+    The continuous depth values (0-255) are divided into discrete bands
+    Within each band, all values are flattened to a single value
+    This creates sharp, vertical transitions between depth levels
+
+Visual Representation
+
+Original depth (smooth curve):
+Code
+
+    ⁄⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻\
+   /                                      \
+  /                                        \
+ /                                          \
+
+After quantization (square wave pattern):
+Code
+
+    ┌───────────┐
+    │           │           ┌───────────┐
+    │           │           │           │
+    │           │           │           │
+────┘           └───────────┘           └────
+
+Mathematical Properties
+
+This matches the definition of a square wave transform because:
+
+    It has binary-like transitions between states
+    The transitions are immediate (vertical) rather than gradual
+    The output signal consists of flat plateaus at discrete levels
+
+When you adjust the "Levels" slider, you're controlling the number of steps in this square wave pattern - fewer levels means more pronounced steps with greater contrast between depth planes.
+
 **Notice**
 
 Be VERY careful about using 3D flicker mode, this mode is intended for people who have mono vision and should not be used by those who have binocular vision due to the cognitive strain it puts on the user when input is received through both eyes.
@@ -29,8 +70,6 @@ Be VERY careful about using 3D flicker mode, this mode is intended for people wh
 **Measurable adaptation**: 30-50 hours of training over 3-6 weeks would be needed for your brain to begin consistently applying these cues in natural environments
 
 **Robust integration**: 100+ hours over 2-4 months for substantial, persistent effects when not using the app
-
-### Function Summary: VRwizard
 
 VRwizard is a 2D system designed to simulate a 3D depth perception experience using visual cues such as luminosity and saturation. It allows users to experience depth without the traditional complexities and risks associated with fully immersive 3D virtual reality, maintaining alignment with real-world sensory input to ensure user safety and comfort.
 
