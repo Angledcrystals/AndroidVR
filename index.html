@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Meta tags and other head content remain the same -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
@@ -112,7 +111,7 @@
         label {
             font-size: 0.7rem; /* Smaller font */
             margin-right: 5px;
-            min-width: 45px;
+            min-width: 45px;We could be heroes
         }
 
         input[type="range"] {
@@ -136,7 +135,7 @@
         }
 
         .divider {
-            width: 1px;
+            width: 1px;We could be heroes
             height: 35px; /* Shorter divider */
             background-color: #444;
             margin: 0 2px;
@@ -354,6 +353,14 @@
                     <label for="blurRadius">Blur</label>
                     <input id="blurRadius" type="range" min="0" max="10" step="1" value="2">
                 </div>
+                <div class="control-item">
+                    <label for="depthQuantize">Quantize</label>
+                    <input id="depthQuantizeToggle" type="checkbox">
+                </div>
+                <div class="control-item">
+                    <label for="depthLevels">Levels</label>
+                    <input id="depthLevels" type="range" min="2" max="16" step="1" value="8">
+                </div>
             </div>
         </div>
         
@@ -409,8 +416,6 @@
     </div>
 
     <script>
-        // All JavaScript remains the same except for the toggleControls function
-        
         // Utility function for debugging
         function debugLog(message) {
             console.log(message);
@@ -928,6 +933,29 @@
             return result;
         }
 
+        // Apply depth quantization to create distinct depth planes
+        function quantizeDepth(depthMap, width, height, levels) {
+            const result = new Uint8ClampedArray(depthMap.length);
+            
+            // Calculate the step size for quantization
+            const stepSize = 256 / levels;
+            
+            for (let i = 0; i < depthMap.length; i += 4) {
+                // Get original depth
+                const depth = depthMap[i];
+                
+                // Apply square wave quantization - converts depth to steps
+                const quantizedDepth = Math.floor(depth / stepSize) * stepSize;
+                
+                result[i] = quantizedDepth;
+                result[i+1] = quantizedDepth;
+                result[i+2] = quantizedDepth;
+                result[i+3] = 255; // Alpha channel
+            }
+            
+            return result;
+        }
+
         // Generate depth map from image data
         function generateDepthMap(imgData, width, height) {
             const depthMap = new Uint8ClampedArray(imgData.data.length);
@@ -956,7 +984,16 @@
             
             // Apply blur to smooth the depth map
             const blurRadius = parseInt(document.getElementById('blurRadius').value);
-            return fastBlurDepthMap(depthMap, width, height, blurRadius);
+            let processedDepthMap = fastBlurDepthMap(depthMap, width, height, blurRadius);
+            
+            // Apply depth quantization if enabled
+            const quantizeEnabled = document.getElementById('depthQuantizeToggle').checked;
+            if (quantizeEnabled) {
+                const levels = parseInt(document.getElementById('depthLevels').value);
+                processedDepthMap = quantizeDepth(processedDepthMap, width, height, levels);
+            }
+            
+            return processedDepthMap;
         }
 
         // Toggle flicker mode
@@ -1440,6 +1477,37 @@
         // Add flicker mode controls
         document.getElementById('toggleFlickerMode').addEventListener('click', toggleFlickerMode);
         document.getElementById('flickerSpeedSlider').addEventListener('input', updateFlickerSpeed);
+        
+        // Add depth quantization event listeners
+        document.getElementById('depthQuantizeToggle').addEventListener('change', () => {
+            // Force a redraw when toggling quantization
+            if (video && !video.paused) {
+                // Update the indicator to show quantization is active
+                const indicator = document.getElementById('qualityIndicator');
+                if (document.getElementById('depthQuantizeToggle').checked) {
+                    const levels = document.getElementById('depthLevels').value;
+                    indicator.textContent = `Depth quantized to ${levels} levels`;
+                    indicator.style.opacity = 1;
+                    
+                    setTimeout(() => {
+                        indicator.style.opacity = 0;
+                    }, 3000);
+                }
+            }
+        });
+
+        document.getElementById('depthLevels').addEventListener('input', () => {
+            if (document.getElementById('depthQuantizeToggle').checked && video && !video.paused) {
+                const levels = document.getElementById('depthLevels').value;
+                const indicator = document.getElementById('qualityIndicator');
+                indicator.textContent = `Depth quantized to ${levels} levels`;
+                indicator.style.opacity = 1;
+                
+                setTimeout(() => {
+                    indicator.style.opacity = 0;
+                }, 1500);
+            }
+        });
 
         // Initialize quality setting from select dropdown
         setQuality(document.getElementById('qualitySelect').value);
