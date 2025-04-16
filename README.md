@@ -32,7 +32,6 @@ This creates a stair-step function which is mathematically equivalent to a squar
 Visual Representation
 
 Original depth (smooth curve):
-Code
 
     ⁄⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻\
    /                                      \
@@ -40,7 +39,6 @@ Code
  /                                          \
 
 After quantization (square wave pattern):
-Code
 
     ┌───────────┐
     │           │           ┌───────────┐
