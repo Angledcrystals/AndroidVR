@@ -29,24 +29,9 @@ This creates a stair-step function which is mathematically equivalent to a squar
     Within each band, all values are flattened to a single value
     This creates sharp, vertical transitions between depth levels
 
-Visual Representation
 
-Original depth (smooth curve):
+![image](https://github.com/user-attachments/assets/9b5675dc-7813-4c91-adb1-7dcd89856638)
 
-    ⁄⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻⁻\
-   /                                      \
-  /                                        \
- /                                          \
-
-After quantization (square wave pattern):
-
-    ┌───────────┐
-    │           │           ┌───────────┐
-    │           │           │           │
-    │           │           │           │
-────┘           └───────────┘           └────
-
-Mathematical Properties
 
 This matches the definition of a square wave transform because:
 
