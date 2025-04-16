@@ -14,7 +14,7 @@ The result is a depth matrix.
 
 Here are the suggested values for creating depth in AndroidVR.
 
-![image](https://github.com/user-attachments/assets/c45c08fe-7890-419c-9065-44ff2574c8e7)
+![image](https://github.com/user-attachments/assets/36f2015b-7e4e-4a9b-877f-6fbeddc04435)
 
 **How does this tool use a Square Wave?**
 
