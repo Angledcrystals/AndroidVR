@@ -111,7 +111,7 @@
         label {
             font-size: 0.7rem; /* Smaller font */
             margin-right: 5px;
-            min-width: 45px;We could be heroes
+            min-width: 45px;
         }
 
         input[type="range"] {
@@ -135,7 +135,7 @@
         }
 
         .divider {
-            width: 1px;We could be heroes
+            width: 1px;
             height: 35px; /* Shorter divider */
             background-color: #444;
             margin: 0 2px;
@@ -287,6 +287,12 @@
         
         .canvas-right {
             left: calc(75% - 50px);
+        }
+        
+        /* Frozen frame styles */
+        .frozen-canvas {
+            border-color: #ff4040 !important;
+            box-shadow: 0 0 10px rgba(255, 64, 64, 0.7);
         }
     </style>
 </head>
@@ -1041,6 +1047,9 @@
                 
                 debugLog("3D Flicker mode disabled");
             }
+            
+            // Update frozen indicators positions after toggling flicker mode
+            setTimeout(updateFrozenIndicatorPositions, 100);
         }
         
         // Save original canvas positions before flicker mode
@@ -1239,6 +1248,9 @@
                         applyTilt(tiltValue);
                     }
                 }
+                
+                // Update frozen indicators if needed
+                updateFrozenIndicatorPositions();
             }
 
             function drawFrame(timestamp) {
@@ -1287,75 +1299,255 @@
             requestAnimationFrame(drawFrame);
         }
         
+        // Variables to track frozen state
+        let canvas1Frozen = false;
+        let canvas2Frozen = false;
+        let frozenImageData1 = null;
+        let frozenImageData2 = null;
+        
+        // Add visual indicators for frozen frames
+        function createFrozenIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'frozen-indicator';
+            indicator.textContent = 'FROZEN';
+            
+            // Style the indicator
+            Object.assign(indicator.style, {
+                position: 'absolute',
+                top: '10px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: 'rgba(255, 0, 0, 0.7)',
+                color: 'white',
+                padding: '3px 8px',
+                borderRadius: '3px',
+                fontSize: '0.7rem',
+                fontWeight: 'bold',
+                zIndex: '100',
+                pointerEvents: 'none',
+                opacity: '0.8'
+            });
+            
+            return indicator;
+        }
+        
+        // Create indicators but don't attach them yet
+        const frozenIndicator1 = createFrozenIndicator();
+        const frozenIndicator2 = createFrozenIndicator();
+        
+        // Function to toggle frozen state for a canvas
+        function toggleFrozenState(canvasNumber) {
+            if (canvasNumber === 1) {
+                canvas1Frozen = !canvas1Frozen;
+                const canvas1 = document.getElementById('canvas1');
+                
+                if (canvas1Frozen) {
+                    // Store current image data
+                    const ctx = canvas1.getContext('2d');
+                    frozenImageData1 = ctx.getImageData(0, 0, canvas1.width, canvas1.height);
+                    
+                    // Add frozen indicator
+                    canvas1.parentNode.appendChild(frozenIndicator1);
+                    frozenIndicator1.style.top = canvas1.offsetTop + 10 + 'px';
+                    frozenIndicator1.style.left = canvas1.offsetLeft + (canvas1.offsetWidth / 2) + 'px';
+                    
+                    // Add border highlight
+                    canvas1.classList.add('frozen-canvas');
+                    
+                    debugLog("Left view frozen");
+                } else {
+                    // Remove frozen image data
+                    frozenImageData1 = null;
+                    
+                    // Remove indicator
+                    if (frozenIndicator1.parentNode) {
+                        frozenIndicator1.parentNode.removeChild(frozenIndicator1);
+                    }
+                    
+                    // Remove border highlight
+                    canvas1.classList.remove('frozen-canvas');
+                    
+                    debugLog("Left view unfrozen");
+                }
+            } else if (canvasNumber === 2) {
+                canvas2Frozen = !canvas2Frozen;
+                const canvas2 = document.getElementById('canvas2');
+                
+                if (canvas2Frozen) {
+                    // Store current image data
+                    const ctx = canvas2.getContext('2d');
+                    frozenImageData2 = ctx.getImageData(0, 0, canvas2.width, canvas2.height);
+                    
+                    // Add frozen indicator
+                    canvas2.parentNode.appendChild(frozenIndicator2);
+                    frozenIndicator2.style.top = canvas2.offsetTop + 10 + 'px';
+                    frozenIndicator2.style.left = canvas2.offsetLeft + (canvas2.offsetWidth / 2) + 'px';
+                    
+                    // Add border highlight
+                    canvas2.classList.add('frozen-canvas');
+                    
+                    debugLog("Right view frozen");
+                } else {
+                    // Remove frozen image data
+                    frozenImageData2 = null;
+                    
+                    // Remove indicator
+                    if (frozenIndicator2.parentNode) {
+                        frozenIndicator2.parentNode.removeChild(frozenIndicator2);
+                    }
+                    
+                    // Remove border highlight
+                    canvas2.classList.remove('frozen-canvas');
+                    
+                    debugLog("Right view unfrozen");
+                }
+            }
+        }
+        
+        // Add event listeners to canvases for tap/click
+        document.getElementById('canvas1').addEventListener('click', () => {
+            toggleFrozenState(1);
+        });
+        
+        document.getElementById('canvas2').addEventListener('click', () => {
+            toggleFrozenState(2);
+        });
+        
+        // For mobile touch events
+        document.getElementById('canvas1').addEventListener('touchend', (e) => {
+            e.preventDefault(); // Prevent triggering click after touchend
+            toggleFrozenState(1);
+        });
+        
+        document.getElementById('canvas2').addEventListener('touchend', (e) => {
+            e.preventDefault(); // Prevent triggering click after touchend
+            toggleFrozenState(2);
+        });
+        
+        // Updated stereoscopic effect function to handle frozen frames
         function applyStereoscopicEffect(ctx1, ctx2, origImgData, depthImgData) {
             const width = depthImgData.width;
             const height = depthImgData.height;
             
-            // Create output images for left and right eyes
-            const leftImgData = new ImageData(width, height);
-            const rightImgData = new ImageData(width, height);
-            
-            // Get depth intensity factor from slider
-            const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
-            
-            // Apply parallax shift based on depth map
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const idx = (y * width + x) * 4;
-                    
-                    // Get depth value (0-255)
-                    const depth = depthImgData.data[idx] / 255;
-                    
-                    // Calculate parallax shift based on depth
-                    // Objects with higher depth value (closer) have more shift
-                    const shift = Math.floor(depth * depthIntensity);
-                    
-                    // Calculate source positions with parallax
-                    const leftSrcX = Math.max(0, Math.min(width - 1, x - shift));
-                    const rightSrcX = Math.max(0, Math.min(width - 1, x + shift));
-                    
-                    // Get source indices
-                    const leftSrcIdx = (y * width + leftSrcX) * 4;
-                    const rightSrcIdx = (y * width + rightSrcX) * 4;
-                    
-                    // Copy pixels with shift
-                    for (let c = 0; c < 4; c++) {
-                        leftImgData.data[idx + c] = origImgData.data[leftSrcIdx + c];
-                        rightImgData.data[idx + c] = origImgData.data[rightSrcIdx + c];
+            // Handle left canvas - either create new view or use frozen data
+            if (!canvas1Frozen) {
+                // Clear the canvas
+                ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
+                
+                // Create output image for left eye (only if not frozen)
+                const leftImgData = new ImageData(width, height);
+                
+                // Get depth intensity factor from slider
+                const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
+                
+                // Apply parallax shift based on depth map for left eye
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const idx = (y * width + x) * 4;
+                        
+                        // Get depth value (0-255)
+                        const depth = depthImgData.data[idx] / 255;
+                        
+                        // Calculate parallax shift based on depth
+                        const shift = Math.floor(depth * depthIntensity);
+                        
+                        // Calculate source position with parallax
+                        const leftSrcX = Math.max(0, Math.min(width - 1, x - shift));
+                        
+                        // Get source indices
+                        const leftSrcIdx = (y * width + leftSrcX) * 4;
+                        
+                        // Copy pixels with shift
+                        for (let c = 0; c < 4; c++) {
+                            leftImgData.data[idx + c] = origImgData.data[leftSrcIdx + c];
+                        }
                     }
                 }
+                
+                // Create temporary canvas for scaling
+                const tempCanvas1 = document.createElement('canvas');
+                tempCanvas1.width = width;
+                tempCanvas1.height = height;
+                const tempCtx1 = tempCanvas1.getContext('2d', { alpha: false });
+                
+                // Put the processed image on the temporary canvas
+                tempCtx1.putImageData(leftImgData, 0, 0);
+                
+                // Apply CSS3D accelerated transforms if available
+                if (renderMethod === 'css3d') {
+                    ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
+                } else {
+                    ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
+                }
+            } else if (frozenImageData1) {
+                // Just reuse the frozen image data
+                ctx1.putImageData(frozenImageData1, 0, 0);
             }
             
-            // Clear the canvases (important for transparency and performance)
-            ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
-            ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
-            
-            // Create temporary canvases for scaling
-            const tempCanvas1 = document.createElement('canvas');
-            const tempCanvas2 = document.createElement('canvas');
-            tempCanvas1.width = tempCanvas2.width = width;
-            tempCanvas1.height = tempCanvas2.height = height;
-            
-            const tempCtx1 = tempCanvas1.getContext('2d', { alpha: false });
-            const tempCtx2 = tempCanvas2.getContext('2d', { alpha: false });
-            
-            // Put the processed images on the temporary canvases
-            tempCtx1.putImageData(leftImgData, 0, 0);
-            tempCtx2.putImageData(rightImgData, 0, 0);
-            
-            // Apply CSS3D accelerated transforms if available
-            if (renderMethod === 'css3d') {
-                // Use drawImage with hardware acceleration
-                ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
-                ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
-            } else {
-                // Fallback to simple scaling
-                ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
-                ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
+            // Handle right canvas - either create new view or use frozen data
+            if (!canvas2Frozen) {
+                // Clear the canvas
+                ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
+                
+                // Create output image for right eye (only if not frozen)
+                const rightImgData = new ImageData(width, height);
+                
+                // Get depth intensity factor from slider
+                const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
+                
+                // Apply parallax shift based on depth map for right eye
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const idx = (y * width + x) * 4;
+                        
+                        // Get depth value (0-255)
+                        const depth = depthImgData.data[idx] / 255;
+                        
+                        // Calculate parallax shift based on depth
+                        const shift = Math.floor(depth * depthIntensity);
+                        
+                        // Calculate source position with parallax
+                        const rightSrcX = Math.max(0, Math.min(width - 1, x + shift));
+                        
+                        // Get source indices
+                        const rightSrcIdx = (y * width + rightSrcX) * 4;
+                        
+                        // Copy pixels with shift
+                        for (let c = 0; c < 4; c++) {
+                            rightImgData.data[idx + c] = origImgData.data[rightSrcIdx + c];
+                        }
+                    }
+                }
+                
+                // Create temporary canvas for scaling
+                const tempCanvas2 = document.createElement('canvas');
+                tempCanvas2.width = width;
+                tempCanvas2.height = height;
+                const tempCtx2 = tempCanvas2.getContext('2d', { alpha: false });
+                
+                // Put the processed image on the temporary canvas
+                tempCtx2.putImageData(rightImgData, 0, 0);
+                
+                // Apply CSS3D accelerated transforms if available
+                if (renderMethod === 'css3d') {
+                    ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
+                } else {
+                    ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
+                }
+            } else if (frozenImageData2) {
+                // Just reuse the frozen image data
+                ctx2.putImageData(frozenImageData2, 0, 0);
             }
         }
 
+        // Updated color adjustments function to handle frozen frames
         function applyColorAdjustments(ctx, canvas, redId, greenId, blueId) {
+            // Don't apply color adjustments to frozen frames if they already have them
+            if ((canvas.id === 'canvas1' && canvas1Frozen) || 
+                (canvas.id === 'canvas2' && canvas2Frozen)) {
+                return;
+            }
+            
             const redValue = document.getElementById(redId).value;
             const greenValue = document.getElementById(greenId).value;
             const blueValue = document.getElementById(blueId).value;
@@ -1386,6 +1578,13 @@
             }
             
             ctx.putImageData(frame, 0, 0);
+            
+            // Update the frozen image data if we just applied adjustments to it
+            if (canvas.id === 'canvas1' && canvas1Frozen) {
+                frozenImageData1 = frame;
+            } else if (canvas.id === 'canvas2' && canvas2Frozen) {
+                frozenImageData2 = frame;
+            }
         }
 
         function applyTilt(tiltValue) {
@@ -1398,6 +1597,21 @@
             // Use hardware-accelerated 3D transforms
             canvas1.style.transform = `perspective(1000px) rotateY(${tiltValue}rad)`;
             canvas2.style.transform = `perspective(1000px) rotateY(${-tiltValue}rad)`;
+        }
+
+        // Function to update the position of frozen indicators
+        function updateFrozenIndicatorPositions() {
+            if (canvas1Frozen) {
+                const canvas1 = document.getElementById('canvas1');
+                frozenIndicator1.style.top = canvas1.offsetTop + 10 + 'px';
+                frozenIndicator1.style.left = canvas1.offsetLeft + (canvas1.offsetWidth / 2) + 'px';
+            }
+            
+            if (canvas2Frozen) {
+                const canvas2 = document.getElementById('canvas2');
+                frozenIndicator2.style.top = canvas2.offsetTop + 10 + 'px';
+                frozenIndicator2.style.left = canvas2.offsetLeft + (canvas2.offsetWidth / 2) + 'px';
+            }
         }
 
         // Modified toggle controls function that works properly every time
@@ -1509,6 +1723,9 @@
             }
         });
 
+        // Call updateFrozenIndicatorPositions when window resizes
+        window.addEventListener('resize', updateFrozenIndicatorPositions);
+
         // Initialize quality setting from select dropdown
         setQuality(document.getElementById('qualitySelect').value);
 
@@ -1557,6 +1774,9 @@
                     if (flickerMode) {
                         positionCanvasesForFlicker(flickerFrame);
                     }
+
+                    // Update frozen indicator positions
+                    updateFrozenIndicatorPositions();
                 }
             }
         });
@@ -1603,6 +1823,18 @@
                     document.getElementById('startButton').click();
                 }, 500);
             }
+        });
+
+        // Show instructions for frozen frames feature when page loads
+        window.addEventListener('load', () => {
+            const indicator = document.getElementById('qualityIndicator');
+            indicator.textContent = "Tap on either view to freeze/unfreeze it";
+            indicator.style.opacity = 1;
+            setTimeout(() => {
+                indicator.style.opacity = 0;
+                // Show default quality message after instructions fade
+                setQuality(document.getElementById('qualitySelect').value);
+            }, 5000);
         });
     </script>
 </body>
