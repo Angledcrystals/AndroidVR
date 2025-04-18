@@ -1,4 +1,4 @@
-https://vrisalotoffun.github.io/AndroidVR/
+https://Angledcrystals.github.io/AndroidVR/
 
 This is simple to use, simply relax your eyes to allow both images to drift together.
 
