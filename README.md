@@ -57,6 +57,31 @@ Be VERY careful about using 3D flicker mode, this mode is intended for people wh
 
 VRwizard is a 2D system designed to simulate a 3D depth perception experience using visual cues such as luminosity and saturation. It allows users to experience depth without the traditional complexities and risks associated with fully immersive 3D virtual reality, maintaining alignment with real-world sensory input to ensure user safety and comfort.
 
+**Learning to move the contents of fixed images**
+
+Oook, this is going to be really hard to explain for someone who cannot use this tool, so I'm writing this under the assumption that the person reading can relax their eyes to join both images together.
+
+Step 1: Use this as normal, move your hand around a bit in front of you, capture it from as many first-person-view angles as possible. This is really quite needed to do at least once.
+
+Step 2: Place your hand on a surface that is mostly consistent, and tap one of the display windows to 'freeze' the frame with your hand in it.
+Your eyes are going to want to adjust to keep both hands together, you must break this instinct and teach the brain that it can move the hand in it's perception.
+
+Step 3: Leave the other window active, keep it as aligned as possible in perspective with the frozen frame; move your hand into your frozen hand, it should get 'picked up' by the motion and move with it.
+If your eyes make micro-adjustments to keep the hands together then start over until the hand moves irrespective of what your eyes want to do.
+
+Step 4: When it de-syncs, pick it back up again. Repeat this process until your hand stays sync'd no matter what you do with it, this will take a while so be very patient and practice diligently.
+
+Step 5: Next add a object, you're going to want to work on moving the object around, a little bit at a time is alright there is no need to make great progress when just starting.
+
+Step 6: Add more diverse objects, you're going to want to make the hand within the image an extension of your own awareness.
+
+Step 7: Once you can move objects that are 'there', you have been primed to move objects that exist ONLY within the image. Try this out, start with something small. Grab something small with your avatar's hand and move it slightly.
+Good job!
+
+Step 8: Get a unrelated image and copy&paste a still frame of your hand into one of the images.
+
+Step 9: Apply the principles discussed to interact with the contents of the image using your avatar, which is the base that you will use to project your awareness into the image.
+
 ---
 
 ### Key Functions:
