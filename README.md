@@ -60,30 +60,39 @@ VRwizard is a 2D system designed to simulate a 3D depth perception experience us
 **Learning to move the contents of fixed images**
 
 Step 1: Prime Your Visual System
+
 Begin by using VRwizard as intended. Move your hand naturally in front of your face and capture several images from a first-person perspective. It's crucial to do this at least once to give your brain a baseline of real 3D depth associated with your own hand in space.
 
 Step 2: Freeze One Eye's Input
+
 Place your hand on a flat, consistent surface. Tap one of the stereoscopic display windows to freeze that frame. Your brain will instinctively try to keep both hand images aligned across both windows. Resist this. Break the reflex. Allow the brain to consider the frozen image as static and learn that the moving window can introduce motion independently.
 
 Step 3: Move Into the Frozen Frame
+
 Leave the second window active. Carefully align the perspective of your real hand in the moving window with the position of your frozen hand. When alignment is close, your moving hand will appear to "pick up" and animate the still image’s hand. Your goal is to teach your brain that it can sync with the phantom limb in the frozen frame.
 
 Step 4: Reinforce the Feedback Loop
+
 The illusion may de-sync. That’s okay. Re-align and repeat. With enough practice, your frozen hand will appear to move with your intention no matter what your physical hand does. This is the foundation: the brain is accepting the phantom hand as a genuine, perceptually controlled object.
 
 Step 5: Introduce External Objects
+
 Place an object near your frozen hand and repeat the process. Your brain will start to associate motion of the hand with potential interaction. Move the hand in the live frame and allow your awareness to "nudge" or "shift" the object within the frozen image.
 
 Step 6: Add Variety and Complexity
+
 Expand your set by adding more diverse and layered objects. Your training now involves manipulating spatial relationships—focusing not on realism but on control. Your awareness is now able to traverse the frozen scene.
 
 Step 7: Manipulate Only the Image
+
 This is the breakthrough step. Once your mind accepts that it can move your phantom hand, it will begin to accept that it can move objects within the image—even ones that were never physically present. Start with small imagined motions and gradually increase.
 
 Step 8: Import Avatars into Foreign Scenes
+
 Copy a still frame of your hand and paste it into an unrelated image. The image doesn’t need to relate to your original sequence. Your brain already knows the avatar; use it to access the new environment.
 
 Step 9: Project Awareness into the Scene
+
 Repeat the steps to integrate your avatar into the image. You are no longer interacting with two photos—you are stepping into a visual environment. The hand is your anchor. The objects respond to projected intent. You now possess a perceptual interface into a 2D-rendered, stereo-reinforced virtual 3D space.
 
 ---
