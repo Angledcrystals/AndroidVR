@@ -65,7 +65,11 @@ Begin by using VRwizard as intended. Move your hand naturally in front of your f
 
 Step 2: Freeze One Eye's Input
 
-Place your hand on a flat, consistent surface. Tap one of the stereoscopic display windows to freeze that frame. Your brain will instinctively try to keep both hand images aligned across both windows. Resist this. Break the reflex. Allow the brain to consider the frozen image as static and learn that the moving window can introduce motion independently.
+Place your hand on a flat, consistent surface. Tap one of the stereoscopic display windows to freeze that frame. Your brain will instinctively try to keep both hand images aligned across both windows. Resist this. Break the reflex. 
+
+One way of doing this is by focusing on something that is not your hand in the resultant image, this will decouple the brain's need to have both perspectives sync'd.
+
+Allow the brain to consider the frozen image as static and learn that the moving window can introduce motion independently.
 
 Step 3: Move Into the Frozen Frame
 
