@@ -294,6 +294,94 @@
             border-color: #ff4040 !important;
             box-shadow: 0 0 10px rgba(255, 64, 64, 0.7);
         }
+
+        /* Recording Controls */
+        .recording-controls {
+            display: flex;
+            align-items: center;
+            margin-right: 5px;
+        }
+
+        .record-button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: #333;
+            border: none;
+            color: white;
+            padding: 5px 8px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .record-button:hover {
+            opacity: 1;
+            background-color: #444;
+        }
+
+        .record-icon {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ff4040;
+            display: inline-block;
+        }
+
+        .stop-icon {
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            display: inline-block;
+        }
+
+        .stop-record {
+            background-color: #c00;
+        }
+
+        .stop-record:hover {
+            background-color: #e00;
+        }
+
+        .recording-indicator {
+            display: flex;
+            align-items: center;
+            margin-left: 8px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ff4040;
+            margin-right: 5px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.8;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.8);
+                opacity: 0.8;
+            }
+        }
+
+        #recordingTimer {
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -305,6 +393,18 @@
     </div>
     
     <div class="top-controls">
+        <div class="recording-controls">
+            <button id="recordButton" class="record-button">
+                <span class="record-icon"></span> Record
+            </button>
+            <button id="stopRecordButton" class="record-button stop-record" style="display:none">
+                <span class="stop-icon"></span> Stop
+            </button>
+            <div id="recordingIndicator" class="recording-indicator" style="display:none">
+                <span class="pulse-dot"></span>
+                <span id="recordingTimer">00:00</span>
+            </div>
+        </div>
         <select id="qualitySelect">
             <option value="1.0">High Quality</option>
             <option value="0.5" selected>Medium Quality</option>
@@ -1740,6 +1840,218 @@
             countdownElement.style.top = `${rect.top + rect.height/2 - countdownElement.offsetHeight/2}px`;
         }
 
+        // Recording feature variables
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+        let recordingStartTime = 0;
+        let recordingTimer = null;
+        let combinedRecordingCanvas = document.createElement('canvas');
+        let combinedRecordingCtx = combinedRecordingCanvas.getContext('2d');
+
+        // Check for MediaRecorder support and determine the best MIME type
+        function getSupportedMimeType() {
+            const types = [
+                'video/webm;codecs=vp9',
+                'video/webm;codecs=vp8',
+                'video/webm',
+                'video/mp4'
+            ];
+            
+            for (const type of types) {
+                if (MediaRecorder.isTypeSupported(type)) {
+                    debugLog(`Using MIME type: ${type} for recording`);
+                    return type;
+                }
+            }
+            
+            return ''; // No supported types found
+        }
+
+        // Start recording function
+        function startRecording() {
+            if (isRecording || !video || video.paused) {
+                alert("Please start the camera before recording.");
+                return;
+            }
+            
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            
+            try {
+                // Set up combined canvas for recording (side by side)
+                combinedRecordingCanvas.width = canvas1.width + canvas2.width;
+                combinedRecordingCanvas.height = Math.max(canvas1.height, canvas2.height);
+                
+                // Try to get the stream from the combined canvas
+                let stream;
+                try {
+                    stream = combinedRecordingCanvas.captureStream(30); // 30 FPS
+                } catch (e) {
+                    debugLog("Error capturing stream: " + e.message);
+                    alert("Recording is not supported in this browser.");
+                    return;
+                }
+                
+                // Get supported MIME type
+                const mimeType = getSupportedMimeType();
+                
+                if (!mimeType) {
+                    alert("No supported recording format found in this browser.");
+                    return;
+                }
+                
+                // Create MediaRecorder with options
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: mimeType,
+                    videoBitsPerSecond: 2500000 // 2.5 Mbps
+                });
+                
+                // Handle data available event
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data && e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+                
+                // Handle recording stop
+                mediaRecorder.onstop = function() {
+                    saveRecording();
+                };
+                
+                // Start recording
+                recordedChunks = [];
+                mediaRecorder.start(1000); // Request data every second
+                isRecording = true;
+                recordingStartTime = Date.now();
+                
+                // Update UI
+                updateRecordingUI();
+                
+                // Start the recording timer
+                startRecordingTimer();
+                
+                // Start the frame capture process
+                captureFrames();
+                
+                debugLog("Recording started");
+            } catch (error) {
+                debugLog("Recording error: " + error.message);
+                alert("Could not start recording: " + error.message);
+            }
+        }
+
+        // Stop recording function
+        function stopRecording() {
+            if (!isRecording || !mediaRecorder) return;
+            
+            try {
+                mediaRecorder.stop();
+                isRecording = false;
+                
+                // Stop the recording timer
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
+                
+                updateRecordingUI();
+                debugLog("Recording stopped");
+            } catch (error) {
+                debugLog("Error stopping recording: " + error.message);
+                alert("Error stopping recording: " + error.message);
+            }
+        }
+
+        // Save the recorded video
+        function saveRecording() {
+            if (recordedChunks.length === 0) {
+                debugLog("No recorded data to save");
+                return;
+            }
+            
+            try {
+                // Get current date and time for filename
+                const now = new Date();
+                const dateString = now.toISOString().replace(/[:.]/g, '-').split('T')[0];
+                const timeString = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+                
+                // Create blob from recorded chunks
+                const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+                recordedChunks = [];
+                
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                document.body.appendChild(a);
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `stereo3d_${dateString}_${timeString}.webm`;
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                }, 100);
+                
+                debugLog("Recording saved: " + a.download);
+            } catch (error) {
+                debugLog("Error saving recording: " + error.message);
+                alert("Error saving recording: " + error.message);
+            }
+        }
+
+        // Capture frames for recording
+        function captureFrames() {
+            if (!isRecording) return;
+            
+            try {
+                const canvas1 = document.getElementById('canvas1');
+                const canvas2 = document.getElementById('canvas2');
+                
+                // Draw both canvases side by side on the combined canvas
+                combinedRecordingCtx.clearRect(0, 0, combinedRecordingCanvas.width, combinedRecordingCanvas.height);
+                combinedRecordingCtx.drawImage(canvas1, 0, 0);
+                combinedRecordingCtx.drawImage(canvas2, canvas1.width, 0);
+                
+                // Request next frame
+                requestAnimationFrame(captureFrames);
+            } catch (error) {
+                debugLog("Frame capture error: " + error.message);
+            }
+        }
+
+        // Start the recording timer
+        function startRecordingTimer() {
+            const timerDisplay = document.getElementById('recordingTimer');
+            
+            recordingTimer = setInterval(() => {
+                const elapsed = Date.now() - recordingStartTime;
+                const seconds = Math.floor(elapsed / 1000) % 60;
+                const minutes = Math.floor(elapsed / 60000);
+                
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Update the recording UI
+        function updateRecordingUI() {
+            const recordButton = document.getElementById('recordButton');
+            const stopRecordButton = document.getElementById('stopRecordButton');
+            const recordingIndicator = document.getElementById('recordingIndicator');
+            
+            if (isRecording) {
+                recordButton.style.display = 'none';
+                stopRecordButton.style.display = 'flex';
+                recordingIndicator.style.display = 'flex';
+            } else {
+                recordButton.style.display = 'flex';
+                stopRecordButton.style.display = 'none';
+                recordingIndicator.style.display = 'none';
+            }
+        }
+
         // Set up event listeners
         document.getElementById('startButton').addEventListener('click', startCamera);
         document.getElementById('switchButton').addEventListener('click', switchCamera);
@@ -1809,6 +2121,10 @@
                 }, 1500);
             }
         });
+
+        // Add recording button event listeners
+        document.getElementById('recordButton').addEventListener('click', startRecording);
+        document.getElementById('stopRecordButton').addEventListener('click', stopRecording);
 
         // Call updateFrozenIndicatorPositions when window resizes
         window.addEventListener('resize', updateFrozenIndicatorPositions);
@@ -1932,6 +2248,11 @@
                 setQuality(document.getElementById('qualitySelect').value);
             }, 5000);
         });
+
+        // Check for MediaRecorder support
+        if (typeof MediaRecorder === 'undefined') {
+            debugLog("MediaRecorder API not supported in this browser");
+        }
     </script>
 </body>
 </html>
