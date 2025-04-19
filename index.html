@@ -300,6 +300,8 @@
     <div class="container">
         <canvas id="canvas1"></canvas>
         <canvas id="canvas2"></canvas>
+        <!-- Freeze countdown display -->
+        <div id="freezeCountdown" style="display: none; position: absolute; background-color: rgba(255, 0, 0, 0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 1.2rem; font-weight: bold; z-index: 200; text-align: center; pointer-events: none;"></div>
     </div>
     
     <div class="top-controls">
@@ -344,6 +346,10 @@
                 <div class="control-item" id="flickerSpeedContainer" style="display: none;">
                     <label for="flickerSpeedSlider">Speed</label>
                     <input id="flickerSpeedSlider" type="range" min="8" max="60" step="1" value="16">
+                </div>
+                <div class="control-item">
+                    <label for="freezeDelayToggle">Freeze Delay</label>
+                    <input id="freezeDelayToggle" type="checkbox">
                 </div>
             </div>
             
@@ -1671,6 +1677,72 @@
             window.dispatchEvent(new Event('resize'));
         }
 
+        // Variables for freeze delay feature
+        let freezeDelayActive = false;
+        let freezeDelayFrame = 0; // 1 for left, 2 for right
+        let freezeDelayCountdown = 15;
+        let freezeDelayInterval = null;
+
+        // Function to start freeze delay process
+        function startFreezeDelay() {
+            if (freezeDelayInterval) {
+                clearInterval(freezeDelayInterval);
+            }
+            
+            // Select random frame (1 or 2)
+            freezeDelayFrame = Math.random() < 0.5 ? 1 : 2;
+            freezeDelayCountdown = 15;
+            
+            const countdownElement = document.getElementById('freezeCountdown');
+            const targetCanvas = document.getElementById(freezeDelayFrame === 1 ? 'canvas1' : 'canvas2');
+            
+            // Position countdown on the selected frame
+            updateCountdownPosition(targetCanvas, countdownElement);
+            
+            // Show countdown
+            countdownElement.style.display = 'block';
+            countdownElement.textContent = `Freezing in ${freezeDelayCountdown}s`;
+            
+            // Start countdown
+            freezeDelayInterval = setInterval(() => {
+                freezeDelayCountdown--;
+                
+                // Update countdown display
+                countdownElement.textContent = `Freezing in ${freezeDelayCountdown}s`;
+                
+                // Update position in case of layout changes
+                updateCountdownPosition(targetCanvas, countdownElement);
+                
+                // When countdown reaches 0
+                if (freezeDelayCountdown <= 0) {
+                    // Stop interval
+                    clearInterval(freezeDelayInterval);
+                    freezeDelayInterval = null;
+                    
+                    // Hide countdown
+                    countdownElement.style.display = 'none';
+                    
+                    // Freeze the selected frame
+                    toggleFrozenState(freezeDelayFrame);
+                    
+                    // Reset freeze delay if toggle is still active
+                    if (freezeDelayActive) {
+                        // Wait a bit before starting the next cycle
+                        setTimeout(() => {
+                            startFreezeDelay();
+                        }, 5000); // 5 second pause between cycles
+                    }
+                }
+            }, 1000);
+        }
+
+        // Function to update countdown position on the canvas
+        function updateCountdownPosition(canvas, countdownElement) {
+            const rect = canvas.getBoundingClientRect();
+            countdownElement.style.left = `${rect.left + rect.width/2 - countdownElement.offsetWidth/2}px`;
+            countdownElement.style.top = `${rect.top + rect.height/2 - countdownElement.offsetHeight/2}px`;
+        }
+
         // Set up event listeners
         document.getElementById('startButton').addEventListener('click', startCamera);
         document.getElementById('switchButton').addEventListener('click', switchCamera);
@@ -1691,6 +1763,24 @@
         // Add flicker mode controls
         document.getElementById('toggleFlickerMode').addEventListener('click', toggleFlickerMode);
         document.getElementById('flickerSpeedSlider').addEventListener('input', updateFlickerSpeed);
+        
+        // Add freeze delay toggle listener
+        document.getElementById('freezeDelayToggle').addEventListener('change', (event) => {
+            freezeDelayActive = event.target.checked;
+            
+            if (freezeDelayActive) {
+                debugLog("Freeze delay activated");
+                startFreezeDelay();
+            } else {
+                debugLog("Freeze delay deactivated");
+                // Clear existing countdown
+                if (freezeDelayInterval) {
+                    clearInterval(freezeDelayInterval);
+                    freezeDelayInterval = null;
+                    document.getElementById('freezeCountdown').style.display = 'none';
+                }
+            }
+        });
         
         // Add depth quantization event listeners
         document.getElementById('depthQuantizeToggle').addEventListener('change', () => {
@@ -1725,6 +1815,15 @@
 
         // Call updateFrozenIndicatorPositions when window resizes
         window.addEventListener('resize', updateFrozenIndicatorPositions);
+        
+        // Update countdown position when window is resized
+        window.addEventListener('resize', () => {
+            if (freezeDelayActive && freezeDelayInterval) {
+                const countdownElement = document.getElementById('freezeCountdown');
+                const targetCanvas = document.getElementById(freezeDelayFrame === 1 ? 'canvas1' : 'canvas2');
+                updateCountdownPosition(targetCanvas, countdownElement);
+            }
+        });
 
         // Initialize quality setting from select dropdown
         setQuality(document.getElementById('qualitySelect').value);
