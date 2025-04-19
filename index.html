@@ -1688,54 +1688,51 @@
             if (freezeDelayInterval) {
                 clearInterval(freezeDelayInterval);
             }
-            
+    
             // Select random frame (1 or 2)
             freezeDelayFrame = Math.random() < 0.5 ? 1 : 2;
             freezeDelayCountdown = 15;
-            
+    
             const countdownElement = document.getElementById('freezeCountdown');
             const targetCanvas = document.getElementById(freezeDelayFrame === 1 ? 'canvas1' : 'canvas2');
-            
+    
             // Position countdown on the selected frame
             updateCountdownPosition(targetCanvas, countdownElement);
-            
+    
             // Show countdown
             countdownElement.style.display = 'block';
             countdownElement.textContent = `Freezing in ${freezeDelayCountdown}s`;
-            
+    
             // Start countdown
             freezeDelayInterval = setInterval(() => {
                 freezeDelayCountdown--;
-                
+        
                 // Update countdown display
                 countdownElement.textContent = `Freezing in ${freezeDelayCountdown}s`;
-                
+        
                 // Update position in case of layout changes
                 updateCountdownPosition(targetCanvas, countdownElement);
-                
+        
                 // When countdown reaches 0
                 if (freezeDelayCountdown <= 0) {
                     // Stop interval
                     clearInterval(freezeDelayInterval);
                     freezeDelayInterval = null;
-                    
+            
                     // Hide countdown
                     countdownElement.style.display = 'none';
-                    
+            
                     // Freeze the selected frame
                     toggleFrozenState(freezeDelayFrame);
-                    
-                    // Reset freeze delay if toggle is still active
-                    if (freezeDelayActive) {
-                        // Wait a bit before starting the next cycle
-                        setTimeout(() => {
-                            startFreezeDelay();
-                        }, 5000); // 5 second pause between cycles
-                    }
+            
+                    // Auto-uncheck the freeze delay toggle
+                    document.getElementById('freezeDelayToggle').checked = false;
+                    freezeDelayActive = false;
+            
+                    debugLog("Freeze completed and auto-disabled");
                 }
             }, 1000);
         }
-
         // Function to update countdown position on the canvas
         function updateCountdownPosition(canvas, countdownElement) {
             const rect = canvas.getBoundingClientRect();
