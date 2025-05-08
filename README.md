@@ -99,7 +99,7 @@ Step 9: Project Awareness into the Scene
 
 Repeat the steps to integrate your avatar into the image. You are no longer interacting with two photos—you are stepping into a visual environment. The hand is your anchor. The objects respond to projected intent. You now possess a perceptual interface into a 2D-rendered, stereo-reinforced virtual 3D space.
 
-**explanation**
+**Explanation**
 
 The avatar inside my tool isn’t some fantasy body; it’s a duplicate of the real one. Not just in appearance, but in feeling. It mirrors the weight, the posture, the orientation of the real body in space. It reflects how I move, how I breathe, how I reach. That’s what makes it reflective.. not because it’s imaginary, but because it’s true.
 
