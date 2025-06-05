@@ -478,8 +478,8 @@
                 <div class="control-item">
                     <label for="depthMode">Mode</label>
                     <select id="depthMode">
-                        <option value="nuit">Nuit Only</option>
-                        <option value="radial" selected>Radial Zones</option>
+                        <option value="nuit" selected>Nuit Only</option>
+                        <option value="radial">Radial Zones</option>
                         <option value="hybrid">Hybrid</option>
                     </select>
                 </div>
@@ -495,7 +495,7 @@
                 </div>
                 <div class="control-item">
                     <label for="depthIntensity">Intensity</label>
-                    <input id="depthIntensity" type="range" min="0" max="50" step="1" value="15">
+                    <input id="depthIntensity" type="range" min="0" max="50" step="1" value="25">
                 </div>
                 <div class="control-item">
                     <label for="baselineSeparation">Eye Sep</label>
@@ -1756,7 +1756,7 @@
             // Get baseline separation from slider (as percentage of image width)
             const baselinePercentage = parseFloat(document.getElementById('baselineSeparation').value);
             const baselineSeparation = Math.max(1, Math.floor(width * (baselinePercentage / 100)));
-            const maxParallax = Math.max(1, Math.floor(depthIntensity * 1.0)); // Increased multiplier
+            const maxParallax = Math.max(1, Math.floor(depthIntensity * 2.0)); // Increased multiplier
             
             debugLog(`STEREO DEBUG: w=${width}, h=${height}, baseline=${baselineSeparation}px, maxParallax=${maxParallax}px, intensity=${depthIntensity}`);
             
@@ -2433,7 +2433,7 @@
         setQuality(document.getElementById('qualitySelect').value);
 
         // Explicitly set default depth mode
-        document.getElementById('depthMode').value = 'radial';
+        document.getElementById('depthMode').value = 'nuit';
 
         // Recalculate canvas sizes whenever control values change that might affect layout
         const controlInputs = document.querySelectorAll('input[type="range"]');
@@ -2553,8 +2553,8 @@
             }, 5000);
             
             debugLog("Enhanced Nuit Distance method initialized with FIXED depth processing:");
-            debugLog("- Radial Zones: Center=closest, edges=farthest (DEFAULT)");
-            debugLog("- Nuit Only: Max depth at Nuit boundary");
+            debugLog("- Nuit Only: Max depth at Nuit boundary (DEFAULT)");
+            debugLog("- Radial Zones: Center=closest, edges=farthest");
             debugLog("- Hybrid: Radial + Nuit boundary enhancement");
             debugLog("- Initial Nuit Radius: " + currentNuitRadius);
             debugLog("- Initial S Bounds: ±" + currentSBounds);
