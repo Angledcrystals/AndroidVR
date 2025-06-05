@@ -1720,157 +1720,117 @@
         });
         
         // Enhanced stereoscopic effect function with improved depth parallax - FIXED VERSION
-        function applyStereoscopicEffect(ctx1, ctx2, origImgData, depthImgData) {
-            const width = depthImgData.width;
-            const height = depthImgData.height;
-            
-            // Get depth intensity factor from slider
-            const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
-            
-            // Get baseline separation from slider (as percentage of image width)
-            const baselinePercentage = parseFloat(document.getElementById('baselineSeparation').value);
-            const baselineSeparation = Math.max(2, Math.floor(width * (baselinePercentage / 100)));
-            const maxParallax = Math.max(1, Math.floor(depthIntensity * 0.5)); // Reduced for more reasonable shifts
-            
-            debugLog(`Applying stereoscopic effect: baseline=${baselineSeparation}px, maxParallax=${maxParallax}px, intensity=${depthIntensity}`);
-            
-            // Handle left canvas - either create new view or use frozen data
-            if (!canvas1Frozen) {
-                // Clear the canvas
-                ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
+// FIXED: Enhanced stereoscopic effect function with proper parallax shifts
+function applyStereoscopicEffect(ctx1, ctx2, origImgData, depthImgData) {
+    const width = depthImgData.width;
+    const height = depthImgData.height;
+    
+    // Get depth intensity factor from slider
+    const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
+    
+    // Get baseline separation from slider (as percentage of image width)
+    const baselinePercentage = parseFloat(document.getElementById('baselineSeparation').value);
+    const baselineSeparation = Math.max(1, Math.floor(width * (baselinePercentage / 100)));
+    const maxParallax = Math.max(1, Math.floor(depthIntensity * 1.0)); // Increased multiplier
+    
+    debugLog(`STEREO DEBUG: w=${width}, h=${height}, baseline=${baselineSeparation}px, maxParallax=${maxParallax}px, intensity=${depthIntensity}`);
+    
+    // Clear both canvases first
+    if (!canvas1Frozen) ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
+    if (!canvas2Frozen) ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
+    
+    // Process LEFT EYE (negative parallax)
+    if (!canvas1Frozen) {
+        const leftImgData = new ImageData(width, height);
+        let leftShifts = 0;
+        let leftTotalShift = 0;
+        
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const idx = (y * width + x) * 4;
                 
-                // Create output image for left eye (only if not frozen)
-                const leftImgData = new ImageData(width, height);
-                let shiftsApplied = 0;
-                let totalShift = 0;
+                // Get depth value and normalize
+                const depth = depthImgData.data[idx] / 255.0;
                 
-                // Apply parallax shift based on depth map for left eye
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        const idx = (y * width + x) * 4;
-                        
-                        // Get depth value (0-255) and normalize to 0-1
-                        const depth = depthImgData.data[idx] / 255.0;
-                        
-                        // Enhanced depth calculation with better range utilization
-                        // Use a non-linear curve to enhance depth perception
-                        const enhancedDepth = Math.pow(depth, 1.2); // Reduced gamma for more subtle effect
-                        
-                        // Calculate parallax shift for left eye (negative shift for left eye)
-                        // Far objects (low depth) have minimal shift, close objects (high depth) have maximum shift
-                        const parallaxShift = -baselineSeparation/2 - (enhancedDepth * maxParallax);
-                        const shift = Math.floor(parallaxShift);
-                        
-                        // Track statistics for debugging
-                        if (Math.abs(shift) > 0) {
-                            shiftsApplied++;
-                            totalShift += Math.abs(shift);
-                        }
-                        
-                        // Calculate source position with parallax (with boundary checking)
-                        const leftSrcX = Math.max(0, Math.min(width - 1, x - shift));
-                        
-                        // Get source indices
-                        const leftSrcIdx = (y * width + leftSrcX) * 4;
-                        
-                        // Copy pixels with shift
-                        leftImgData.data[idx] = origImgData.data[leftSrcIdx];
-                        leftImgData.data[idx + 1] = origImgData.data[leftSrcIdx + 1];
-                        leftImgData.data[idx + 2] = origImgData.data[leftSrcIdx + 2];
-                        leftImgData.data[idx + 3] = 255; // Full alpha
-                    }
+                // Calculate parallax shift for LEFT EYE (shift pixels to the RIGHT to simulate left eye view)
+                const parallaxShift = Math.floor(depth * maxParallax);
+                const sourceX = Math.max(0, Math.min(width - 1, x + parallaxShift)); // Source is shifted RIGHT
+                
+                if (parallaxShift > 0) {
+                    leftShifts++;
+                    leftTotalShift += parallaxShift;
                 }
                 
-                if (shiftsApplied > 0) {
-                    debugLog(`Left eye: ${shiftsApplied} pixels shifted, avg shift: ${(totalShift/shiftsApplied).toFixed(1)}px`);
-                } else {
-                    debugLog("Left eye: NO SHIFTS APPLIED - CHECK DEPTH MAP!");
-                }
-                
-                // Create temporary canvas for scaling
-                const tempCanvas1 = document.createElement('canvas');
-                tempCanvas1.width = width;
-                tempCanvas1.height = height;
-                const tempCtx1 = tempCanvas1.getContext('2d', { alpha: false });
-                
-                // Put the processed image on the temporary canvas
-                tempCtx1.putImageData(leftImgData, 0, 0);
-                
-                // Draw to final canvas with scaling
-                ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
-            } else if (frozenImageData1) {
-                // Just reuse the frozen image data
-                ctx1.putImageData(frozenImageData1, 0, 0);
-            }
-            
-            // Handle right canvas - either create new view or use frozen data
-            if (!canvas2Frozen) {
-                // Clear the canvas
-                ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
-                
-                // Create output image for right eye (only if not frozen)
-                const rightImgData = new ImageData(width, height);
-                let shiftsApplied = 0;
-                let totalShift = 0;
-                
-                // Apply parallax shift based on depth map for right eye
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        const idx = (y * width + x) * 4;
-                        
-                        // Get depth value (0-255) and normalize to 0-1
-                        const depth = depthImgData.data[idx] / 255.0;
-                        
-                        // Enhanced depth calculation with better range utilization
-                        const enhancedDepth = Math.pow(depth, 1.2); // Reduced gamma for more subtle effect
-                        
-                        // Calculate parallax shift for right eye (positive shift for right eye)
-                        const parallaxShift = baselineSeparation/2 + (enhancedDepth * maxParallax);
-                        const shift = Math.floor(parallaxShift);
-                        
-                        // Track statistics for debugging
-                        if (Math.abs(shift) > 0) {
-                            shiftsApplied++;
-                            totalShift += Math.abs(shift);
-                        }
-                        
-                        // Calculate source position with parallax (with boundary checking)
-                        const rightSrcX = Math.max(0, Math.min(width - 1, x + shift));
-                        
-                        // Get source indices
-                        const rightSrcIdx = (y * width + rightSrcX) * 4;
-                        
-                        // Copy pixels with shift
-                        rightImgData.data[idx] = origImgData.data[rightSrcIdx];
-                        rightImgData.data[idx + 1] = origImgData.data[rightSrcIdx + 1];
-                        rightImgData.data[idx + 2] = origImgData.data[rightSrcIdx + 2];
-                        rightImgData.data[idx + 3] = 255; // Full alpha
-                    }
-                }
-                
-                if (shiftsApplied > 0) {
-                    debugLog(`Right eye: ${shiftsApplied} pixels shifted, avg shift: ${(totalShift/shiftsApplied).toFixed(1)}px`);
-                } else {
-                    debugLog("Right eye: NO SHIFTS APPLIED - CHECK DEPTH MAP!");
-                }
-                
-                // Create temporary canvas for scaling
-                const tempCanvas2 = document.createElement('canvas');
-                tempCanvas2.width = width;
-                tempCanvas2.height = height;
-                const tempCtx2 = tempCanvas2.getContext('2d', { alpha: false });
-                
-                // Put the processed image on the temporary canvas
-                tempCtx2.putImageData(rightImgData, 0, 0);
-                
-                // Draw to final canvas with scaling
-                ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
-            } else if (frozenImageData2) {
-                // Just reuse the frozen image data
-                ctx2.putImageData(frozenImageData2, 0, 0);
+                // Copy pixel from shifted source position
+                const srcIdx = (y * width + sourceX) * 4;
+                leftImgData.data[idx] = origImgData.data[srcIdx];
+                leftImgData.data[idx + 1] = origImgData.data[srcIdx + 1];
+                leftImgData.data[idx + 2] = origImgData.data[srcIdx + 2];
+                leftImgData.data[idx + 3] = 255;
             }
         }
-
+        
+        debugLog(`LEFT EYE: ${leftShifts} pixels shifted, avg=${leftShifts > 0 ? (leftTotalShift/leftShifts).toFixed(1) : 0}px`);
+        
+        // Draw to left canvas
+        const tempCanvas1 = document.createElement('canvas');
+        tempCanvas1.width = width;
+        tempCanvas1.height = height;
+        const tempCtx1 = tempCanvas1.getContext('2d');
+        tempCtx1.putImageData(leftImgData, 0, 0);
+        ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
+    }
+    
+    // Process RIGHT EYE (positive parallax)
+    if (!canvas2Frozen) {
+        const rightImgData = new ImageData(width, height);
+        let rightShifts = 0;
+        let rightTotalShift = 0;
+        
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const idx = (y * width + x) * 4;
+                
+                // Get depth value and normalize
+                const depth = depthImgData.data[idx] / 255.0;
+                
+                // Calculate parallax shift for RIGHT EYE (shift pixels to the LEFT to simulate right eye view)
+                const parallaxShift = Math.floor(depth * maxParallax);
+                const sourceX = Math.max(0, Math.min(width - 1, x - parallaxShift)); // Source is shifted LEFT
+                
+                if (parallaxShift > 0) {
+                    rightShifts++;
+                    rightTotalShift += parallaxShift;
+                }
+                
+                // Copy pixel from shifted source position
+                const srcIdx = (y * width + sourceX) * 4;
+                rightImgData.data[idx] = origImgData.data[srcIdx];
+                rightImgData.data[idx + 1] = origImgData.data[srcIdx + 1];
+                rightImgData.data[idx + 2] = origImgData.data[srcIdx + 2];
+                rightImgData.data[idx + 3] = 255;
+            }
+        }
+        
+        debugLog(`RIGHT EYE: ${rightShifts} pixels shifted, avg=${rightShifts > 0 ? (rightTotalShift/rightShifts).toFixed(1) : 0}px`);
+        
+        // Draw to right canvas
+        const tempCanvas2 = document.createElement('canvas');
+        tempCanvas2.width = width;
+        tempCanvas2.height = height;
+        const tempCtx2 = tempCanvas2.getContext('2d');
+        tempCtx2.putImageData(rightImgData, 0, 0);
+        ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
+    }
+    
+    // Use frozen data if canvases are frozen
+    if (canvas1Frozen && frozenImageData1) {
+        ctx1.putImageData(frozenImageData1, 0, 0);
+    }
+    if (canvas2Frozen && frozenImageData2) {
+        ctx2.putImageData(frozenImageData2, 0, 0);
+    }
+}
         // Updated color adjustments function to handle frozen frames
         function applyColorAdjustments(ctx, canvas, redId, greenId, blueId) {
             // Don't apply color adjustments to frozen frames if they already have them
