@@ -119,6 +119,16 @@
             height: 12px; /* Thinner sliders */
         }
 
+        select {
+            width: 70px;
+            font-size: 0.7rem;
+            background: #333;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 3px;
+            padding: 1px;
+        }
+
         button {
             margin: 2px; /* Reduced margin */
             padding: 5px 8px; /* Smaller padding */
@@ -466,6 +476,14 @@
             <div class="control-section">
                 <div class="section-header">Enhanced Nuit Depth</div>
                 <div class="control-item">
+                    <label for="depthMode">Mode</label>
+                    <select id="depthMode">
+                        <option value="nuit">Nuit Only</option>
+                        <option value="radial" selected>Radial Zones</option>
+                        <option value="hybrid">Hybrid</option>
+                    </select>
+                </div>
+                <div class="control-item">
                     <label for="nuitRadius">Nuit Radius</label>
                     <input id="nuitRadius" type="range" min="0.5" max="15.0" step="0.1" value="7.0">
                     <span id="nuitRadiusValue" class="value-display">7.0</span>
@@ -477,16 +495,16 @@
                 </div>
                 <div class="control-item">
                     <label for="depthIntensity">Intensity</label>
-                    <input id="depthIntensity" type="range" min="0" max="30" step="0.5" value="8">
+                    <input id="depthIntensity" type="range" min="0" max="30" step="0.5" value="12">
                 </div>
                 <div class="control-item">
                     <label for="baselineSeparation">Eye Sep</label>
-                    <input id="baselineSeparation" type="range" min="0.5" max="5.0" step="0.1" value="2.0">
-                    <span id="baselineSeparationValue" class="value-display">2.0%</span>
+                    <input id="baselineSeparation" type="range" min="0.5" max="5.0" step="0.1" value="2.5">
+                    <span id="baselineSeparationValue" class="value-display">2.5%</span>
                 </div>
                 <div class="control-item">
                     <label for="blurRadius">Blur</label>
-                    <input id="blurRadius" type="range" min="0" max="10" step="1" value="2">
+                    <input id="blurRadius" type="range" min="0" max="10" step="1" value="1">
                 </div>
                 <div class="control-item">
                     <label for="nuitFalloffFactor">Falloff</label>
@@ -578,7 +596,7 @@
         debugLog("- iOS: " + isIOS);
         debugLog("- Mobile: " + isMobile);
         debugLog("- User Agent: " + navigator.userAgent);
-        debugLog("- Session: Angledcrystals - 2025-06-05 12:39:12 UTC");
+        debugLog("- Session: Angledcrystals - 2025-06-05 13:15:36 UTC");
         
         // Add a GPU acceleration hint specific for Android WebView
         if (isAndroid) {
@@ -675,22 +693,55 @@
             };
         }
         
-        // Enhanced Nuit distance depth calculation with better contrast
+        // Enhanced Nuit distance depth calculation with multiple modes and better depth distribution
         function calculateNuitDistanceDepth(sCoord, nuitRadius, falloffFactor) {
             const distanceFromOrigin = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
             const distanceFromNuit = Math.abs(distanceFromOrigin - nuitRadius);
             
-            // Calculate base depth using exponential falloff for more dramatic effect
-            const baseDepth = 1.0 / (1.0 + distanceFromNuit * falloffFactor);
+            // Get depth mode from selector
+            const depthMode = document.getElementById('depthMode').value;
             
-            // Apply contrast enhancement to make depth differences more pronounced
-            const contrastedDepth = Math.pow(baseDepth, 0.7); // Enhance contrast
+            let finalDepth;
             
-            // Add a minimum depth floor to ensure some parallax even in "flat" areas
-            const minDepth = 0.1;
-            const finalDepth = minDepth + (contrastedDepth * (1.0 - minDepth));
+            switch (depthMode) {
+                case 'nuit':
+                    // Original Nuit distance method - max depth at boundary
+                    const baseDepth = 1.0 / (1.0 + distanceFromNuit * falloffFactor);
+                    const contrastedDepth = Math.pow(baseDepth, 0.7);
+                    const minDepth = 0.1;
+                    finalDepth = minDepth + (contrastedDepth * (1.0 - minDepth));
+                    break;
+                    
+                case 'radial':
+                    // Radial depth - center is closest, edges are farthest
+                    const maxDistance = Math.max(currentSBounds * 2, 10);
+                    const normalizedDistance = Math.min(distanceFromOrigin / maxDistance, 1.0);
+                    // Invert so center (distance 0) = max depth (1.0), edges = min depth
+                    finalDepth = 1.0 - (normalizedDistance * 0.8); // Range: 1.0 to 0.2
+                    break;
+                    
+                case 'hybrid':
+                    // Combination: radial base + Nuit boundary enhancement
+                    const maxDist = Math.max(currentSBounds * 2, 10);
+                    const normDist = Math.min(distanceFromOrigin / maxDist, 1.0);
+                    const radialDepth = 1.0 - (normDist * 0.7); // Base radial depth
+                    
+                    // Add Nuit boundary enhancement
+                    const nuitDepth = 1.0 / (1.0 + distanceFromNuit * falloffFactor * 0.5);
+                    const nuitBoost = (nuitDepth - 0.5) * 0.3; // Boost around boundary
+                    
+                    finalDepth = radialDepth + nuitBoost;
+                    break;
+                    
+                default:
+                    finalDepth = 0.5;
+            }
             
-            return Math.min(1.0, Math.max(0.0, finalDepth));
+            // Apply contrast enhancement
+            const contrastedDepth = Math.pow(Math.max(0, finalDepth), 0.7);
+            
+            // Ensure reasonable bounds
+            return Math.min(1.0, Math.max(0.05, contrastedDepth));
         }
         
         // Try to set up WebGL for GPU acceleration
@@ -1147,7 +1198,7 @@
             return result;
         }
 
-        // Generate depth map using Enhanced Nuit Distance method
+        // Generate depth map using Enhanced Nuit Distance method with multiple modes
         function generateDepthMap(imgData, width, height) {
             const depthMap = new Uint8ClampedArray(imgData.data.length);
             const luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
@@ -1176,7 +1227,7 @@
                         luminosityWeight, saturationWeight
                     );
                     
-                    // Calculate depth using Enhanced Nuit Distance method with current radius
+                    // Calculate depth using Enhanced Nuit Distance method with current radius and mode
                     const nuitDepth = calculateNuitDistanceDepth(sCoord, currentNuitRadius, nuitFalloffFactor);
                     
                     // Convert to 0-255 range
@@ -1554,6 +1605,7 @@
                     
                     // Add border highlight
                     canvas1.classList.add('frozen-canvas');
+                    
                     debugLog("Left view frozen");
                 } else {
                     // Remove frozen image data
@@ -1848,7 +1900,8 @@
             
             // Show quality indicator
             const indicator = document.getElementById('qualityIndicator');
-            indicator.textContent = `Processing at ${Math.round(qualityFactor * 100)}% resolution with Enhanced Nuit Distance (R:${currentNuitRadius}, S:±${currentSBounds})`;
+            const depthMode = document.getElementById('depthMode').value;
+            indicator.textContent = `Processing at ${Math.round(qualityFactor * 100)}% resolution with ${depthMode.charAt(0).toUpperCase() + depthMode.slice(1)} Depth (R:${currentNuitRadius}, S:±${currentSBounds})`;
             
             // Add rendering method info
             if (renderMethod === 'css3d') {
@@ -2076,6 +2129,7 @@
                 const now = new Date();
                 const dateString = now.toISOString().replace(/[:.]/g, '-').split('T')[0];
                 const timeString = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+                const depthMode = document.getElementById('depthMode').value;
                 
                 // Create blob from recorded chunks
                 const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
@@ -2087,7 +2141,7 @@
                 document.body.appendChild(a);
                 a.style.display = 'none';
                 a.href = url;
-                a.download = `enhanced_nuit_stereo3d_R${currentNuitRadius}_S${currentSBounds}_${dateString}_${timeString}.webm`;
+                a.download = `enhanced_nuit_${depthMode}_R${currentNuitRadius}_S${currentSBounds}_${dateString}_${timeString}.webm`;
                 a.click();
                 
                 // Clean up
@@ -2174,6 +2228,18 @@
         document.getElementById('toggleFlickerMode').addEventListener('click', toggleFlickerMode);
         document.getElementById('flickerSpeedSlider').addEventListener('input', updateFlickerSpeed);
         
+        // Add depth mode event listener
+        document.getElementById('depthMode').addEventListener('change', (e) => {
+            if (video && !video.paused) {
+                const mode = e.target.value;
+                const indicator = document.getElementById('qualityIndicator');
+                indicator.textContent = `Depth Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+                indicator.style.opacity = 1;
+                setTimeout(() => indicator.style.opacity = 0, 1500);
+                debugLog("Depth mode changed to: " + mode);
+            }
+        });
+        
         // Add Nuit radius and S bounds event listeners with value display updates
         document.getElementById('nuitRadius').addEventListener('input', (e) => {
             const value = parseFloat(e.target.value);
@@ -2241,7 +2307,8 @@
                 const indicator = document.getElementById('qualityIndicator');
                 if (document.getElementById('depthQuantizeToggle').checked) {
                     const levels = document.getElementById('depthLevels').value;
-                    indicator.textContent = `Enhanced Nuit Distance depth quantized to ${levels} levels`;
+                    const depthMode = document.getElementById('depthMode').value;
+                    indicator.textContent = `${depthMode.charAt(0).toUpperCase() + depthMode.slice(1)} depth quantized to ${levels} levels`;
                     indicator.style.opacity = 1;
                     
                     setTimeout(() => {
@@ -2254,8 +2321,9 @@
         document.getElementById('depthLevels').addEventListener('input', () => {
             if (document.getElementById('depthQuantizeToggle').checked && video && !video.paused) {
                 const levels = document.getElementById('depthLevels').value;
+                const depthMode = document.getElementById('depthMode').value;
                 const indicator = document.getElementById('qualityIndicator');
-                indicator.textContent = `Enhanced Nuit Distance depth quantized to ${levels} levels`;
+                indicator.textContent = `${depthMode.charAt(0).toUpperCase() + depthMode.slice(1)} depth quantized to ${levels} levels`;
                 indicator.style.opacity = 1;
                 
                 setTimeout(() => {
@@ -2364,10 +2432,11 @@
                 debugLog("Quality factor: " + qualityFactor);
                 debugLog("Current Nuit radius: " + currentNuitRadius);
                 debugLog("Current S bounds: ±" + currentSBounds);
+                debugLog("Current depth mode: " + document.getElementById('depthMode').value);
                 debugLog("Firefox: " + isFirefox);
                 debugLog("Android: " + isAndroid);
                 debugLog("Mobile: " + isMobile);
-                debugLog("Session: Angledcrystals - 2025-06-05 12:43:21 UTC");
+                debugLog("Session: Angledcrystals - 2025-06-05 13:20:37 UTC");
             } else {
                 debugOutput.style.display = 'none';
             }
@@ -2399,7 +2468,7 @@
         // Show instructions for Enhanced Nuit Distance method when page loads
         window.addEventListener('load', () => {
             const indicator = document.getElementById('qualityIndicator');
-            indicator.textContent = "Enhanced Nuit Distance method - Adjustable radius, S-bounds & eye separation - Tap views to freeze";
+            indicator.textContent = "Enhanced Nuit Distance method - Multiple depth modes - Tap views to freeze";
             indicator.style.opacity = 1;
             setTimeout(() => {
                 indicator.style.opacity = 0;
@@ -2407,13 +2476,16 @@
                 setQuality(document.getElementById('qualitySelect').value);
             }, 5000);
             
-            debugLog("Enhanced Nuit Distance method initialized with adjustable parameters:");
+            debugLog("Enhanced Nuit Distance method initialized with multiple depth modes:");
+            debugLog("- Radial Zones: Center=closest, edges=farthest");
+            debugLog("- Nuit Only: Max depth at Nuit boundary");
+            debugLog("- Hybrid: Radial + Nuit boundary enhancement");
             debugLog("- Initial Nuit Radius: " + currentNuitRadius);
             debugLog("- Initial S Bounds: ±" + currentSBounds);
-            debugLog("- Eye Separation: 2.0% of image width");
+            debugLog("- Eye Separation: 2.5% of image width");
             debugLog("- Enhanced depth processing with gamma correction");
             debugLog("- Use sliders to adjust in real-time");
-            debugLog("- Session: Angledcrystals - 2025-06-05 12:43:21 UTC");
+            debugLog("- Session: Angledcrystals - 2025-06-05 13:20:37 UTC");
         });
 
         // Check for MediaRecorder support
