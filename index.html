@@ -456,7 +456,7 @@
             <div class="divider"></div>
             
             <div class="control-section">
-                <div class="section-header">Depth</div>
+                <div class="section-header">Nuit Distance Depth</div>
                 <div class="control-item">
                     <label for="depthIntensity">Intensity</label>
                     <input id="depthIntensity" type="range" min="0" max="20" step="0.5" value="5">
@@ -464,6 +464,10 @@
                 <div class="control-item">
                     <label for="blurRadius">Blur</label>
                     <input id="blurRadius" type="range" min="0" max="10" step="1" value="2">
+                </div>
+                <div class="control-item">
+                    <label for="nuitFalloffFactor">Falloff</label>
+                    <input id="nuitFalloffFactor" type="range" min="1" max="20" step="0.5" value="5.0">
                 </div>
                 <div class="control-item">
                     <label for="depthQuantize">Quantize</label>
@@ -478,7 +482,7 @@
         
         <div class="control-row">
             <div class="control-section">
-                <div class="section-header">Depth Factors</div>
+                <div class="section-header">S-Coordinate Mapping</div>
                 <div class="control-item">
                     <label for="luminosityWeight">Luminosity</label>
                     <input id="luminosityWeight" type="range" min="0" max="1" step="0.05" value="0.7">
@@ -570,6 +574,10 @@
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
         
+        // NEW: Nuit Distance Method Parameters
+        const FIXED_NUIT_RADIUS = 7.0;
+        const S_BOUNDS = 5.0;
+        
         // NEW: Improved camera tracking
         let detectedCameras = {
             front: null,
@@ -612,6 +620,42 @@
                 debugLog("OffscreenCanvas failed: " + e.message);
                 // Fall back to regular canvas (already defined)
             }
+        }
+        
+        // NEW: S-coordinate mapping functions from Python script
+        function pixelToSCoordinate(px, py, width, height, lum, sat, lumMapWeight, satMapWeight) {
+            // Normalize pixel coordinates to -1 to 1 range, centered
+            const normX = (px / (width - 1)) * 2 - 1;
+            const normY = (py / (height - 1)) * 2 - 1;
+            
+            // Base S-coordinate range using S_BOUNDS
+            const sMinX = -S_BOUNDS;
+            const sMaxX = S_BOUNDS;
+            const sMinY = -S_BOUNDS;
+            const sMaxY = S_BOUNDS;
+            
+            // Apply color mediation to influence the S-coordinate mapping
+            const effectiveSMaxX = sMaxX * (1 + lum * lumMapWeight + sat * satMapWeight);
+            const effectiveSMinX = sMinX * (1 + lum * lumMapWeight + sat * satMapWeight);
+            const effectiveSMaxY = sMaxY * (1 + lum * lumMapWeight + sat * satMapWeight);
+            const effectiveSMinY = sMinY * (1 + lum * lumMapWeight + sat * satMapWeight);
+            
+            const sX = (normX + 1) / 2 * (effectiveSMaxX - effectiveSMinX) + effectiveSMinX;
+            const sY = (normY + 1) / 2 * (effectiveSMaxY - effectiveSMinY) + effectiveSMinY;
+            
+            // Clip to reasonable bounds
+            const clipVal = S_BOUNDS * 5;
+            return {
+                x: Math.max(-clipVal, Math.min(clipVal, sX)),
+                y: Math.max(-clipVal, Math.min(clipVal, sY))
+            };
+        }
+        
+        // NEW: Nuit distance depth calculation
+        function calculateNuitDistanceDepth(sCoord, nuitRadius, falloffFactor) {
+            const distanceFromOrigin = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+            const distanceFromNuit = Math.abs(distanceFromOrigin - nuitRadius);
+            return 1.0 / (1.0 + distanceFromNuit * falloffFactor);
         }
         
         // Try to set up WebGL for GPU acceleration
@@ -1068,30 +1112,42 @@
             return result;
         }
 
-        // Generate depth map from image data
+        // NEW: Generate depth map using Nuit Distance method
         function generateDepthMap(imgData, width, height) {
             const depthMap = new Uint8ClampedArray(imgData.data.length);
             const luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
             const saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
+            const nuitFalloffFactor = parseFloat(document.getElementById('nuitFalloffFactor').value);
             
-            // Process pixel by pixel
-            for (let i = 0; i < imgData.data.length; i += 4) {
-                const r = imgData.data[i];
-                const g = imgData.data[i + 1];
-                const b = imgData.data[i + 2];
-                
-                const luminosity = getLuminosity(r, g, b);
-                const saturation = getSaturation(r, g, b);
-                
-                // Combine luminosity and saturation to create depth value
-                // Higher values = closer objects (more parallax)
-                const depthValue = (luminosity * luminosityWeight + saturation * 255 * saturationWeight) / 
-                                  (luminosityWeight + saturationWeight);
-                
-                depthMap[i] = depthValue;
-                depthMap[i + 1] = depthValue;
-                depthMap[i + 2] = depthValue;
-                depthMap[i + 3] = 255;
+            // Process pixel by pixel using Nuit Distance method
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    const r = imgData.data[idx];
+                    const g = imgData.data[idx + 1];
+                    const b = imgData.data[idx + 2];
+                    
+                    const luminosity = getLuminosity(r, g, b) / 255; // Normalize to 0-1
+                    const saturation = getSaturation(r, g, b);
+                    
+                    // Map pixel to S-coordinate
+                    const sCoord = pixelToSCoordinate(
+                        x, y, width, height,
+                        luminosity, saturation,
+                        luminosityWeight, saturationWeight
+                    );
+                    
+                    // Calculate depth using Nuit Distance method
+                    const nuitDepth = calculateNuitDistanceDepth(sCoord, FIXED_NUIT_RADIUS, nuitFalloffFactor);
+                    
+                    // Convert to 0-255 range
+                    const depthValue = Math.round(nuitDepth * 255);
+                    
+                    depthMap[idx] = depthValue;
+                    depthMap[idx + 1] = depthValue;
+                    depthMap[idx + 2] = depthValue;
+                    depthMap[idx + 3] = 255;
+                }
             }
             
             // Apply blur to smooth the depth map
@@ -1385,7 +1441,7 @@
                     // Get the image data to calculate the depth map
                     const imgData = processingCtx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
                     
-                    // Generate depth map
+                    // Generate depth map using Nuit Distance method
                     const depthData = generateDepthMap(imgData, processingCanvas.width, processingCanvas.height);
                     
                     // Create depth map image data
@@ -1511,10 +1567,6 @@
         }
         
         // Add event listeners to canvases for tap/click
-        document.getElementById('canvas1').addEventListener('click', () => {
-            toggleFrozenState(1);
-        });
-        
         document.getElementById('canvas2').addEventListener('click', () => {
             toggleFrozenState(2);
         });
@@ -1748,11 +1800,11 @@
             
             // Show quality indicator
             const indicator = document.getElementById('qualityIndicator');
-            indicator.textContent = `Processing at ${Math.round(qualityFactor * 100)}% resolution`;
+            indicator.textContent = `Processing at ${Math.round(qualityFactor * 100)}% resolution with Nuit Distance`;
             
             // Add rendering method info
             if (renderMethod === 'css3d') {
-                indicator.textContent += ' with GPU acceleration';
+                indicator.textContent += ' (GPU accelerated)';
             }
             
             indicator.style.opacity = 1;
@@ -1833,6 +1885,7 @@
                 }
             }, 1000);
         }
+        
         // Function to update countdown position on the canvas
         function updateCountdownPosition(canvas, countdownElement) {
             const rect = canvas.getBoundingClientRect();
@@ -1934,7 +1987,7 @@
                 // Start the frame capture process
                 captureFrames();
                 
-                debugLog("Recording started");
+                debugLog("Recording started with Nuit Distance depth processing");
             } catch (error) {
                 debugLog("Recording error: " + error.message);
                 alert("Could not start recording: " + error.message);
@@ -1986,7 +2039,7 @@
                 document.body.appendChild(a);
                 a.style.display = 'none';
                 a.href = url;
-                a.download = `stereo3d_${dateString}_${timeString}.webm`;
+                a.download = `nuit_stereo3d_${dateString}_${timeString}.webm`;
                 a.click();
                 
                 // Clean up
@@ -2099,7 +2152,7 @@
                 const indicator = document.getElementById('qualityIndicator');
                 if (document.getElementById('depthQuantizeToggle').checked) {
                     const levels = document.getElementById('depthLevels').value;
-                    indicator.textContent = `Depth quantized to ${levels} levels`;
+                    indicator.textContent = `Nuit Distance depth quantized to ${levels} levels`;
                     indicator.style.opacity = 1;
                     
                     setTimeout(() => {
@@ -2113,7 +2166,21 @@
             if (document.getElementById('depthQuantizeToggle').checked && video && !video.paused) {
                 const levels = document.getElementById('depthLevels').value;
                 const indicator = document.getElementById('qualityIndicator');
-                indicator.textContent = `Depth quantized to ${levels} levels`;
+                indicator.textContent = `Nuit Distance depth quantized to ${levels} levels`;
+                indicator.style.opacity = 1;
+                
+                setTimeout(() => {
+                    indicator.style.opacity = 0;
+                }, 1500);
+            }
+        });
+
+        // Add Nuit falloff factor event listener
+        document.getElementById('nuitFalloffFactor').addEventListener('input', () => {
+            if (video && !video.paused) {
+                const falloff = document.getElementById('nuitFalloffFactor').value;
+                const indicator = document.getElementById('qualityIndicator');
+                indicator.textContent = `Nuit falloff factor: ${falloff}`;
                 indicator.style.opacity = 1;
                 
                 setTimeout(() => {
@@ -2206,6 +2273,8 @@
                 debugLog("User Agent: " + navigator.userAgent);
                 debugLog("Render method: " + renderMethod);
                 debugLog("Quality factor: " + qualityFactor);
+                debugLog("Nuit radius: " + FIXED_NUIT_RADIUS);
+                debugLog("S bounds: " + S_BOUNDS);
                 debugLog("Firefox: " + isFirefox);
                 debugLog("Android: " + isAndroid);
                 debugLog("Mobile: " + isMobile);
@@ -2237,16 +2306,21 @@
             }
         });
 
-        // Show instructions for frozen frames feature when page loads
+        // Show instructions for Nuit Distance method when page loads
         window.addEventListener('load', () => {
             const indicator = document.getElementById('qualityIndicator');
-            indicator.textContent = "Tap on either view to freeze/unfreeze it";
+            indicator.textContent = "Nuit Distance depth method active - Tap views to freeze/unfreeze";
             indicator.style.opacity = 1;
             setTimeout(() => {
                 indicator.style.opacity = 0;
                 // Show default quality message after instructions fade
                 setQuality(document.getElementById('qualitySelect').value);
             }, 5000);
+            
+            debugLog("Nuit Distance method initialized:");
+            debugLog("- Fixed Nuit Radius: " + FIXED_NUIT_RADIUS);
+            debugLog("- S Bounds: " + S_BOUNDS);
+            debugLog("- Depth calculation uses distance from Nuit boundary circle");
         });
 
         // Check for MediaRecorder support
