@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Virtual spectrum with Enhanced Nuit Distance Depth</title>
+    <title>Virtual spectrum based on S-values</title>
     <style>
         /* All the existing styles remain the same */
         body {
@@ -478,10 +478,10 @@
                 <div class="control-item">
                     <label for="depthMode">Mode</label>
                     <select id="depthMode">
-                        <option value="nuit" selected>Nuit Only</option>
+                        <option value="nuit">Nuit Only</option>
                         <option value="radial">Radial Zones</option>
                         <option value="hybrid">Hybrid</option>
-                        <option value="sum_xy">Sum XY S-Coords</option>
+                        <option value="sum_xy" selected>Sum XY S-Coords</option>
                     </select>
                 </div>
                 <div class="control-item">
@@ -496,7 +496,7 @@
                 </div>
                 <div class="control-item">
                     <label for="depthIntensity">Intensity</label>
-                    <input id="depthIntensity" type="range" min="0" max="50" step="1" value="25">
+                    <input id="depthIntensity" type="range" min="0" max="50" step="1" value="5">
                 </div>
                 <div class="control-item">
                     <label for="baselineSeparation">Eye Sep</label>
@@ -2444,7 +2444,7 @@
         setQuality(document.getElementById('qualitySelect').value);
 
         // Explicitly set default depth mode to Nuit
-        document.getElementById('depthMode').value = 'nuit';
+        document.getElementById('depthMode').value = 'sum_xy';
 
         // Recalculate canvas sizes whenever control values change that might affect layout
         const controlInputs = document.querySelectorAll('input[type="range"]');
@@ -2564,10 +2564,10 @@
             }, 5000);
             
             debugLog("Enhanced Nuit Distance method initialized with FIXED depth processing:");
-            debugLog("- Nuit Only: Max depth at Nuit boundary (DEFAULT)");
+            debugLog("- Sum XY S-Coords: Depth from sum of absolute S-coordinate values (DEFAULT)");
+            debugLog("- Nuit Only: Max depth at Nuit boundary");
             debugLog("- Radial Zones: Center=closest, edges=farthest");
             debugLog("- Hybrid: Radial + Nuit boundary enhancement");
-            debugLog("- Sum XY S-Coords: Depth from sum of absolute S-coordinate values");
             debugLog("- Initial Nuit Radius: " + currentNuitRadius);
             debugLog("- Initial S Bounds: ±" + currentSBounds);
             debugLog("- Eye Separation: 3.0% of image width");
