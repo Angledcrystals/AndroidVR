@@ -481,6 +481,7 @@
                         <option value="nuit" selected>Nuit Only</option>
                         <option value="radial">Radial Zones</option>
                         <option value="hybrid">Hybrid</option>
+                        <option value="sum_xy">Sum XY S-Coords</option>
                     </select>
                 </div>
                 <div class="control-item">
@@ -596,7 +597,7 @@
         debugLog("- iOS: " + isIOS);
         debugLog("- Mobile: " + isMobile);
         debugLog("- User Agent: " + navigator.userAgent);
-        debugLog("- Session: Angledcrystals - 2025-06-05 13:52:51 UTC");
+        debugLog("- Session: Angledcrystals - 2025-06-05 14:43:21 UTC");
         
         // Add a GPU acceleration hint specific for Android WebView
         if (isAndroid) {
@@ -731,6 +732,16 @@
                     const nuitBoost = (nuitDepth - 0.5) * 0.3; // Boost around boundary
                     
                     finalDepth = radialDepth + nuitBoost;
+                    break;
+                    
+                case 'sum_xy':
+                    // Sum XY S-coordinates method - depth based on sum of absolute S-coordinate values
+                    const sumXY = Math.abs(sCoord.x) + Math.abs(sCoord.y);
+                    const maxSum = currentSBounds * 2; // Maximum possible sum
+                    const normalizedSum = Math.min(sumXY / maxSum, 1.0);
+                    
+                    // Invert so that higher sums (edges/corners) = closer, lower sums (center) = farther
+                    finalDepth = 0.2 + (normalizedSum * 0.8); // Range: 0.2 to 1.0
                     break;
                     
                 default:
@@ -1756,7 +1767,7 @@
             // Get baseline separation from slider (as percentage of image width)
             const baselinePercentage = parseFloat(document.getElementById('baselineSeparation').value);
             const baselineSeparation = Math.max(1, Math.floor(width * (baselinePercentage / 100)));
-            const maxParallax = Math.max(1, Math.floor(depthIntensity * 2.0)); // Increased multiplier
+            const maxParallax = Math.max(1, Math.floor(depthIntensity * 2.0)); // Doubled the multiplier for stronger effect
             
             debugLog(`STEREO DEBUG: w=${width}, h=${height}, baseline=${baselineSeparation}px, maxParallax=${maxParallax}px, intensity=${depthIntensity}`);
             
@@ -2432,7 +2443,7 @@
         // Initialize quality setting from select dropdown
         setQuality(document.getElementById('qualitySelect').value);
 
-        // Explicitly set default depth mode
+        // Explicitly set default depth mode to Nuit
         document.getElementById('depthMode').value = 'nuit';
 
         // Recalculate canvas sizes whenever control values change that might affect layout
@@ -2506,7 +2517,7 @@
                 debugLog("Firefox: " + isFirefox);
                 debugLog("Android: " + isAndroid);
                 debugLog("Mobile: " + isMobile);
-                debugLog("Session: Angledcrystals - 2025-06-05 13:56:50 UTC");
+                debugLog("Session: Angledcrystals - 2025-06-05 14:48:43 UTC");
                 debugLog("=== DEPTH MAP DEBUGGING ENABLED ===");
             } else {
                 debugOutput.style.display = 'none';
@@ -2556,13 +2567,14 @@
             debugLog("- Nuit Only: Max depth at Nuit boundary (DEFAULT)");
             debugLog("- Radial Zones: Center=closest, edges=farthest");
             debugLog("- Hybrid: Radial + Nuit boundary enhancement");
+            debugLog("- Sum XY S-Coords: Depth from sum of absolute S-coordinate values");
             debugLog("- Initial Nuit Radius: " + currentNuitRadius);
             debugLog("- Initial S Bounds: ±" + currentSBounds);
             debugLog("- Eye Separation: 3.0% of image width");
             debugLog("- Enhanced depth processing with debugging");
             debugLog("- Use sliders to adjust in real-time");
             debugLog("- Double-tap quality indicator to enable debug mode");
-            debugLog("- Session: Angledcrystals - 2025-06-05 13:56:50 UTC");
+            debugLog("- Session: Angledcrystals - 2025-06-05 14:48:43 UTC");
         });
 
         // Check for MediaRecorder support
