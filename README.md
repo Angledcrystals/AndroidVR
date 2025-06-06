@@ -51,3 +51,6 @@ Each feature is rated, and a summary evaluation is provided at the end.
 - **Why?** Only AndroidVR Virtual Spectrum offers live, in-browser, stereo/depth video with extensive, tunable algorithms and controls—no install, open source, and highly adaptable for experimentation, learning, and creative VR/AR workflows.
 
 ---
+
+AndroidVR (VRwizard) is licensed under the GNU General Public License v3.0 (GPLv3).  
+This ensures that all modified versions and redistributions remain free and open.
