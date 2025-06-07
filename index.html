@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AndroidVR - Live Hadit Camera Complete</title>
+    <title>AndroidVR - Invisible Mirror</title>
     <style>
         body {
             margin: 0;
@@ -284,7 +284,7 @@
 <body>
     <div class="container">
         <h1>AndroidVR - Live Hadit Camera Complete</h1>
-        <div class="subtitle">Real-time Fine Hadit Control with Band Detection: 0.1° Precision | 2025-06-07 07:52:00 UTC | User: Angledcrystals</div>
+        <div class="subtitle">Real-time Fine Hadit Control with Band Detection & Depth Contrast: 0.1° Precision | 2025-06-07 08:03:18 UTC | User: Angledcrystals</div>
 
         <div class="hadit-info">
             <div style="color: #ff00ff; font-weight: bold;">⚡ Complete Live Hadit Processing:</div>
@@ -292,6 +292,7 @@
             <div>• θ (Theta): 0° to 360° in 0.1° increments for live adjustment</div>
             <div>• φ (Phi): 0.1° to 179.9° in 0.1° increments for extreme precision</div>
             <div>• Band detection modes: Auto, Content Analysis, Gradient-Based, Statistical, Manual, Full Image</div>
+            <div>• Depth Contrast control for enhanced depth perception</div>
             <div>• Band size multiplier and focus controls for precise depth mapping</div>
             <div>• Parallel stereo view with pixel-perfect offset based on Hadit depth</div>
         </div>
@@ -413,6 +414,11 @@
                 <label>🗺️ Depth Intensity: <span id="depthIntensityValue">1.5x</span></label>
                 <input type="range" id="depthIntensity" min="0.1" max="5.0" value="1.5" step="0.1" class="depth-control">
             </div>
+
+            <div class="control-group">
+                <label>🎨 Depth Contrast: <span id="depthContrastValue">1.0x</span></label>
+                <input type="range" id="depthContrast" min="0.1" max="3.0" value="1.0" step="0.1" class="depth-control">
+            </div>
             
             <div class="control-group">
                 <label>📐 S Bounds: <span id="sBoundsValue">±10.0</span></label>
@@ -441,7 +447,7 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-07 07:52:00 UTC</div>
+            <div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-07 08:03:18 UTC</div>
         </div>
 
         <div class="analysis-grid">
@@ -455,6 +461,16 @@
                         <button id="animateTheta" class="hadit-control">🌀 Animate θ</button>
                         <button id="animatePhi" class="hadit-control">🌊 Animate φ</button>
                         <button id="stopAnimation" class="hadit-control">⏹️ Stop All</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Depth Presets</label>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button id="setHighContrast" class="depth-control">🔆 High Contrast</button>
+                        <button id="setLowContrast" class="depth-control">🔅 Low Contrast</button>
+                        <button id="setExtremeDepth" class="depth-control">💥 Extreme Depth</button>
+                        <button id="setSubtleDepth" class="depth-control">🌫️ Subtle Depth</button>
                     </div>
                 </div>
 
@@ -558,6 +574,23 @@
                 luminance: lum,
                 saturation: sat
             };
+        }
+
+        // ==================== DEPTH CONTRAST PROCESSING ====================
+        
+        function applyDepthContrast(depth, contrast, bandCenteredness = 1.0) {
+            // Apply depth contrast enhancement
+            const centerAdjusted = 0.5; // Depth center point
+            let contrastAdjustedDepth = centerAdjusted + (depth - centerAdjusted) * contrast;
+            
+            // Apply band-aware contrast boosting
+            if (bandCenteredness > 0.5) {
+                const bandBoost = 1.0 + (bandCenteredness - 0.5) * 0.5; // Up to 25% boost for center band pixels
+                contrastAdjustedDepth = centerAdjusted + (contrastAdjustedDepth - centerAdjusted) * bandBoost;
+            }
+            
+            // Ensure depth stays in valid range
+            return Math.max(0.05, Math.min(1.0, contrastAdjustedDepth));
         }
 
         // ==================== HADIT INFORMATION BAND DETECTION ====================
@@ -847,10 +880,10 @@
             return peaks;
         }
 
-        // ==================== BAND-FOCUSED DEPTH GENERATION ====================
+        // ==================== BAND-FOCUSED DEPTH GENERATION WITH CONTRAST ====================
         
         function generateBandFocusedDepth(imageData, config, detectedBand) {
-            console.log('📡 Generating precise Hadit depth map...');
+            console.log('📡 Generating precise Hadit depth map with contrast enhancement...');
             const startTime = performance.now();
             
             const { width, height, data } = imageData;
@@ -884,12 +917,15 @@
                     const bandPosition = Math.max(0, Math.min(1, (sMagnitude - detectedBand.min) / Math.max(0.001, detectedBand.width)));
                     
                     let depth = 0.1;
+                    let bandCenteredness = 0;
                     
                     if (isInBand) {
                         pixelsInBand++;
                         
-                        const bandCenteredness = detectedBand.width > 0 ? 
+                        bandCenteredness = detectedBand.width > 0 ? 
                             1.0 - (distanceFromBandCenter / (detectedBand.width * 0.5)) : 1.0;
+                        bandCenteredness = Math.max(0, Math.min(1, bandCenteredness));
+                        
                         const contentWeight = lum * 0.5 + sat * 0.3;
                         
                         depth = 0.3 + bandPosition * 0.6;
@@ -919,6 +955,9 @@
                         depth = 0.5 + (depth - 0.5) * config.focusFactor;
                     }
                     
+                    // 🎨 APPLY DEPTH CONTRAST ENHANCEMENT
+                    depth = applyDepthContrast(depth, config.depthContrast, bandCenteredness);
+                    
                     depth = Math.max(0.05, Math.min(1.0, depth));
                     
                     minDepth = Math.min(minDepth, depth);
@@ -932,6 +971,7 @@
                         isInBand: isInBand,
                         bandPosition: bandPosition,
                         distanceFromBandCenter: distanceFromBandCenter,
+                        bandCenteredness: bandCenteredness,
                         luminance: lum,
                         saturation: sat,
                         haditResult: result,
@@ -945,8 +985,8 @@
             const avgBandDepth = pixelsInBand > 0 ? bandDepthSum / pixelsInBand : 0;
             const avgOutsideDepth = pixelsOutsideBand > 0 ? outsideDepthSum / pixelsOutsideBand : 0;
             
-            console.log(`✅ Precise depth generated in ${processingTime.toFixed(2)}ms`);
-            console.log(`   θ=${config.haditTheta.toFixed(1)}°, φ=${config.haditPhi.toFixed(1)}°`);
+            console.log(`✅ Precise depth with contrast generated in ${processingTime.toFixed(2)}ms`);
+            console.log(`   θ=${config.haditTheta.toFixed(1)}°, φ=${config.haditPhi.toFixed(1)}°, Contrast=${config.depthContrast.toFixed(1)}x`);
             console.log(`   Pixels in band: ${pixelsInBand}/${width * height} (${(pixelsInBand/(width*height)*100).toFixed(1)}%)`);
             
             return {
@@ -965,13 +1005,14 @@
                     haditTheta: config.haditTheta,
                     haditPhi: config.haditPhi,
                     focusFactor: config.focusFactor,
+                    depthContrast: config.depthContrast,
                     focusOnlyBand: config.focusOnlyBand,
                     bandSizeMultiplier: config.bandSizeMultiplier
                 }
             };
         }
 
-        // ==================== ENHANCED CAMERA SYSTEM WITH COMPLETE BAND PROCESSING ====================
+        // ==================== ENHANCED CAMERA SYSTEM WITH DEPTH CONTRAST ====================
         
         class LiveHaditCamera {
             constructor() {
@@ -999,14 +1040,85 @@
                 this.setupCanvases();
                 this.setupDebugVideo();
                 this.checkCameraPermissions();
-                this.updateInfoPanel(`Complete Live Hadit camera system ready! | Angledcrystals | 2025-06-07 07:52:00`);
+                this.updateInfoPanel(`Complete Live Hadit camera system with Depth Contrast ready! | Angledcrystals | 2025-06-07 08:03:18`);
                 
-                console.log('✅ Complete Live Hadit Camera System initialized!');
+                console.log('✅ Complete Live Hadit Camera System with Depth Contrast initialized!');
+                console.log('🎨 Depth Contrast control: 0.1x to 3.0x enhancement');
                 console.log('🎯 Full band detection modes available');
                 console.log('θ (Theta) range: 0° to 360° in 0.1° increments');
                 console.log('φ (Phi) range: 0.1° to 179.9° in 0.1° increments');
             }
 
+            getConfiguration() {
+                return {
+                    // Hadit parameters
+                    haditTheta: parseFloat(document.getElementById('haditTheta')?.value || 45),
+                    haditPhi: parseFloat(document.getElementById('haditPhi')?.value || 60),
+                    haditInfluence: parseFloat(document.getElementById('haditInfluence')?.value || 1.0),
+                    
+                    // Band detection parameters
+                    bandDetectionMode: document.getElementById('bandDetectionMode')?.value || 'auto_detect',
+                    bandSizeMultiplier: parseFloat(document.getElementById('bandSizeMultiplier')?.value || 1.0),
+                    focusFactor: parseFloat(document.getElementById('focusFactor')?.value || 2.0),
+                    
+                    // Processing parameters
+                    separation: parseFloat(document.getElementById('separation')?.value || 8),
+                    depthIntensity: parseFloat(document.getElementById('depthIntensity')?.value || 1.5),
+                    depthContrast: parseFloat(document.getElementById('depthContrast')?.value || 1.0), // 🎨 NEW!
+                    sBounds: parseFloat(document.getElementById('sBounds')?.value || 10.0),
+                    luminosityWeight: parseFloat(document.getElementById('luminosityWeight')?.value || 0.7),
+                    saturationWeight: parseFloat(document.getElementById('saturationWeight')?.value || 0.3),
+                    quality: parseFloat(document.getElementById('qualitySelect')?.value || 0.75),
+                    
+                    // Options
+                    enableStereo: document.getElementById('enableStereo')?.checked ?? true,
+                    showDepthMap: document.getElementById('showDepthMap')?.checked ?? true,
+                    showBandVisualization: document.getElementById('showBandVisualization')?.checked ?? false,
+                    focusOnlyBand: document.getElementById('focusOnlyBand')?.checked ?? false,
+                    mirrorCamera: document.getElementById('mirrorCamera')?.checked ?? false,
+                    showFPS: document.getElementById('showFPS')?.checked ?? true,
+                    debugMode: document.getElementById('debugMode')?.checked ?? false,
+                    showRawFeed: document.getElementById('showRawFeed')?.checked ?? false
+                };
+            }
+
+            // Depth preset methods
+            setHighContrast() {
+                document.getElementById('depthContrast').value = '2.5';
+                document.getElementById('depthIntensity').value = '3.0';
+                document.getElementById('focusFactor').value = '4.0';
+                this.updateControlValues();
+                this.updateInfoPanel('High contrast depth preset applied - enhanced depth perception!');
+            }
+
+            setLowContrast() {
+                document.getElementById('depthContrast').value = '0.3';
+                document.getElementById('depthIntensity').value = '0.8';
+                document.getElementById('focusFactor').value = '1.2';
+                this.updateControlValues();
+                this.updateInfoPanel('Low contrast depth preset applied - subtle depth effect.');
+            }
+
+            setExtremeDepth() {
+                document.getElementById('depthContrast').value = '3.0';
+                document.getElementById('depthIntensity').value = '5.0';
+                document.getElementById('separation').value = '25';
+                document.getElementById('focusFactor').value = '5.0';
+                this.updateControlValues();
+                this.updateInfoPanel('Extreme depth preset applied - maximum 3D effect!');
+            }
+
+            setSubtleDepth() {
+                document.getElementById('depthContrast').value = '0.5';
+                document.getElementById('depthIntensity').value = '0.5';
+                document.getElementById('separation').value = '3';
+                document.getElementById('focusFactor').value = '1.0';
+                this.updateControlValues();
+                this.updateInfoPanel('Subtle depth preset applied - gentle 3D effect.');
+            }
+
+            // Continue with all the existing camera methods but I'll include the key updates...
+            
             setupDebugVideo() {
                 if (this.debugVideo) {
                     this.debugVideo.autoplay = true;
@@ -1078,37 +1190,8 @@
                 this.depthCtx = this.depthCanvas.getContext('2d');
             }
 
-            getConfiguration() {
-                return {
-                    // Hadit parameters
-                    haditTheta: parseFloat(document.getElementById('haditTheta')?.value || 45),
-                    haditPhi: parseFloat(document.getElementById('haditPhi')?.value || 60),
-                    haditInfluence: parseFloat(document.getElementById('haditInfluence')?.value || 1.0),
-                    
-                    // Band detection parameters
-                    bandDetectionMode: document.getElementById('bandDetectionMode')?.value || 'auto_detect',
-                    bandSizeMultiplier: parseFloat(document.getElementById('bandSizeMultiplier')?.value || 1.0),
-                    focusFactor: parseFloat(document.getElementById('focusFactor')?.value || 2.0),
-                    
-                    // Processing parameters
-                    separation: parseFloat(document.getElementById('separation')?.value || 8),
-                    depthIntensity: parseFloat(document.getElementById('depthIntensity')?.value || 1.5),
-                    sBounds: parseFloat(document.getElementById('sBounds')?.value || 10.0),
-                    luminosityWeight: parseFloat(document.getElementById('luminosityWeight')?.value || 0.7),
-                    saturationWeight: parseFloat(document.getElementById('saturationWeight')?.value || 0.3),
-                    quality: parseFloat(document.getElementById('qualitySelect')?.value || 0.75),
-                    
-                    // Options
-                    enableStereo: document.getElementById('enableStereo')?.checked ?? true,
-                    showDepthMap: document.getElementById('showDepthMap')?.checked ?? true,
-                    showBandVisualization: document.getElementById('showBandVisualization')?.checked ?? false,
-                    focusOnlyBand: document.getElementById('focusOnlyBand')?.checked ?? false,
-                    mirrorCamera: document.getElementById('mirrorCamera')?.checked ?? false,
-                    showFPS: document.getElementById('showFPS')?.checked ?? true,
-                    debugMode: document.getElementById('debugMode')?.checked ?? false,
-                    showRawFeed: document.getElementById('showRawFeed')?.checked ?? false
-                };
-            }
+            // Include all the camera control methods from the previous version...
+            // (requestPermissions, startCamera, stopCamera, switchCamera, toggleDebugVideo)
 
             async requestPermissions() {
                 try {
@@ -1157,20 +1240,11 @@
                         console.log(`Attempting to use camera by facingMode: ${constraints.video.facingMode.ideal}`);
                     }
 
-                    console.log('🎥 Camera constraints:', JSON.stringify(constraints));
-
                     if (this.stream) {
                         this.stream.getTracks().forEach(track => track.stop());
-                        console.log("Stopped existing stream tracks.");
                     }
 
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        this.showError('getUserMedia is not supported in this browser.');
-                        this.updateCameraStatus('❌ getUserMedia not supported', 'error');
-                        return;
-                    }
                     this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    console.log('✅ Camera stream obtained');
 
                     if (!this.video) {
                         this.video = document.createElement('video');
@@ -1179,13 +1253,11 @@
                         this.video.muted = true;
                         this.video.style.display = 'none';
                         document.body.appendChild(this.video);
-                        console.log("Processing video element created and added to DOM.");
                     }
                     
                     this.video.srcObject = this.stream;
                     if (this.debugVideo) {
                         this.debugVideo.srcObject = this.stream;
-                        console.log("Stream assigned to debugVideo.");
                     }
                     
                     const playPromises = [];
@@ -1201,15 +1273,13 @@
                     }
                     
                     await Promise.all(playPromises);
-                    console.log('▶️ Play initiated for video elements');
 
                     await new Promise((resolve, reject) => {
                         if (!this.video) {
-                            reject(new Error("Processing video element not found for loadedmetadata event"));
+                            reject(new Error("Processing video element not found"));
                             return;
                         }
-                        const timeout = setTimeout(() => {
-                            reject(new Error(`Video load timeout. ReadyState: ${this.video?.readyState}. Stream active: ${this.stream?.active}`));
+                        const timeout = setTimeout(() => {                            reject(new Error(`Video load timeout. ReadyState: ${this.video?.readyState}. Stream active: ${this.stream?.active}`));
                         }, 10000);
                         
                         const handleLoad = () => {
@@ -1229,14 +1299,13 @@
                         }, { once: true });
 
                         if (this.video.readyState >= HTMLMediaElement.HAVE_METADATA) {
-                            console.log("Video metadata already loaded, calling handleLoad directly.");
                             handleLoad();
                         }
                     });
                     
                     this.isRunning = true;
-                    this.updateCameraStatus('📹 Camera active - Live Hadit Band processing', 'active');
-                    this.updateInfoPanel(`Camera started: ${this.video?.videoWidth || 'N/A'}x${this.video?.videoHeight || 'N/A'} | Live Hadit band processing active`);
+                    this.updateCameraStatus('📹 Camera active - Live Hadit Band processing with Depth Contrast', 'active');
+                    this.updateInfoPanel(`Camera started: ${this.video?.videoWidth || 'N/A'}x${this.video?.videoHeight || 'N/A'} | Live Hadit band processing with depth contrast active`);
                     
                     this.startProcessingLoop();
                     
@@ -1279,27 +1348,23 @@
                 if (this.stream) {
                     this.stream.getTracks().forEach(track => track.stop());
                     this.stream = null;
-                    console.log("Stream tracks stopped.");
                 }
                 
                 if (this.video) {
                     this.video.srcObject = null;
-                    console.log("Processing video srcObject cleared.");
                 }
                 
                 if (this.debugVideo) {
                     this.debugVideo.srcObject = null;
-                    console.log("Debug video srcObject cleared.");
                 }
                 
                 this.updateCameraStatus('📹 Camera stopped', 'connecting');
-                this.updateInfoPanel('Camera stopped. Click Start Camera to resume live Hadit band processing.');
+                this.updateInfoPanel('Camera stopped. Click Start Camera to resume live Hadit band processing with depth contrast.');
                 
                 document.getElementById('startCamera').style.display = 'inline-block';
                 document.getElementById('switchCamera').style.display = 'none';
                 document.getElementById('stopCamera').style.display = 'none';
                 
-                // Clear canvases
                 [this.leftCtx, this.rightCtx, this.depthCtx].forEach(ctx => {
                     if (ctx && ctx.canvas) {
                         ctx.fillStyle = '#000';
@@ -1307,7 +1372,6 @@
                     }
                 });
                 this.updateFpsDisplay(true);
-                console.log("Camera stopped and canvases cleared.");
             }
 
             async switchCamera() {
@@ -1336,7 +1400,7 @@
                 if (this.debugVideo.style.display === 'none') {
                     this.debugVideo.style.display = 'block';
                     if (showRawFeedCheckbox) showRawFeedCheckbox.checked = true;
-                    this.updateInfoPanel('Debug video enabled - raw camera feed should be visible.');
+                    this.updateInfoPanel('Debug video enabled - raw camera feed visible.');
                 } else {
                     this.debugVideo.style.display = 'none';
                     if (showRawFeedCheckbox) showRawFeedCheckbox.checked = false;
@@ -1349,7 +1413,7 @@
                 const targetInterval = 1000 / targetFPS;
                 let lastTime = performance.now();
                 
-                console.log(`🔄 Starting complete Hadit band processing loop with target FPS: ${targetFPS}`);
+                console.log(`🔄 Starting complete Hadit band processing loop with depth contrast enhancement`);
                 
                 const processFrame = (currentTime) => {
                     if (!this.isRunning) {
@@ -1418,15 +1482,15 @@
                     this.currentBandDetectionResult = detectHaditInformationBand(imageData, config);
                     detectedBand = this.currentBandDetectionResult.band;
                     
-                    // Generate band-focused depth
+                    // Generate band-focused depth with contrast enhancement
                     this.currentDepthResult = generateBandFocusedDepth(imageData, config, this.currentBandDetectionResult.band);
                     
-                    // Generate stereo views using band-focused depth
-                    this.generateHaditStereoViewsWithBand(imageData, config, this.currentDepthResult);
+                    // Generate stereo views using band-focused depth with contrast
+                    this.generateHaditStereoViewsWithBandAndContrast(imageData, config, this.currentDepthResult);
                     
                     const processingTime = performance.now() - startTime;
                     if (config.debugMode) {
-                        this.updateAnalysisPanelWithBand(processingTime, config, processWidth, processHeight);
+                        this.updateAnalysisPanelWithBandAndContrast(processingTime, config, processWidth, processHeight);
                     }
                     
                 } catch (error) {
@@ -1434,7 +1498,7 @@
                 }
             }
 
-            generateHaditStereoViewsWithBand(imageData, config, depthResult) {
+            generateHaditStereoViewsWithBandAndContrast(imageData, config, depthResult) {
                 const { width, height, data } = imageData;
                 
                 if (width === 0 || height === 0 || !data || data.length === 0) {
@@ -1466,12 +1530,13 @@
                         const idx = (y * width + x) * 4;
                         const depthIdx = y * width + x;
                         
-                        // Get depth from band-focused depth result
+                        // Get depth from band-focused depth result with contrast enhancement
                         const depthData = depthResult.depthBuffer[depthIdx];
                         const depth = depthData ? depthData.depth : 0.5;
                         const isInBand = depthData ? depthData.isInBand : false;
+                        const bandCenteredness = depthData ? depthData.bandCenteredness : 0;
                         
-                        // Calculate stereo displacement
+                        // Calculate stereo displacement with enhanced contrast effect
                         const normalizedDepthDisplacement = (depth - 0.5) * 2;
                         const displacement = Math.round(normalizedDepthDisplacement * config.separation * config.depthIntensity);
                         
@@ -1481,10 +1546,11 @@
                         let b = data[idx + 2];
                         
                         if (config.showBandVisualization && isInBand) {
-                            // Highlight band pixels with a subtle overlay
-                            r = Math.min(255, r + 20);
-                            g = Math.min(255, g + 20);
-                            b = Math.max(0, b - 10);
+                            // Enhanced band visualization with contrast awareness
+                            const contrastBoost = Math.floor(bandCenteredness * 30);
+                            r = Math.min(255, r + contrastBoost);
+                            g = Math.min(255, g + contrastBoost);
+                            b = Math.max(0, b - Math.floor(contrastBoost * 0.5));
                         }
                         
                         if (config.enableStereo) {
@@ -1517,11 +1583,13 @@
                                 const depthIdx = (dy * depthDisplayWidth + dx) * 4;
                                 let depthColor = Math.floor(depth * 255);
                                 
-                                // Color-code band pixels in depth map
+                                // Enhanced depth visualization with contrast and band highlighting
                                 if (config.showBandVisualization && isInBand) {
-                                    depthOutData[depthIdx] = Math.min(255, depthColor + 50);     // R (enhanced for band)
-                                    depthOutData[depthIdx + 1] = depthColor;                     // G
-                                    depthOutData[depthIdx + 2] = Math.max(0, depthColor - 30);  // B (reduced for band)
+                                    const contrastFactor = 1.0 + (config.depthContrast - 1.0) * bandCenteredness;
+                                    depthColor = Math.floor(Math.min(255, depthColor * contrastFactor));
+                                    depthOutData[depthIdx] = Math.min(255, depthColor + Math.floor(bandCenteredness * 40));     // R (enhanced for band)
+                                    depthOutData[depthIdx + 1] = depthColor;                                                     // G
+                                    depthOutData[depthIdx + 2] = Math.max(0, depthColor - Math.floor(bandCenteredness * 20)); // B (reduced for band)
                                 } else {
                                     depthOutData[depthIdx] = depthColor;     // R
                                     depthOutData[depthIdx + 1] = depthColor; // G
@@ -1563,8 +1631,9 @@
                 document.getElementById('bandDetectionMode').value = 'auto_detect';
                 document.getElementById('bandSizeMultiplier').value = '1.0';
                 document.getElementById('focusFactor').value = '2.0';
+                document.getElementById('depthContrast').value = '1.0';
                 this.updateControlValues();
-                this.updateInfoPanel('Band detection reset to auto-detect with default settings.');
+                this.updateInfoPanel('Band detection and depth contrast reset to defaults.');
             }
             
             // UI Update methods
@@ -1605,7 +1674,7 @@
                 analysisPanel.scrollTop = analysisPanel.scrollHeight;
             }
             
-            updateAnalysisPanelWithBand(processingTime, config, processWidth, processHeight) {
+            updateAnalysisPanelWithBandAndContrast(processingTime, config, processWidth, processHeight) {
                 const panel = document.getElementById('analysisPanel');
                 
                 let bandInfo = 'No band detected';
@@ -1622,7 +1691,7 @@
                 }
                 
                 panel.innerHTML = `
-                    <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Band Analysis</div>
+                    <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Band Analysis with Depth Contrast</div>
                     <div>Processing Time: ${processingTime.toFixed(2)} ms</div>
                     <div>Resolution: ${processWidth}x${processHeight}</div>
                     <div>Band Mode: ${config.bandDetectionMode}</div>
@@ -1630,7 +1699,8 @@
                     <div>${depthInfo}</div>
                     <div>Hadit θ: ${config.haditTheta.toFixed(1)}°, φ: ${config.haditPhi.toFixed(1)}°</div>
                     <div>Band Size Multiplier: ${config.bandSizeMultiplier.toFixed(1)}x</div>
-                    <div>Focus Factor: ${config.focusFactor.toFixed(1)}x, Focus Only Band: ${config.focusOnlyBand}</div>
+                    <div>Focus Factor: ${config.focusFactor.toFixed(1)}x, Depth Contrast: ${config.depthContrast.toFixed(1)}x</div>
+                    <div>Focus Only Band: ${config.focusOnlyBand}</div>
                     <div>Influence: ${config.haditInfluence.toFixed(2)}, S Bounds: ±${config.sBounds.toFixed(1)}</div>
                     <div>Separation: ${config.separation}px, Depth Intensity: ${config.depthIntensity.toFixed(1)}x</div>
                     <div>Lum Weight: ${config.luminosityWeight.toFixed(2)}, Sat Weight: ${config.saturationWeight.toFixed(2)}</div>
@@ -1652,6 +1722,12 @@
                 document.getElementById('detectBand').addEventListener('click', () => this.detectBand());
                 document.getElementById('expandBandFull').addEventListener('click', () => this.expandBandFull());
                 document.getElementById('resetBand').addEventListener('click', () => this.resetBand());
+
+                // Depth preset controls
+                document.getElementById('setHighContrast').addEventListener('click', () => this.setHighContrast());
+                document.getElementById('setLowContrast').addEventListener('click', () => this.setLowContrast());
+                document.getElementById('setExtremeDepth').addEventListener('click', () => this.setExtremeDepth());
+                document.getElementById('setSubtleDepth').addEventListener('click', () => this.setSubtleDepth());
 
                 // Settings with live updates for labels
                 const setupSliderWithValue = (sliderId, valueId, suffix = '', multiplier = 1, digits = 1) => {
@@ -1695,6 +1771,7 @@
                 setupSliderWithValue('haditInfluence', 'haditInfluenceValue', '', 1, 2);
                 setupSliderWithValue('separation', 'separationValue', 'px', 1, 0);
                 setupSliderWithValue('depthIntensity', 'depthIntensityValue', 'x', 1, 1);
+                setupSliderWithValue('depthContrast', 'depthContrastValue', 'x', 1, 1); // 🎨 NEW!
                 setupSliderWithValue('sBounds', 'sBoundsValue', '', 1, 1);
                 setupSliderWithValue('luminosityWeight', 'luminosityWeightValue', '', 1, 2);
                 setupSliderWithValue('saturationWeight', 'saturationWeightValue', '', 1, 2);
@@ -1718,7 +1795,7 @@
             }
 
             updateControlValues() {
-                // This method updates all the value display labels
+                // Updates all value display labels
                 const controls = [
                     { id: 'bandSizeMultiplier', suffix: 'x', precision: 1 },
                     { id: 'focusFactor', suffix: 'x', precision: 1 },
@@ -1727,6 +1804,7 @@
                     { id: 'haditInfluence', suffix: '', precision: 2 },
                     { id: 'separation', suffix: 'px' },
                     { id: 'depthIntensity', suffix: 'x', precision: 1 },
+                    { id: 'depthContrast', suffix: 'x', precision: 1 }, // 🎨 NEW!
                     { id: 'sBounds', suffix: '', precision: 1 },
                     { id: 'luminosityWeight', suffix: '', precision: 2 },
                     { id: 'saturationWeight', suffix: '', precision: 2 }
@@ -1798,17 +1876,20 @@
 
         // Initialize the complete camera system when the DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('⚡ Initializing Complete Live Hadit Camera System...');
-            console.log('Current Date and Time (UTC): 2025-06-07 07:55:45');
+            console.log('⚡ Initializing Complete Live Hadit Camera System with Depth Contrast...');
+            console.log('Current Date and Time (UTC): 2025-06-07 08:07:29');
             console.log('Current User Login: Angledcrystals');
+            console.log('🎨 Depth Contrast control: 0.1x to 3.0x enhancement');
             console.log('🎯 Full band detection and processing system enabled');
             
             window.haditCamera = new LiveHaditCamera();
             
-            console.log('✅ Complete Live Hadit Camera system ready!');
+            console.log('✅ Complete Live Hadit Camera system with Depth Contrast ready!');
             console.log('📹 Click "Start Camera" to begin live band processing');
             console.log('🎛️ All band detection modes: Auto, Content, Gradient, Statistical, Manual, Full Image');
+            console.log('🎨 Depth presets: High Contrast, Low Contrast, Extreme Depth, Subtle Depth');
         });
     </script>
 </body>
 </html>
+                
