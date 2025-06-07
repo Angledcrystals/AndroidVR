@@ -283,8 +283,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>AndroidVR - Live Hadit Camera Complete</h1>
-        <div class="subtitle">Real-time Fine Hadit Control with Band Detection & Depth Contrast: 0.1° Precision | 2025-06-07 08:03:18 UTC | User: Angledcrystals</div>
+        <h1>AndroidVR - Invisible Mirror </h1>
+        <div class="subtitle">Real-time Mirror angle Control with Band Detection & Depth Contrast: 0.1° Precision | 2025-06-07 08:03:18 UTC | User: Angledcrystals</div>
 
         <div class="hadit-info">
             <div style="color: #ff00ff; font-weight: bold;">⚡ Complete Live Hadit Processing:</div>
@@ -375,28 +375,28 @@
             </div>
 
             <div class="control-group">
-                <label>🔧 Band Size Multiplier: <span id="bandSizeMultiplierValue">1.0x</span></label>
-                <input type="range" id="bandSizeMultiplier" min="0.1" max="10.0" step="0.1" value="1.0" class="band-control">
+                <label>🔧 Band Size Multiplier: <span id="bandSizeMultiplierValue">10.0x</span></label>
+                <input type="range" id="bandSizeMultiplier" min="0.1" max="10.0" step="0.1" value="10.0" class="band-control">
             </div>
 
             <div class="control-group">
-                <label>🎯 Focus Factor: <span id="focusFactorValue">2.0x</span></label>
-                <input type="range" id="focusFactor" min="1.0" max="5.0" step="0.1" value="2.0" class="band-control">
+                <label>🎯 Focus Factor: <span id="focusFactorValue">4.0x</span></label>
+                <input type="range" id="focusFactor" min="1.0" max="5.0" step="0.1" value="4.0" class="band-control">
             </div>
             
             <div class="control-group">
-                <label>⚡ Hadit θ (Theta): <span id="haditThetaValue">45.0°</span></label>
+                <label>⚡ Hadit θ (Theta): <span id="haditThetaValue">0.0°</span></label>
                 <div class="dual-input">
-                    <input type="range" id="haditTheta" min="0" max="360" value="45" step="0.1" class="hadit-control">
-                    <input type="number" id="haditThetaNumber" min="0" max="360" step="0.1" value="45" class="hadit-control">
+                    <input type="range" id="haditTheta" min="0" max="360" value="0" step="0.1" class="hadit-control">
+                    <input type="number" id="haditThetaNumber" min="0" max="360" step="0.1" value="0" class="hadit-control">
                 </div>
             </div>
             
             <div class="control-group">
-                <label>⚡ Hadit φ (Phi): <span id="haditPhiValue">60.0°</span></label>
+                <label>⚡ Hadit φ (Phi): <span id="haditPhiValue">0.1°</span></label>
                 <div class="dual-input">
-                    <input type="range" id="haditPhi" min="0.1" max="179.9" value="60" step="0.1" class="hadit-control">
-                    <input type="number" id="haditPhiNumber" min="0.1" max="179.9" step="0.1" value="60" class="hadit-control">
+                    <input type="range" id="haditPhi" min="0.1" max="179.9" value="0.1" step="0.1" class="hadit-control">
+                    <input type="number" id="haditPhiNumber" min="0.1" max="179.9" step="0.1" value="0.1" class="hadit-control">
                 </div>
             </div>
             
@@ -411,28 +411,28 @@
             </div>
             
             <div class="control-group">
-                <label>🗺️ Depth Intensity: <span id="depthIntensityValue">1.5x</span></label>
-                <input type="range" id="depthIntensity" min="0.1" max="5.0" value="1.5" step="0.1" class="depth-control">
+                <label>🗺️ Depth Intensity: <span id="depthIntensityValue">2.0x</span></label>
+                <input type="range" id="depthIntensity" min="0.1" max="5.0" value="2.0" step="0.1" class="depth-control">
             </div>
 
             <div class="control-group">
-                <label>🎨 Depth Contrast: <span id="depthContrastValue">1.0x</span></label>
-                <input type="range" id="depthContrast" min="0.1" max="3.0" value="1.0" step="0.1" class="depth-control">
+                <label>🎨 Depth Contrast: <span id="depthContrastValue">0.2x</span></label>
+                <input type="range" id="depthContrast" min="0.1" max="3.0" value="0.2" step="0.1" class="depth-control">
             </div>
             
             <div class="control-group">
-                <label>📐 S Bounds: <span id="sBoundsValue">±10.0</span></label>
-                <input type="range" id="sBounds" min="1.0" max="20.0" step="0.1" value="10.0" class="hadit-control">
+                <label>📐 S Bounds: <span id="sBoundsValue">±20.0</span></label>
+                <input type="range" id="sBounds" min="1.0" max="20.0" step="0.1" value="20.0" class="hadit-control">
             </div>
             
             <div class="control-group">
-                <label>💡 Luminosity Weight: <span id="luminosityWeightValue">0.7</span></label>
-                <input type="range" id="luminosityWeight" min="0" max="1" step="0.05" value="0.7" class="band-control">
+                <label>💡 Luminosity Weight: <span id="luminosityWeightValue">0.0</span></label>
+                <input type="range" id="luminosityWeight" min="0" max="1" step="0.05" value="0.0" class="band-control">
             </div>
             
             <div class="control-group">
-                <label>🌈 Saturation Weight: <span id="saturationWeightValue">0.3</span></label>
-                <input type="range" id="saturationWeight" min="0" max="1" step="0.05" value="0.3" class="band-control">
+                <label>🌈 Saturation Weight: <span id="saturationWeightValue">0.0</span></label>
+                <input type="range" id="saturationWeight" min="0" max="1" step="0.05" value="0.0" class="band-control">
             </div>
             
             <div class="control-group">
@@ -595,7 +595,7 @@
 
         // ==================== HADIT INFORMATION BAND DETECTION ====================
         
-        let currentSBounds = 10.0;
+        let currentSBounds = 20.0;
         let detectedBand = { min: 0, max: 0, center: 0, width: 0, confidence: 0 };
 
         function detectHaditInformationBand(imageData, config) {
