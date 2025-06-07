@@ -1,6 +1,6 @@
 https://Angledcrystals.github.io/AndroidVR/
 
-** Main Project: Invisible Mirror**
+Rewritten by AI for readability.
 
 # Invisible Mirror
 
@@ -88,9 +88,7 @@ The Core Steps:
     The S-coordinate is a mathematical way to measure "distance from the focus direction" after mapping the 3D sphere onto a 2D plane.
     It's the core of how Invisible Mirror finds and enhances "bands" of visual information in your camera feed.
 
-**How does the Hadit Band decode depth?**
-
-Copilot said: ## How the H-Band Creates Functional Depth
+## How the H-Band Creates Functional Depth
 How the H-Band Creates Functional Depth Maps Through Pure Geometry
 
 The H-Band (Hadit Band) generates depth maps using pure mathematical geometry without needing brightness or saturation. Here's how:
