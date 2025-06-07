@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>AndroidVR - Hadit S-Coordinate Depth Detection</title>
     <style>
-        /* All your existing styles unchanged */
+        /* All existing styles unchanged */
         body {
             margin: 0;
             padding: 0;
@@ -314,6 +314,33 @@
             opacity: 1;
         }
 
+        /* Flicker mode specific styles - for position swapping */
+        .flicker-active .container {
+            position: relative;
+        }
+        
+        .flicker-active canvas {
+            position: absolute;
+            transition: none; /* Disable transitions for flicker mode */
+        }
+        
+        .canvas-left {
+            left: calc(50% - 50% - 60px) !important;
+            right: auto !important;
+        }
+        
+        .canvas-right {
+            left: calc(50% + 60px) !important;
+            right: auto !important;
+        }
+        
+        /* Frozen frame styles */
+        .frozen-canvas {
+            border-color: #ff4040 !important;
+            box-shadow: 0 0 10px rgba(255, 64, 64, 0.7);
+        }
+
+        /* Additional styles to ensure everything else works correctly */
         /* Portrait mode warning */
         @media (orientation: portrait) {
             body::before {
@@ -331,60 +358,6 @@
             .container, .control-panel, .top-controls, #qualityIndicator {
                 display: none;
             }
-        }
-
-        /* Very small screens */
-        @media (max-width: 480px) {
-            button {
-                padding: 3px 6px;
-                font-size: 0.65rem;
-            }
-            
-            input[type="range"] {
-                width: 60px;
-            }
-            
-            label {
-                font-size: 0.65rem;
-                min-width: 40px;
-            }
-        }
-
-        /* Firefox-specific CSS fixes */
-        @-moz-document url-prefix() {
-            video {
-                transform-origin: center center;
-                will-change: transform;
-            }
-            
-            canvas {
-                transform-origin: center center;
-                will-change: transform;
-            }
-        }
-        
-        /* Flicker mode specific styles - for position swapping */
-        .flicker-active .container {
-            position: relative;
-        }
-        
-        .flicker-active canvas {
-            position: absolute;
-            transition: none; /* Disable transitions for flicker mode */
-        }
-        
-        .canvas-left {
-            left: calc(25% - 50px);
-        }
-        
-        .canvas-right {
-            left: calc(75% - 50px);
-        }
-        
-        /* Frozen frame styles */
-        .frozen-canvas {
-            border-color: #ff4040 !important;
-            box-shadow: 0 0 10px rgba(255, 64, 64, 0.7);
         }
 
         /* Recording Controls */
@@ -409,42 +382,12 @@
             transition: all 0.3s ease;
         }
 
-        .record-button:hover {
-            opacity: 1;
-            background-color: #444;
-        }
-
         .record-icon {
             width: 10px;
             height: 10px;
             border-radius: 50%;
             background-color: #ff4040;
             display: inline-block;
-        }
-
-        .stop-icon {
-            width: 10px;
-            height: 10px;
-            background-color: white;
-            display: inline-block;
-        }
-
-        .stop-record {
-            background-color: #c00;
-        }
-
-        .stop-record:hover {
-            background-color: #e00;
-        }
-
-        .recording-indicator {
-            display: flex;
-            align-items: center;
-            margin-left: 8px;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
         }
 
         .pulse-dot {
@@ -469,10 +412,6 @@
                 transform: scale(0.8);
                 opacity: 0.8;
             }
-        }
-
-        #recordingTimer {
-            font-family: monospace;
         }
     </style>
 </head>
@@ -527,6 +466,9 @@
                 <div class="control-item">
                     <button id="startButton">Start Camera</button>
                     <button id="switchButton">Switch Camera</button>
+                </div>
+                <div class="control-item">
+                    <button id="freezeButton">Freeze Frame</button>
                 </div>
             </div>
             
@@ -707,7 +649,7 @@
     </div>
 
     <script>
-        // Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-07 02:53:16
+        // Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-07 03:10:54
         // Current User's Login: Angledcrystals
 
         // ==================== HADIT MATHEMATICS ====================
@@ -925,56 +867,59 @@
         function generateDepthMapFromCurrentFrame() {
             if (!depthMapVisible || !video || video.readyState < 2) return;
             
-            const depthMapCanvas = document.getElementById('depthMapCanvas');
-            const depthMapCtx = depthMapCanvas.getContext('2d');
-            
-            // Set dimensions for depth map canvas (smaller for performance)
-            const depthMapWidth = Math.round(video.videoWidth * 0.25);
-            const depthMapHeight = Math.round(video.videoHeight * 0.25);
-            
-            depthMapCanvas.width = depthMapWidth;
-            depthMapCanvas.height = depthMapHeight;
-            
-            // Create temporary canvas to sample from video
+            // Create temporary canvas for video frame
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = depthMapWidth;
-            tempCanvas.height = depthMapHeight;
+            const tempWidth = Math.round(video.videoWidth * 0.25);
+            const tempHeight = Math.round(video.videoHeight * 0.25);
+            tempCanvas.width = tempWidth;
+            tempCanvas.height = tempHeight;
             const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(video, 0, 0, depthMapWidth, depthMapHeight);
+            tempCtx.drawImage(video, 0, 0, tempWidth, tempHeight);
             
-            // Get image data
-            const imageData = tempCtx.getImageData(0, 0, depthMapWidth, depthMapHeight);
-            const depthImageData = depthMapCtx.createImageData(depthMapWidth, depthMapHeight);
+            // Get image data from the temp canvas
+            const imageData = tempCtx.getImageData(0, 0, tempWidth, tempHeight);
             
-            // Get current Hadit settings - using our presets
+            // Now get the actual depth map canvas
+            const depthMapCanvas = document.getElementById('depthMapCanvas');
+            if (!depthMapCanvas) return;
+            
+            // Set dimensions for depth map canvas
+            depthMapCanvas.width = tempWidth;
+            depthMapCanvas.height = tempHeight;
+            const depthCtx = depthMapCanvas.getContext('2d');
+            
+            // Create our depth image data
+            const depthImageData = depthCtx.createImageData(tempWidth, tempHeight);
+            
+            // Configure Hadit parameters - FIXED HARD-CODED VALUES
             const haditConfig = {
-                haditTheta: 0.0, // Hard-coded to 0.0 from requirements
-                haditPhi: 0.1, // Hard-coded to 0.1 from requirements
+                haditTheta: 0.0,
+                haditPhi: 0.1,
                 haditInfluence: parseFloat(document.getElementById('haditInfluence').value),
                 focusFactor: parseFloat(document.getElementById('focusFactor').value),
-                bandMode: 'full_image', // Hard-coded to full_image from requirements
-                bandSizeMultiplier: 10.0, // Hard-coded to 10x from requirements 
-                luminosityWeight: 0.0, // Hard-coded to 0.0 from requirements
-                saturationWeight: 0.0, // Hard-coded to 0.0 from requirements
-                depthContrast: 0.2, // Hard-coded to 0.2 from requirements
-                sBounds: 20.0 // Hard-coded to 20.0 from requirements
+                bandMode: 'full_image',
+                bandSizeMultiplier: 10.0,
+                luminosityWeight: 0.0,
+                saturationWeight: 0.0,
+                depthContrast: 0.2,
+                sBounds: 20.0
             };
             
-            // Make sure UI reflects our hard-coded settings
+            // Update UI to match our fixed settings
             document.getElementById('haditTheta').value = haditConfig.haditTheta;
             document.getElementById('haditThetaValue').textContent = haditConfig.haditTheta.toFixed(1) + '°';
-            document.getElementById('haditPhi').value = haditConfig.haditPhi;
+            document.getElementById('haditPhi').value = haditConfig.haditPhi; 
             document.getElementById('haditPhiValue').textContent = haditConfig.haditPhi.toFixed(1) + '°';
-            document.getElementById('bandSizeMultiplier').value = haditConfig.bandSizeMultiplier;
-            document.getElementById('bandSizeMultiplierValue').textContent = haditConfig.bandSizeMultiplier.toFixed(1) + 'x';
             document.getElementById('luminosityWeight').value = haditConfig.luminosityWeight;
             document.getElementById('luminosityWeightValue').textContent = haditConfig.luminosityWeight.toFixed(1);
             document.getElementById('saturationWeight').value = haditConfig.saturationWeight;
             document.getElementById('saturationWeightValue').textContent = haditConfig.saturationWeight.toFixed(1);
-            document.getElementById('depthContrast').value = haditConfig.depthContrast;
-            document.getElementById('depthContrastValue').textContent = haditConfig.depthContrast.toFixed(1) + 'x';
             document.getElementById('sBounds').value = haditConfig.sBounds;
             document.getElementById('sBoundsValue').textContent = '±' + haditConfig.sBounds.toFixed(1);
+            document.getElementById('bandSizeMultiplier').value = haditConfig.bandSizeMultiplier;
+            document.getElementById('bandSizeMultiplierValue').textContent = haditConfig.bandSizeMultiplier.toFixed(1) + 'x';
+            document.getElementById('depthContrast').value = haditConfig.depthContrast;
+            document.getElementById('depthContrastValue').textContent = haditConfig.depthContrast.toFixed(1) + 'x';
             document.getElementById('bandMode').value = haditConfig.bandMode;
             
             // Update the Hadit indicator
@@ -983,11 +928,12 @@
             // Detect the band
             const band = detectHaditInformationBand(imageData, haditConfig);
             currentSBounds = haditConfig.sBounds; // Update global variable
+            detectedBand = band; // Store for stereo view generation
             
             // Process each pixel for depth
-            for (let y = 0; y < depthMapHeight; y++) {
-                for (let x = 0; x < depthMapWidth; x++) {
-                    const pixelIdx = (y * depthMapWidth + x) * 4;
+            for (let y = 0; y < tempHeight; y++) {
+                for (let x = 0; x < tempWidth; x++) {
+                    const pixelIdx = (y * tempWidth + x) * 4;
                     
                     // Extract RGB values
                     const r = imageData.data[pixelIdx] / 255;
@@ -1002,7 +948,7 @@
                     
                     // Calculate Hadit S-Coordinate
                     const result = calculateHaditSCoordinate(
-                        x, y, depthMapWidth, depthMapHeight, lum, sat,
+                        x, y, tempWidth, tempHeight, lum, sat,
                         haditConfig.haditTheta, haditConfig.haditPhi,
                         haditConfig.haditInfluence,
                         haditConfig.luminosityWeight,
@@ -1026,66 +972,8 @@
             }
             
             // Put the depth map to the canvas
-            depthMapCtx.putImageData(depthImageData, 0, 0);
+            depthCtx.putImageData(depthImageData, 0, 0);
             latestDepthMap = depthImageData;
-        }
-        
-        // Initialize depth map display functionality
-        function initializeDepthMap() {
-            console.log("Initializing Hadit depth map system...");
-            
-            // Set up the toggle button
-            const toggleDepthMapBtn = document.getElementById('toggleDepthMap');
-            if (toggleDepthMapBtn) {
-                toggleDepthMapBtn.addEventListener('click', function() {
-                    depthMapVisible = !depthMapVisible;
-                    document.getElementById('depthMapDisplay').style.display = depthMapVisible ? 'block' : 'none';
-                    this.classList.toggle('active', depthMapVisible);
-                    
-                    if (depthMapVisible) {
-                        // Force initial depth map generation
-                        if (video && video.readyState >= 2) {
-                            requestAnimationFrame(generateDepthMapFromCurrentFrame);
-                        }
-                    }
-                    
-                    // Update UI
-                    if (depthMapVisible) {
-                        document.getElementById('depthMapLabel').textContent = "Hadit Depth Map (Active)";
-                    } else {
-                        document.getElementById('depthMapLabel').textContent = "Hadit Depth Map";
-                    }
-                });
-            }
-            
-            // Set the Hadit settings according to requirements
-            document.getElementById('haditPhi').value = 0.1;
-            document.getElementById('haditPhiValue').textContent = '0.1°';
-            document.getElementById('haditTheta').value = 0.0;
-            document.getElementById('haditThetaValue').textContent = '0.0°';
-            document.getElementById('luminosityWeight').value = 0.0;
-            document.getElementById('luminosityWeightValue').textContent = '0.0';
-            document.getElementById('saturationWeight').value = 0.0;
-            document.getElementById('saturationWeightValue').textContent = '0.0';
-            document.getElementById('sBounds').value = 20.0;
-            document.getElementById('sBoundsValue').textContent = '±20.0';
-            document.getElementById('bandSizeMultiplier').value = 10.0;
-            document.getElementById('bandSizeMultiplierValue').textContent = '10.0x';
-            document.getElementById('depthContrast').value = 0.2;
-            document.getElementById('depthContrastValue').textContent = '0.2x';
-            document.getElementById('bandMode').value = 'full_image';
-            
-            // Update hadit indicator
-            document.getElementById('haditIndicator').textContent = 'Hadit: φ=0.1° θ=0.0° Focus=4.3x';
-            
-            // Listen for slider changes to update the depth map
-            document.querySelectorAll('.hadit-control').forEach(control => {
-                control.addEventListener('input', function() {
-                    if (depthMapVisible && video && video.readyState >= 2) {
-                        requestAnimationFrame(generateDepthMapFromCurrentFrame);
-                    }
-                });
-            });
         }
 
         // Utility function for debugging
@@ -1105,7 +993,7 @@
         const isMobile = isAndroid || isIOS;
         
         // Log useful browser information
-        debugLog("Hadit AndroidVR - Current Date and Time (UTC): 2025-06-07 02:53:16");
+        debugLog("Hadit AndroidVR - Current Date and Time (UTC): 2025-06-07 03:10:54");
         debugLog("Current User Login: Angledcrystals");
         debugLog("Browser Detection:");
         debugLog("- Firefox: " + isFirefox);
@@ -1114,14 +1002,6 @@
         debugLog("- Mobile: " + isMobile);
         debugLog("- User Agent: " + navigator.userAgent);
         
-        // Add a GPU acceleration hint specific for Android WebView
-        if (isAndroid) {
-            const meta = document.createElement('meta');
-            meta.name = 'viewport';
-            meta.content = 'width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover, minimal-ui';
-            document.getElementsByTagName('head')[0].appendChild(meta);
-        }
-
         // App state variables
         let currentStream = null;
         let video = null;
@@ -1131,6 +1011,7 @@
         let lastFrameTime = 0;
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
+        let isFrozen = false;
         
         // Depth map display state
         let depthMapVisible = false;
@@ -1154,10 +1035,6 @@
         // Dynamic Nuit Distance Method Parameters
         let currentNuitRadius = 7.0;
         let currentSBounds = 20.0; // Updated to match your settings
-        
-        // Vector Field globals
-        let vectorFieldTime = 0;
-        let lastUpdateTime = 0;
         
         // Improved camera tracking
         let detectedCameras = {
@@ -1186,19 +1063,6 @@
         // Canvas setup
         let processingCanvas = document.createElement('canvas');
         let processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
-        
-        // Try to use OffscreenCanvas for better performance if available
-        if (typeof OffscreenCanvas !== 'undefined') {
-            try {
-                processingCanvas = new OffscreenCanvas(1, 1);
-                processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
-                debugLog("Using OffscreenCanvas for better performance");
-            } catch (e) {
-                debugLog("OffscreenCanvas not supported: " + e.message);
-            }
-        }
-
-        // ==================== CAMERA AND RENDERING SETUP ====================
         
         // Initialize the video element
         function initVideo() {
@@ -1299,11 +1163,15 @@
                 startButton.textContent = "Camera Active";
                 document.getElementById('switchButton').disabled = false;
                 
+                // Reset frozen state
+                isFrozen = false;
+                const canvas1 = document.getElementById('canvas1');
+                const canvas2 = document.getElementById('canvas2');
+                if (canvas1) canvas1.classList.remove('frozen-canvas');
+                if (canvas2) canvas2.classList.remove('frozen-canvas');
+                
                 // Setup rendering
                 setupRendering();
-                
-                // Initialize depth map
-                initializeDepthMap();
                 
                 debugLog(`Camera started successfully: ${video.videoWidth}x${video.videoHeight}`);
             } catch (error) {
@@ -1355,7 +1223,7 @@
             requestAnimationFrame(renderFrame);
         }
         
-        // Main render frame function
+        // Main render frame function - FIXED VERSION
         function renderFrame(time) {
             if (video && video.readyState >= 2) {
                 const currentTime = performance.now();
@@ -1365,57 +1233,49 @@
                 if (elapsed >= frameInterval) {
                     lastFrameTime = currentTime;
                     
-                    // Process and render frame
-                    const canvas1 = document.getElementById('canvas1');
-                    const canvas2 = document.getElementById('canvas2');
-                    
-                    if (canvas1 && canvas2) {
-                        const ctx1 = canvas1.getContext('2d');
-                        const ctx2 = canvas2.getContext('2d');
+                    // Don't process new frames if frozen
+                    if (!isFrozen) {
+                        // Process and render frame
+                        const canvas1 = document.getElementById('canvas1');
+                        const canvas2 = document.getElementById('canvas2');
                         
-                        // Draw video frame to processing canvas
-                        processingCtx.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
-                        
-                        // Apply stereo effect
-                        const baselineSeparation = parseFloat(document.getElementById('baselineSeparation').value) || 3.0;
-                        const depthIntensity = parseFloat(document.getElementById('depthIntensity').value) || 15;
-                        const depthMode = document.getElementById('depthMode').value || 'hadit_scoord';
-                        const blurRadius = parseInt(document.getElementById('blurRadius').value) || 1;
-                        const depthQuantize = document.getElementById('depthQuantizeToggle').checked;
-                        const depthLevels = parseInt(document.getElementById('depthLevels').value) || 8;
-                        
-                        // Get color tinting for left/right eyes
-                        const leftEyeColor = {
-                            r: parseInt(document.getElementById('redSlider1').value) / 255,
-                            g: parseInt(document.getElementById('greenSlider1').value) / 255,
-                            b: parseInt(document.getElementById('blueSlider1').value) / 255
-                        };
-                        
-                        const rightEyeColor = {
-                            r: parseInt(document.getElementById('redSlider2').value) / 255,
-                            g: parseInt(document.getElementById('greenSlider2').value) / 255,
-                            b: parseInt(document.getElementById('blueSlider2').value) / 255
-                        };
-                        
-                        // Create stereo effect
-                        applyStereoEffect(
-                            processingCtx, 
-                            ctx1, 
-                            ctx2, 
-                            leftEyeColor, 
-                            rightEyeColor, 
-                            baselineSeparation, 
-                            depthIntensity,
-                            depthMode
-                        );
-                        
-                        // Update canvas transforms
-                        updateCanvasTransforms();
-                        
-                        // Update depth map if visible
-                        if (depthMapVisible) {
-                            generateDepthMapFromCurrentFrame();
+                        if (canvas1 && canvas2) {
+                            const ctx1 = canvas1.getContext('2d');
+                            const ctx2 = canvas2.getContext('2d');
+                            
+                            // Draw video frame to processing canvas
+                            processingCtx.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
+                            
+                            // Apply stereo effect
+                            const baselineSeparation = parseFloat(document.getElementById('baselineSeparation').value) || 3.0;
+                            const depthIntensity = parseFloat(document.getElementById('depthIntensity').value) || 15;
+                            const depthMode = document.getElementById('depthMode').value || 'hadit_scoord';
+                            
+                            // Get color tinting for left/right eyes
+                            const leftEyeColor = {
+                                r: parseInt(document.getElementById('redSlider1').value) / 255,
+                                g: parseInt(document.getElementById('greenSlider1').value) / 255,
+                                b: parseInt(document.getElementById('blueSlider1').value) / 255
+                            };
+                            
+                            const rightEyeColor = {
+                                r: parseInt(document.getElementById('redSlider2').value) / 255,
+                                g: parseInt(document.getElementById('greenSlider2').value) / 255,
+                                b: parseInt(document.getElementById('blueSlider2').value) / 255
+                            };
+                            
+                            // Create stereo effect - FIXED VERSION
+                            applyStereoEffect(processingCtx, ctx1, ctx2, leftEyeColor, rightEyeColor, 
+                                baselineSeparation, depthIntensity, depthMode);
+                            
+                            // Update canvas transforms
+                            updateCanvasTransforms();
                         }
+                    }
+                    
+                    // Update depth map if visible (even when frozen)
+                    if (depthMapVisible) {
+                        generateDepthMapFromCurrentFrame();
                     }
                 }
             }
@@ -1424,13 +1284,21 @@
             requestAnimationFrame(renderFrame);
         }
         
-        // Apply stereo effect to frames
+        // Apply stereo effect to frames - FIXED VERSION
         function applyStereoEffect(processingCtx, leftCtx, rightCtx, leftColor, rightColor, separation, intensity, depthMode) {
             const width = processingCanvas.width;
             const height = processingCanvas.height;
             
             // Get original image data
             const imageData = processingCtx.getImageData(0, 0, width, height);
+            
+            // Make sure output canvases are the right size
+            if (leftCtx.canvas.width !== rightCtx.canvas.width || leftCtx.canvas.height !== rightCtx.canvas.height) {
+                leftCtx.canvas.width = rightCtx.canvas.width;
+                leftCtx.canvas.height = rightCtx.canvas.height;
+            }
+            
+            // Create output image data
             const leftImageData = leftCtx.createImageData(leftCtx.canvas.width, leftCtx.canvas.height);
             const rightImageData = rightCtx.createImageData(rightCtx.canvas.width, rightCtx.canvas.height);
             
@@ -1438,127 +1306,31 @@
             const scaleX = leftCtx.canvas.width / width;
             const scaleY = leftCtx.canvas.height / height;
             
-            // Calculate or get the depthMap
-            let depthMap;
-            
-            if (depthMode === 'hadit_scoord') {
-                // Use Hadit S-coordinate for depth mapping
-                depthMap = generateHaditDepthMap(imageData, width, height);
-            } else {
-                // Fallback to radial depth method
-                depthMap = generateRadialDepthMap(imageData, width, height);
-            }
-            
-            // Apply the depth map to create stereo offset
-            const separationAmount = separation * width / 100; // Convert percentage to pixels
-            const maxOffset = separationAmount * (intensity / 100);
-            
-            // Process each pixel in the output canvases
-            for (let y = 0; y < leftCtx.canvas.height; y++) {
-                for (let x = 0; x < leftCtx.canvas.width; x++) {
-                    // Map back to processing canvas coordinates
-                    const srcX = Math.floor(x / scaleX);
-                    const srcY = Math.floor(y / scaleY);
-                    
-                    if (srcX < 0 || srcX >= width || srcY < 0 || srcY >= height) continue;
-                    
-                    // Get depth value for this pixel
-                    const depth = depthMap[srcY * width + srcX];
-                    const offset = Math.round(depth * maxOffset);
-                    
-                    // Calculate sample positions
-                    const leftSampleX = srcX + offset;
-                    const rightSampleX = srcX - offset;
-                    
-                    // Sample pixels for left eye
-                    let leftPixel = [0, 0, 0];
-                    if (leftSampleX >= 0 && leftSampleX < width) {
-                        const idx = (srcY * width + leftSampleX) * 4;
-                        leftPixel = [
-                            imageData.data[idx] * leftColor.r,
-                            imageData.data[idx + 1] * leftColor.g,
-                            imageData.data[idx + 2] * leftColor.b
-                        ];
-                    }
-                    
-                    // Sample pixels for right eye
-                    let rightPixel = [0, 0, 0];
-                    if (rightSampleX >= 0 && rightSampleX < width) {
-                        const idx = (srcY * width + rightSampleX) * 4;
-                        rightPixel = [
-                            imageData.data[idx] * rightColor.r,
-                            imageData.data[idx + 1] * rightColor.g,
-                            imageData.data[idx + 2] * rightColor.b
-                        ];
-                    }
-                    
-                    // Set pixels in output images
-                    const outIdx = (y * leftCtx.canvas.width + x) * 4;
-                    leftImageData.data[outIdx] = leftPixel[0];
-                    leftImageData.data[outIdx + 1] = leftPixel[1];
-                    leftImageData.data[outIdx + 2] = leftPixel[2];
-                    leftImageData.data[outIdx + 3] = 255;
-                    
-                    rightImageData.data[outIdx] = rightPixel[0];
-                    rightImageData.data[outIdx + 1] = rightPixel[1];
-                    rightImageData.data[outIdx + 2] = rightPixel[2];
-                    rightImageData.data[outIdx + 3] = 255;
-                }
-            }
-            
-            // Put the processed images to the canvases
-            leftCtx.putImageData(leftImageData, 0, 0);
-            rightCtx.putImageData(rightImageData, 0, 0);
-        }
-        
-        // Generate Hadit-based depth map for stereo view
-        function generateHaditDepthMap(imageData, width, height) {
-            const depthMap = new Float32Array(width * height);
-            
-            // Get current Hadit settings - using our presets
+            // Get Hadit configuration for depth mapping
             const haditConfig = {
-                haditTheta: 0.0,  // Hard-coded to 0.0 from requirements
-                haditPhi: 0.1,    // Hard-coded to 0.1 from requirements
+                haditTheta: 0.0, // Fixed to requirements
+                haditPhi: 0.1,   // Fixed to requirements
                 haditInfluence: parseFloat(document.getElementById('haditInfluence').value),
                 focusFactor: parseFloat(document.getElementById('focusFactor').value),
-                bandMode: 'full_image', // Hard-coded to full_image from requirements
-                bandSizeMultiplier: 10.0, // Hard-coded to 10x from requirements 
-                luminosityWeight: 0.0, // Hard-coded to 0.0 from requirements
-                saturationWeight: 0.0, // Hard-coded to 0.0 from requirements
-                depthContrast: 0.2, // Hard-coded to 0.2 from requirements
-                sBounds: 20.0 // Hard-coded to 20.0 from requirements
+                bandMode: 'full_image', // Fixed to requirements
+                bandSizeMultiplier: 10.0, // Fixed to requirements
+                luminosityWeight: 0.0, // Fixed to requirements
+                saturationWeight: 0.0, // Fixed to requirements
+                depthContrast: 0.2, // Fixed to requirements
+                sBounds: 20.0 // Fixed to requirements
             };
-            
-            // Make sure UI reflects our hard-coded settings
-            document.getElementById('haditTheta').value = haditConfig.haditTheta;
-            document.getElementById('haditThetaValue').textContent = haditConfig.haditTheta.toFixed(1) + '°';
-            document.getElementById('haditPhi').value = haditConfig.haditPhi;
-            document.getElementById('haditPhiValue').textContent = haditConfig.haditPhi.toFixed(1) + '°';
-            document.getElementById('luminosityWeight').value = haditConfig.luminosityWeight;
-            document.getElementById('luminosityWeightValue').textContent = haditConfig.luminosityWeight.toFixed(1);
-            document.getElementById('saturationWeight').value = haditConfig.saturationWeight;
-            document.getElementById('saturationWeightValue').textContent = haditConfig.saturationWeight.toFixed(1);
-            document.getElementById('sBounds').value = haditConfig.sBounds;
-            document.getElementById('sBoundsValue').textContent = '±' + haditConfig.sBounds.toFixed(1);
-            document.getElementById('bandSizeMultiplier').value = haditConfig.bandSizeMultiplier;
-            document.getElementById('bandSizeMultiplierValue').textContent = haditConfig.bandSizeMultiplier.toFixed(1) + 'x';
-            document.getElementById('depthContrast').value = haditConfig.depthContrast;
-            document.getElementById('depthContrastValue').textContent = haditConfig.depthContrast.toFixed(1) + 'x';
-            document.getElementById('bandMode').value = haditConfig.bandMode;
-            
-            // Update the Hadit indicator
-            document.getElementById('haditIndicator').textContent = `Hadit: φ=${haditConfig.haditPhi.toFixed(1)}° θ=${haditConfig.haditTheta.toFixed(1)}° Focus=${haditConfig.focusFactor.toFixed(1)}x`;
             
             // Detect the band if not already detected
             if (!detectedBand) {
                 detectedBand = detectHaditInformationBand(imageData, haditConfig);
             }
             
-            // Process each pixel for depth
-            const sampleStep = Math.max(1, Math.floor(Math.min(width, height) / 200));
+            // Generate depth map for current frame
+            const depthMap = new Float32Array(width * height);
             
-            for (let y = 0; y < height; y += sampleStep) {
-                for (let x = 0; x < width; x += sampleStep) {
+            // Process each pixel in the original image for depth
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
                     const pixelIdx = (y * width + x) * 4;
                     
                     // Extract RGB values
@@ -1572,73 +1344,88 @@
                     const minCol = Math.min(r, g, b);
                     const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
                     
-                    // Calculate Hadit S-Coordinate
-                    const result = calculateHaditSCoordinate(
-                        x, y, width, height, lum, sat,
-                        haditConfig.haditTheta, haditConfig.haditPhi,
-                        haditConfig.haditInfluence,
-                        haditConfig.luminosityWeight,
-                        haditConfig.saturationWeight
-                    );
+                    // Calculate depth based on mode
+                    let depth = 0.5;
                     
-                    // Calculate depth
-                    const depthResult = calculateHaditDepth(
-                        result, detectedBand, haditConfig.focusFactor, haditConfig.depthContrast
-                    );
-                    
-                    // Store depth value
-                    const depthIdx = y * width + x;
-                    depthMap[depthIdx] = depthResult.depth;
-                    
-                    // For performance, fill in nearby pixels with the same depth
-                    if (sampleStep > 1) {
-                        for (let dy = 0; dy < sampleStep && y + dy < height; dy++) {
-                            for (let dx = 0; dx < sampleStep && x + dx < width; dx++) {
-                                if (dx === 0 && dy === 0) continue; // Skip the source pixel
-                                depthMap[(y + dy) * width + (x + dx)] = depthResult.depth;
-                            }
-                        }
+                    if (depthMode === 'hadit_scoord') {
+                        // Use Hadit S-coordinate for depth mapping
+                        const result = calculateHaditSCoordinate(
+                            x, y, width, height, lum, sat,
+                            haditConfig.haditTheta, haditConfig.haditPhi,
+                            haditConfig.haditInfluence,
+                            haditConfig.luminosityWeight,
+                            haditConfig.saturationWeight
+                        );
+                        
+                        const depthResult = calculateHaditDepth(
+                            result, detectedBand, haditConfig.focusFactor, haditConfig.depthContrast
+                        );
+                        
+                        depth = depthResult.depth;
+                    } else {
+                        // Fallback to basic luminance-based depth
+                        depth = lum;
                     }
+                    
+                    depthMap[y * width + x] = depth;
                 }
             }
             
-            return depthMap;
-        }
-        
-        // Generate a radial depth map as fallback
-        function generateRadialDepthMap(imageData, width, height) {
-            const depthMap = new Float32Array(width * height);
-            const centerX = width / 2;
-            const centerY = height / 2;
-            const nuitRadius = parseFloat(document.getElementById('nuitRadius').value) || 7.0;
-            const nuitFalloffFactor = parseFloat(document.getElementById('nuitFalloffFactor').value) || 5.0;
-            const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+            // Apply the depth map to create stereo offset - FIXED VERSION 
+            const separationAmount = separation * width / 100; // Convert percentage to pixels
+            const maxOffset = separationAmount * (intensity / 100);
             
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const pixelIdx = (y * width + x) * 4;
-                    const r = imageData.data[pixelIdx] / 255;
-                    const g = imageData.data[pixelIdx + 1] / 255;
-                    const b = imageData.data[pixelIdx + 2] / 255;
+            // Copy to output canvases with proper offsets
+            for (let y = 0; y < leftCtx.canvas.height; y++) {
+                for (let x = 0; x < leftCtx.canvas.width; x++) {
+                    // Map back to processing canvas coordinates
+                    const srcX = Math.floor(x / scaleX);
+                    const srcY = Math.floor(y / scaleY);
                     
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    const distFromCenter = Math.sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
-                    const normalizedDist = distFromCenter / maxDist;
+                    if (srcX < 0 || srcX >= width || srcY < 0 || srcY >= height) continue;
                     
-                    // Radial depth calculation with Nuit radius
-                    let depth = 1.0 - normalizedDist;
+                    // Get depth value for this pixel
+                    const depth = depthMap[srcY * width + srcX];
+                    const offset = Math.round(depth * maxOffset);
                     
-                    // Apply Nuit falloff
-                    depth = Math.pow(depth, nuitFalloffFactor / 10);
+                    // Output pixel index
+                    const outIdx = (y * leftCtx.canvas.width + x) * 4;
                     
-                    // Adjust by luminance
-                    depth = depth * 0.8 + lum * 0.2;
+                    // Sample pixels for left eye (shifted right for near pixels)
+                    const leftSampleX = srcX - offset;
+                    if (leftSampleX >= 0 && leftSampleX < width) {
+                        const leftSrcIdx = (srcY * width + leftSampleX) * 4;
+                        leftImageData.data[outIdx] = imageData.data[leftSrcIdx] * leftColor.r;
+                        leftImageData.data[outIdx + 1] = imageData.data[leftSrcIdx + 1] * leftColor.g;
+                        leftImageData.data[outIdx + 2] = imageData.data[leftSrcIdx + 2] * leftColor.b;
+                    } else {
+                        // Fill with black for out-of-bounds
+                        leftImageData.data[outIdx] = 0;
+                        leftImageData.data[outIdx + 1] = 0;
+                        leftImageData.data[outIdx + 2] = 0;
+                    }
+                    leftImageData.data[outIdx + 3] = 255;
                     
-                    depthMap[y * width + x] = Math.max(0.01, Math.min(0.99, depth));
+                    // Sample pixels for right eye (shifted left for near pixels) 
+                    const rightSampleX = srcX + offset;
+                    if (rightSampleX >= 0 && rightSampleX < width) {
+                        const rightSrcIdx = (srcY * width + rightSampleX) * 4;
+                        rightImageData.data[outIdx] = imageData.data[rightSrcIdx] * rightColor.r;
+                        rightImageData.data[outIdx + 1] = imageData.data[rightSrcIdx + 1] * rightColor.g;
+                        rightImageData.data[outIdx + 2] = imageData.data[rightSrcIdx + 2] * rightColor.b;
+                    } else {
+                        // Fill with black for out-of-bounds
+                        rightImageData.data[outIdx] = 0;
+                        rightImageData.data[outIdx + 1] = 0;
+                        rightImageData.data[outIdx + 2] = 0;
+                    }
+                    rightImageData.data[outIdx + 3] = 255;
                 }
             }
             
-            return depthMap;
+            // Put the processed images to the canvases
+            leftCtx.putImageData(leftImageData, 0, 0);
+            rightCtx.putImageData(rightImageData, 0, 0);
         }
         
         // Update canvas transforms
@@ -1658,7 +1445,7 @@
             }
         }
         
-        // Toggle flicker mode
+        // Toggle flicker mode - FIXED VERSION
         function toggleFlickerMode() {
             const container = document.querySelector('.container');
             const canvas1 = document.getElementById('canvas1');
@@ -1686,6 +1473,11 @@
                 
                 // Enable flicker
                 container.classList.add('flicker-active');
+                
+                // Position canvases initially - FIXED
+                canvas1.style.position = 'absolute';
+                canvas2.style.position = 'absolute';
+                
                 flickerSpeedContainer.style.display = 'flex';
                 flickerIndicator.style.opacity = '1';
                 toggleBtn.textContent = 'Disable 3D Flicker';
@@ -1700,6 +1492,12 @@
                 
                 // Restore original positions
                 container.classList.remove('flicker-active');
+                
+                canvas1.style.position = '';
+                canvas2.style.position = '';
+                canvas1.classList.remove('canvas-left', 'canvas-right');
+                canvas2.classList.remove('canvas-left', 'canvas-right');
+                
                 canvas1.style.left = originalCanvasPositions.canvas1.left;
                 canvas1.style.margin = originalCanvasPositions.canvas1.margin;
                 canvas1.style.transform = originalCanvasPositions.canvas1.transform;
@@ -1714,7 +1512,7 @@
             }
         }
         
-        // Start flicker animation
+        // Start flicker animation - FIXED VERSION
         function startFlicker() {
             const canvas1 = document.getElementById('canvas1');
             const canvas2 = document.getElementById('canvas2');
@@ -1727,18 +1525,24 @@
             
             flickerSpeed = parseInt(document.getElementById('flickerSpeedSlider').value) || 16;
             
+            // Initialize positions
+            canvas1.classList.add('canvas-left');
+            canvas2.classList.add('canvas-right');
+            
             flickerFrame = 0;
             flickerInterval = setInterval(() => {
                 if (flickerFrame === 0) {
-                    canvas1.classList.add('canvas-left');
                     canvas1.classList.remove('canvas-right');
-                    canvas2.classList.add('canvas-right');
+                    canvas1.classList.add('canvas-left');
+                    
                     canvas2.classList.remove('canvas-left');
+                    canvas2.classList.add('canvas-right');
                 } else {
-                    canvas1.classList.add('canvas-right');
                     canvas1.classList.remove('canvas-left');
-                    canvas2.classList.add('canvas-left');
+                    canvas1.classList.add('canvas-right');
+                    
                     canvas2.classList.remove('canvas-right');
+                    canvas2.classList.add('canvas-left');
                 }
                 
                 flickerFrame = 1 - flickerFrame;
@@ -1821,116 +1625,7 @@
             });
         }
 
-        // ==================== RECORDING FUNCTIONALITY ====================
-        
-        let mediaRecorder = null;
-        let recordedChunks = [];
-        let recordingStartTime = 0;
-        let recordingTimerInterval = null;
-        
-        // Start recording
-        function startRecording() {
-            if (!currentStream) {
-                alert("Camera is not active. Please start the camera first.");
-                return;
-            }
-            
-            const recordButton = document.getElementById('recordButton');
-            const stopRecordButton = document.getElementById('stopRecordButton');
-            const recordingIndicator = document.getElementById('recordingIndicator');
-            
-            if (!recordButton || !stopRecordButton || !recordingIndicator) return;
-            
-            try {
-                // Create a new combined stream of both canvases
-                const canvas1 = document.getElementById('canvas1');
-                const canvas2 = document.getElementById('canvas2');
-                
-                if (!canvas1 || !canvas2) return;
-                
-                const stream = canvas1.captureStream(30);
-                
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
-                
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) {
-                        recordedChunks.push(event.data);
-                    }
-                };
-                
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const url = URL.createObjectURL(blob);
-                    
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = `androidvr-${new Date().toISOString()}.webm`;
-                    document.body.appendChild(a);
-                    a.click();
-                    
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 100);
-                    
-                    recordedChunks = [];
-                    stopRecordingUI();
-                };
-                
-                // Start recording
-                mediaRecorder.start(1000); // 1 second chunks
-                recordingStartTime = Date.now();
-                
-                // Update UI
-                recordButton.style.display = 'none';
-                stopRecordButton.style.display = 'flex';
-                recordingIndicator.style.display = 'flex';
-                
-                // Start timer
-                recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
-                
-            } catch (error) {
-                console.error("Error starting recording:", error);
-                alert("Could not start recording: " + error.message);
-            }
-        }
-        
-        // Stop recording
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-        }
-        
-        // Update recording timer display
-        function updateRecordingTimer() {
-            const recordingTimer = document.getElementById('recordingTimer');
-            if (!recordingTimer) return;
-            
-            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
-            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
-            const seconds = (elapsed % 60).toString().padStart(2, '0');
-            recordingTimer.textContent = `${minutes}:${seconds}`;
-        }
-        
-        // Stop recording UI updates
-        function stopRecordingUI() {
-            const recordButton = document.getElementById('recordButton');
-            const stopRecordButton = document.getElementById('stopRecordButton');
-            const recordingIndicator = document.getElementById('recordingIndicator');
-            
-            if (recordingTimerInterval) {
-                clearInterval(recordingTimerInterval);
-                recordingTimerInterval = null;
-            }
-            
-            if (recordButton) recordButton.style.display = 'flex';
-            if (stopRecordButton) stopRecordButton.style.display = 'none';
-            if (recordingIndicator) recordingIndicator.style.display = 'none';
-        }
-
-        // Freeze frame with countdown
+        // Freeze frame with countdown - FIXED VERSION
         function freezeFrameWithDelay() {
             const freezeDelayToggle = document.getElementById('freezeDelayToggle');
             
@@ -1963,28 +1658,75 @@
             }, 1000);
         }
         
-        // Freeze frame
+        // Freeze frame - FIXED VERSION
         function freezeFrame() {
             const canvas1 = document.getElementById('canvas1');
             const canvas2 = document.getElementById('canvas2');
+            const freezeButton = document.getElementById('freezeButton');
             
-            if (!canvas1 || !canvas2) return;
+            if (!canvas1 || !canvas2 || !freezeButton) return;
             
             // Toggle frozen state
-            canvas1.classList.toggle('frozen-canvas');
-            canvas2.classList.toggle('frozen-canvas');
+            isFrozen = !isFrozen;
             
-            if (canvas1.classList.contains('frozen-canvas')) {
-                // Stop video
-                if (video) {
-                    video.pause();
-                }
-            } else {
-                // Resume video
-                if (video) {
-                    video.play();
-                }
+            // Update UI
+            canvas1.classList.toggle('frozen-canvas', isFrozen);
+            canvas2.classList.toggle('frozen-canvas', isFrozen);
+            freezeButton.textContent = isFrozen ? "Unfreeze Frame" : "Freeze Frame";
+            
+            // Update depth map if visible
+            if (depthMapVisible) {
+                generateDepthMapFromCurrentFrame();
             }
+        }
+        
+        // Initialize depth map display functionality
+        function initializeDepthMap() {
+            console.log("Initializing Hadit depth map system...");
+            
+            // Set up the toggle button
+            const toggleDepthMapBtn = document.getElementById('toggleDepthMap');
+            if (toggleDepthMapBtn) {
+                toggleDepthMapBtn.addEventListener('click', function() {
+                    depthMapVisible = !depthMapVisible;
+                    document.getElementById('depthMapDisplay').style.display = depthMapVisible ? 'block' : 'none';
+                    this.classList.toggle('active', depthMapVisible);
+                    
+                    if (depthMapVisible) {
+                        // Force initial depth map generation
+                        if (video && video.readyState >= 2) {
+                            requestAnimationFrame(generateDepthMapFromCurrentFrame);
+                        }
+                    }
+                    
+                    // Update UI
+                    if (depthMapVisible) {
+                        document.getElementById('depthMapLabel').textContent = "Hadit Depth Map (Active)";
+                    } else {
+                        document.getElementById('depthMapLabel').textContent = "Hadit Depth Map";
+                    }
+                });
+            }
+            
+            // Set the Hadit settings according to requirements
+            document.getElementById('haditPhi').value = 0.1;
+            document.getElementById('haditPhiValue').textContent = '0.1°';
+            document.getElementById('haditTheta').value = 0.0;
+            document.getElementById('haditThetaValue').textContent = '0.0°';
+            document.getElementById('luminosityWeight').value = 0.0;
+            document.getElementById('luminosityWeightValue').textContent = '0.0';
+            document.getElementById('saturationWeight').value = 0.0;
+            document.getElementById('saturationWeightValue').textContent = '0.0';
+            document.getElementById('sBounds').value = 20.0;
+            document.getElementById('sBoundsValue').textContent = '±20.0';
+            document.getElementById('bandSizeMultiplier').value = 10.0;
+            document.getElementById('bandSizeMultiplierValue').textContent = '10.0x';
+            document.getElementById('depthContrast').value = 0.2;
+            document.getElementById('depthContrastValue').textContent = '0.2x';
+            document.getElementById('bandMode').value = 'full_image';
+            
+            // Update Hadit indicator
+            document.getElementById('haditIndicator').textContent = 'Hadit: φ=0.1° θ=0.0° Focus=4.3x';
         }
 
         // ==================== INITIALIZATION ====================
@@ -2006,10 +1748,7 @@
                 }
             });
             document.getElementById('qualitySelect')?.addEventListener('change', handleQualityChange);
-            
-            // Recording controls
-            document.getElementById('recordButton')?.addEventListener('click', startRecording);
-            document.getElementById('stopRecordButton')?.addEventListener('click', stopRecording);
+            document.getElementById('freezeButton')?.addEventListener('click', freezeFrameWithDelay);
             
             // Apply initial Hadit settings from requirements
             document.getElementById('haditPhi').value = 0.1;
@@ -2029,32 +1768,14 @@
             document.getElementById('bandMode').value = 'full_image';
             
             // Initialize depth map
-            document.getElementById('toggleDepthMap')?.addEventListener('click', function() {
-                depthMapVisible = !depthMapVisible;
-                document.getElementById('depthMapDisplay').style.display = depthMapVisible ? 'block' : 'none';
-                this.classList.toggle('active', depthMapVisible);
-                
-                if (depthMapVisible) {
-                    // Force initial depth map generation
-                    if (video && video.readyState >= 2) {
-                        requestAnimationFrame(generateDepthMapFromCurrentFrame);
-                    }
-                }
-                
-                // Update UI
-                if (depthMapVisible) {
-                    document.getElementById('depthMapLabel').textContent = "Hadit Depth Map (Active)";
-                } else {
-                    document.getElementById('depthMapLabel').textContent = "Hadit Depth Map";
-                }
-            });
+            initializeDepthMap();
             
             console.log("AndroidVR initialized with Hadit depth settings:");
             console.log("- Phi: 0.1°, Theta: 0.0°");
             console.log("- Luminosity: 0, Saturation: 0");
             console.log("- S bounds: 20, Band Size: 10x");
             console.log("- Depth contrast: 0.2, Full Image coverage");
-            console.log("Current Date and Time (UTC): 2025-06-07 02:59:28");
+            console.log("Current Date and Time (UTC): 2025-06-07 03:17:17");
             console.log("Current User Login: Angledcrystals");
         });
     </script>
