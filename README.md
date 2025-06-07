@@ -14,7 +14,7 @@ Also I use esoteric terminology for the functions because I think it is funny.
 
 Here is a example of the depth map created.
 
-![topimage-classic-hamburger-2019m04-800x534-600x401](https://github.com/user-attachments/assets/f9021dd6-d872-4db7-a4ff-d3376bbef16a)![image]
+![topimage-classic-hamburger-2019m04-800x534-600x401](https://github.com/user-attachments/assets/f9021dd6-d872-4db7-a4ff-d3376bbef16a)
 
 ![topimage-classic-hamburger-2019m04-800x534-600x401](https://github.com/user-attachments/assets/a41bb8b5-bd20-453c-ac89-efeffd556050)
 
