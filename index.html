@@ -1191,7 +1191,22 @@
             
             // Apply the depth map to create stereo offset - COMPLETELY FIXED
             const separationAmount = separation * width / 100; // Convert percentage to pixels
-            const maxOffset = Math.round(separationAmount * (intensity / 100));
+            let maxOffset = Math.round(separationAmount * (intensity / 100)); // Changed to let
+            
+            // FORCE a good depth range specifically for Hadit mode
+            if (depthMode === 'hadit_scoord') {
+                let haditMinDepth = 0.2;  // Force minimum depth 
+                let haditMaxDepth = 0.9;  // Force maximum depth
+                
+                // Normalize ALL depth values to ensure visible offsets
+                for (let i = 0; i < depthMap.length; i++) {
+                    // Spread the values across a wider range
+                    depthMap[i] = haditMinDepth + (depthMap[i] * (haditMaxDepth - haditMinDepth));
+                }
+                
+                // Increase maxOffset for Hadit mode for more visible effect
+                maxOffset = Math.round(maxOffset * 1.5);
+            }
             
             // Function to safely sample pixel with proper edge handling
             function getPixelSafe(x, y) {
