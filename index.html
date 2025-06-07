@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AndroidVR - Live Hadit Camera</title>
+    <title>AndroidVR - Live Hadit Camera Complete</title>
     <style>
         body {
             margin: 0;
@@ -60,7 +60,7 @@
         canvas, video {
             border: 2px solid #00ff88;
             border-radius: 10px;
-            background: #000; /* Canvas background is black */
+            background: #000;
             max-width: 100%;
             height: auto;
         }
@@ -68,7 +68,7 @@
         .left-eye { border-color: #ff4444 !important; }
         .right-eye { border-color: #4444ff !important; }
         .depth-map { border-color: #ff8800 !important; }
-        .raw-video { border-color: #00ff88 !important; } /* For the debug video element */
+        .raw-video { border-color: #00ff88 !important; }
 
         .camera-label {
             text-align: center;
@@ -144,6 +144,11 @@
         .hadit-control {
             background: rgba(255, 0, 255, 0.2) !important;
             border-color: #ff00ff !important;
+        }
+
+        .band-control {
+            background: rgba(255, 255, 0, 0.2) !important;
+            border-color: #ffff00 !important;
         }
 
         .stereo-control {
@@ -278,16 +283,17 @@
 </head>
 <body>
     <div class="container">
-        <h1>AndroidVR - Live Hadit Camera</h1>
-        <div class="subtitle">Real-time Fine Hadit Control: 0.1° Precision | 2025-06-07 07:40:56 UTC | User: Angledcrystals</div>
+        <h1>AndroidVR - Live Hadit Camera Complete</h1>
+        <div class="subtitle">Real-time Fine Hadit Control with Band Detection: 0.1° Precision | 2025-06-07 07:52:00 UTC | User: Angledcrystals</div>
 
         <div class="hadit-info">
-            <div style="color: #ff00ff; font-weight: bold;">⚡ Live Hadit Processing:</div>
-            <div>• Real-time camera feed with Hadit depth generation</div>
+            <div style="color: #ff00ff; font-weight: bold;">⚡ Complete Live Hadit Processing:</div>
+            <div>• Real-time camera feed with advanced Hadit band detection</div>
             <div>• θ (Theta): 0° to 360° in 0.1° increments for live adjustment</div>
             <div>• φ (Phi): 0.1° to 179.9° in 0.1° increments for extreme precision</div>
+            <div>• Band detection modes: Auto, Content Analysis, Gradient-Based, Statistical, Manual, Full Image</div>
+            <div>• Band size multiplier and focus controls for precise depth mapping</div>
             <div>• Parallel stereo view with pixel-perfect offset based on Hadit depth</div>
-            <div>• Enhanced debugging for camera feed issues</div>
         </div>
 
         <div class="camera-status" id="cameraStatus">
@@ -354,6 +360,28 @@
                     <option value="user">Front Camera</option>
                 </select>
             </div>
+
+            <div class="control-group">
+                <label>📡 Band Detection Mode</label>
+                <select id="bandDetectionMode" class="band-control">
+                    <option value="auto_detect" selected>🔍 Auto-Detect Band</option>
+                    <option value="content_analysis">📊 Content Analysis</option>
+                    <option value="gradient_based">🌊 Gradient-Based</option>
+                    <option value="statistical">📈 Statistical Analysis</option>
+                    <option value="manual_range">✋ Manual Range</option>
+                    <option value="full_image">🌍 Full Image Coverage</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>🔧 Band Size Multiplier: <span id="bandSizeMultiplierValue">1.0x</span></label>
+                <input type="range" id="bandSizeMultiplier" min="0.1" max="10.0" step="0.1" value="1.0" class="band-control">
+            </div>
+
+            <div class="control-group">
+                <label>🎯 Focus Factor: <span id="focusFactorValue">2.0x</span></label>
+                <input type="range" id="focusFactor" min="1.0" max="5.0" step="0.1" value="2.0" class="band-control">
+            </div>
             
             <div class="control-group">
                 <label>⚡ Hadit θ (Theta): <span id="haditThetaValue">45.0°</span></label>
@@ -377,11 +405,6 @@
             </div>
             
             <div class="control-group">
-                <label>🎯 Focus Factor: <span id="focusFactorValue">2.0x</span></label>
-                <input type="range" id="focusFactor" min="1.0" max="5.0" step="0.1" value="2.0" class="hadit-control">
-            </div>
-            
-            <div class="control-group">
                 <label>👁️ Stereo Separation: <span id="separationValue">8px</span></label>
                 <input type="range" id="separation" min="0" max="50" value="8" step="1" class="stereo-control">
             </div>
@@ -398,12 +421,12 @@
             
             <div class="control-group">
                 <label>💡 Luminosity Weight: <span id="luminosityWeightValue">0.7</span></label>
-                <input type="range" id="luminosityWeight" min="0" max="1" step="0.05" value="0.7">
+                <input type="range" id="luminosityWeight" min="0" max="1" step="0.05" value="0.7" class="band-control">
             </div>
             
             <div class="control-group">
                 <label>🌈 Saturation Weight: <span id="saturationWeightValue">0.3</span></label>
-                <input type="range" id="saturationWeight" min="0" max="1" step="0.05" value="0.3">
+                <input type="range" id="saturationWeight" min="0" max="1" step="0.05" value="0.3" class="band-control">
             </div>
             
             <div class="control-group">
@@ -418,7 +441,7 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Live Hadit camera system ready... Angledcrystals | 2025-06-07 07:40:56 UTC</div>
+            <div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-07 07:52:00 UTC</div>
         </div>
 
         <div class="analysis-grid">
@@ -434,12 +457,23 @@
                         <button id="stopAnimation" class="hadit-control">⏹️ Stop All</button>
                     </div>
                 </div>
+
+                <div class="control-group">
+                    <label>Band Actions</label>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button id="detectBand" class="band-control">📡 Detect Band</button>
+                        <button id="expandBandFull" class="band-control">🌍 Expand Full</button>
+                        <button id="resetBand" class="band-control">🔄 Reset Band</button>
+                    </div>
+                </div>
                 
                 <div class="control-group">
                     <label>Options & Debug</label>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <label><input type="checkbox" id="enableStereo" checked> Enable Stereo</label>
                         <label><input type="checkbox" id="showDepthMap" checked> Show Depth</label>
+                        <label><input type="checkbox" id="showBandVisualization"> Show Band Viz</label>
+                        <label><input type="checkbox" id="focusOnlyBand"> Focus Only Band</label>
                         <label><input type="checkbox" id="mirrorCamera"> Mirror Camera</label>
                         <label><input type="checkbox" id="showFPS" checked> Show FPS</label>
                         <label><input type="checkbox" id="debugMode" checked> Debug Mode</label>
@@ -449,8 +483,8 @@
             </div>
             
             <div class="analysis-panel" id="analysisPanel">
-                <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Analysis</div>
-                <div>Ready for live camera processing...</div>
+                <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Band Analysis</div>
+                <div>Ready for live camera processing with band detection...</div>
                 <div>Camera permissions status: checking...</div>
             </div>
         </div>
@@ -489,7 +523,7 @@
 
         function stereographicProjection(G_reflected) {
             if (Math.abs(1 - G_reflected.z) < 1e-10) {
-                return { x: 0, y: 0 }; // Or handle as an error/special case
+                return { x: 0, y: 0 };
             }
             return {
                 x: G_reflected.x / (1 - G_reflected.z),
@@ -509,21 +543,444 @@
             const contentModulation = (1 + lum * config.luminosityWeight + sat * config.saturationWeight);
             
             return {
-                x: S_hadit.x * contentModulation * config.haditInfluence,
-                y: S_hadit.y * contentModulation * config.haditInfluence
+                sCoord: {
+                    x: S_hadit.x * contentModulation * config.haditInfluence,
+                    y: S_hadit.y * contentModulation * config.haditInfluence
+                },
+                sMagnitude: Math.sqrt(
+                    Math.pow(S_hadit.x * contentModulation * config.haditInfluence, 2) +
+                    Math.pow(S_hadit.y * contentModulation * config.haditInfluence, 2)
+                ),
+                originalG: G_3d,
+                reflectedG: G_reflected,
+                haditVector: hadit_3d,
+                contentModulation: contentModulation,
+                luminance: lum,
+                saturation: sat
             };
         }
 
-        // ==================== ENHANCED CAMERA SYSTEM WITH DEBUGGING ====================
+        // ==================== HADIT INFORMATION BAND DETECTION ====================
+        
+        let currentSBounds = 10.0;
+        let detectedBand = { min: 0, max: 0, center: 0, width: 0, confidence: 0 };
+
+        function detectHaditInformationBand(imageData, config) {
+            console.log(`📡 Detecting band with Hadit θ=${config.haditTheta.toFixed(1)}°, φ=${config.haditPhi.toFixed(1)}°`);
+            const startTime = performance.now();
+            
+            const { width, height, data } = imageData;
+            const sMagnitudeHistogram = new Array(200).fill(0);
+            const contentHistogram = new Array(200).fill(0);
+            
+            const maxSMagnitude = currentSBounds * 2;
+            let totalPixels = 0;
+            let totalContent = 0;
+            
+            const sampleStep = Math.max(1, Math.floor(Math.min(width, height) / 50));
+            
+            for (let y = 0; y < height; y += sampleStep) {
+                for (let x = 0; x < width; x += sampleStep) {
+                    const pixelIdx = (y * width + x) * 4;
+                    
+                    const r = data[pixelIdx] / 255;
+                    const g = data[pixelIdx + 1] / 255;
+                    const b = data[pixelIdx + 2] / 255;
+                    
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    const maxCol = Math.max(r, g, b);
+                    const minCol = Math.min(r, g, b);
+                    const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
+                    
+                    const result = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
+                    const sMagnitude = result.sMagnitude;
+                    
+                    const contentImportance = lum * 0.5 + sat * 0.3 + 
+                                            (Math.abs(r - g) + Math.abs(g - b) + Math.abs(b - r)) * 0.2;
+                    
+                    const binIndex = Math.floor((sMagnitude / maxSMagnitude) * (sMagnitudeHistogram.length - 1));
+                    if (binIndex >= 0 && binIndex < sMagnitudeHistogram.length) {
+                        sMagnitudeHistogram[binIndex]++;
+                        contentHistogram[binIndex] += contentImportance;
+                        totalContent += contentImportance;
+                    }
+                    
+                    totalPixels++;
+                }
+            }
+            
+            let bandDetectionResult;
+            
+            switch (config.bandDetectionMode) {
+                case 'full_image':
+                    bandDetectionResult = {
+                        min: 0,
+                        max: maxSMagnitude * 2,
+                        center: maxSMagnitude,
+                        width: maxSMagnitude * 2,
+                        confidence: 1.0
+                    };
+                    break;
+                    
+                case 'auto_detect':
+                    bandDetectionResult = autoDetectBand(sMagnitudeHistogram, contentHistogram, maxSMagnitude, 0.1);
+                    break;
+                    
+                case 'content_analysis':
+                    bandDetectionResult = contentBasedBandDetection(contentHistogram, maxSMagnitude, 0.1);
+                    break;
+                    
+                case 'gradient_based':
+                    bandDetectionResult = gradientBasedBandDetection(sMagnitudeHistogram, maxSMagnitude, 0.1);
+                    break;
+                    
+                case 'statistical':
+                    bandDetectionResult = statisticalBandDetection(sMagnitudeHistogram, contentHistogram, maxSMagnitude, 0.1);
+                    break;
+                    
+                case 'manual_range':
+                    bandDetectionResult = {
+                        min: config.manualBandMin || 0,
+                        max: config.manualBandMax || maxSMagnitude,
+                        center: ((config.manualBandMin || 0) + (config.manualBandMax || maxSMagnitude)) / 2,
+                        width: (config.manualBandMax || maxSMagnitude) - (config.manualBandMin || 0),
+                        confidence: 1.0
+                    };
+                    break;
+            }
+            
+            // Apply band size multiplier
+            if (config.bandSizeMultiplier !== 1.0) {
+                const originalWidth = bandDetectionResult.width;
+                const newWidth = originalWidth * config.bandSizeMultiplier;
+                const expansion = (newWidth - originalWidth) / 2;
+                
+                bandDetectionResult.min = Math.max(0, bandDetectionResult.min - expansion);
+                bandDetectionResult.max = bandDetectionResult.max + expansion;
+                bandDetectionResult.width = newWidth;
+            }
+            
+            const processingTime = performance.now() - startTime;
+            
+            console.log(`✅ Band detection completed in ${processingTime.toFixed(2)}ms`);
+            console.log(`   Detected band: ${bandDetectionResult.min.toFixed(2)} to ${bandDetectionResult.max.toFixed(2)}`);
+            
+            return {
+                band: bandDetectionResult,
+                histograms: {
+                    sMagnitude: sMagnitudeHistogram,
+                    content: contentHistogram
+                },
+                stats: {
+                    processingTime,
+                    totalPixels,
+                    totalContent,
+                    maxSMagnitude,
+                    samplingStep: sampleStep
+                }
+            };
+        }
+
+        function autoDetectBand(sMagnitudeHistogram, contentHistogram, maxSMagnitude, sensitivity) {
+            const smoothedContent = smoothHistogram(contentHistogram, 3);
+            const peaks = findHistogramPeaks(smoothedContent, sensitivity);
+            
+            if (peaks.length === 0) {
+                return { min: 0, max: maxSMagnitude, center: maxSMagnitude / 2, width: maxSMagnitude, confidence: 0.1 };
+            }
+            
+            const primaryPeak = peaks.reduce((max, peak) => peak.strength > max.strength ? peak : max);
+            const bandHalfWidth = Math.max(0.5, maxSMagnitude * 0.1);
+            const binToSMagnitude = (bin) => (bin / (smoothedContent.length - 1)) * maxSMagnitude;
+            
+            const bandCenter = binToSMagnitude(primaryPeak.bin);
+            const bandMin = Math.max(0, bandCenter - bandHalfWidth);
+            const bandMax = Math.min(maxSMagnitude, bandCenter + bandHalfWidth);
+            
+            return {
+                min: bandMin,
+                max: bandMax,
+                center: bandCenter,
+                width: bandMax - bandMin,
+                confidence: Math.min(1.0, primaryPeak.strength / (smoothedContent.length * 0.1))
+            };
+        }
+
+        function contentBasedBandDetection(contentHistogram, maxSMagnitude, sensitivity) {
+            let totalContent = contentHistogram.reduce((sum, val) => sum + val, 0);
+            if (totalContent === 0) {
+                return { min: 0, max: maxSMagnitude, center: maxSMagnitude / 2, width: maxSMagnitude, confidence: 0.1 };
+            }
+            
+            let weightedSum = 0;
+            for (let i = 0; i < contentHistogram.length; i++) {
+                weightedSum += i * contentHistogram[i];
+            }
+            const centerOfMass = weightedSum / totalContent;
+            
+            const threshold = totalContent * sensitivity * 0.01;
+            let minBin = 0, maxBin = contentHistogram.length - 1;
+            
+            for (let i = 0; i < contentHistogram.length; i++) {
+                if (contentHistogram[i] > threshold) {
+                    minBin = i;
+                    break;
+                }
+            }
+            
+            for (let i = contentHistogram.length - 1; i >= 0; i--) {
+                if (contentHistogram[i] > threshold) {
+                    maxBin = i;
+                    break;
+                }
+            }
+            
+            const binToSMagnitude = (bin) => (bin / (contentHistogram.length - 1)) * maxSMagnitude;
+            
+            return {
+                min: binToSMagnitude(minBin),
+                max: binToSMagnitude(maxBin),
+                center: binToSMagnitude(centerOfMass),
+                width: binToSMagnitude(maxBin) - binToSMagnitude(minBin),
+                confidence: Math.min(1.0, (maxBin - minBin) / (contentHistogram.length * 0.5))
+            };
+        }
+
+        function gradientBasedBandDetection(sMagnitudeHistogram, maxSMagnitude, sensitivity) {
+            const gradient = [];
+            for (let i = 1; i < sMagnitudeHistogram.length - 1; i++) {
+                gradient[i] = sMagnitudeHistogram[i + 1] - sMagnitudeHistogram[i - 1];
+            }
+            
+            const threshold = Math.max(...gradient) * sensitivity;
+            let risingEdges = [];
+            let fallingEdges = [];
+            
+            for (let i = 0; i < gradient.length; i++) {
+                if (gradient[i] > threshold) risingEdges.push(i);
+                if (gradient[i] < -threshold) fallingEdges.push(i);
+            }
+            
+            if (risingEdges.length === 0 || fallingEdges.length === 0) {
+                return { min: 0, max: maxSMagnitude, center: maxSMagnitude / 2, width: maxSMagnitude, confidence: 0.1 };
+            }
+            
+            const binToSMagnitude = (bin) => (bin / (sMagnitudeHistogram.length - 1)) * maxSMagnitude;
+            const bandMin = binToSMagnitude(risingEdges[0]);
+            const bandMax = binToSMagnitude(fallingEdges[fallingEdges.length - 1]);
+            
+            return {
+                min: bandMin,
+                max: bandMax,
+                center: (bandMin + bandMax) / 2,
+                width: bandMax - bandMin,
+                confidence: Math.min(1.0, (risingEdges.length + fallingEdges.length) / 10)
+            };
+        }
+
+        function statisticalBandDetection(sMagnitudeHistogram, contentHistogram, maxSMagnitude, sensitivity) {
+            let mean = 0, variance = 0, total = 0;
+            
+            for (let i = 0; i < sMagnitudeHistogram.length; i++) {
+                const count = sMagnitudeHistogram[i];
+                mean += i * count;
+                total += count;
+            }
+            
+            if (total === 0) {
+                return { min: 0, max: maxSMagnitude, center: maxSMagnitude / 2, width: maxSMagnitude, confidence: 0.1 };
+            }
+            
+            mean /= total;
+            
+            for (let i = 0; i < sMagnitudeHistogram.length; i++) {
+                const count = sMagnitudeHistogram[i];
+                variance += Math.pow(i - mean, 2) * count;
+            }
+            variance /= total;
+            
+            const stdDev = Math.sqrt(variance);
+            const bandHalfWidth = stdDev * (2 - sensitivity);
+            
+            const binToSMagnitude = (bin) => (bin / (sMagnitudeHistogram.length - 1)) * maxSMagnitude;
+            const center = binToSMagnitude(mean);
+            const bandMin = Math.max(0, center - binToSMagnitude(bandHalfWidth));
+            const bandMax = Math.min(maxSMagnitude, center + binToSMagnitude(bandHalfWidth));
+            
+            return {
+                min: bandMin,
+                max: bandMax,
+                center: center,
+                width: bandMax - bandMin,
+                confidence: Math.min(1.0, stdDev / (sMagnitudeHistogram.length * 0.2))
+            };
+        }
+
+        function smoothHistogram(histogram, radius) {
+            const smoothed = new Array(histogram.length).fill(0);
+            for (let i = 0; i < histogram.length; i++) {
+                let sum = 0, count = 0;
+                for (let j = Math.max(0, i - radius); j <= Math.min(histogram.length - 1, i + radius); j++) {
+                    sum += histogram[j];
+                    count++;
+                }
+                smoothed[i] = sum / count;
+            }
+            return smoothed;
+        }
+
+        function findHistogramPeaks(histogram, sensitivity) {
+            const peaks = [];
+            const minPeakHeight = Math.max(...histogram) * sensitivity * 0.1;
+            
+            for (let i = 1; i < histogram.length - 1; i++) {
+                if (histogram[i] > histogram[i - 1] && 
+                    histogram[i] > histogram[i + 1] && 
+                    histogram[i] > minPeakHeight) {
+                    peaks.push({
+                        bin: i,
+                        strength: histogram[i]
+                    });
+                }
+            }
+            
+            return peaks;
+        }
+
+        // ==================== BAND-FOCUSED DEPTH GENERATION ====================
+        
+        function generateBandFocusedDepth(imageData, config, detectedBand) {
+            console.log('📡 Generating precise Hadit depth map...');
+            const startTime = performance.now();
+            
+            const { width, height, data } = imageData;
+            const depthBuffer = new Array(width * height);
+            
+            currentSBounds = config.sBounds;
+            
+            let minDepth = 1, maxDepth = 0, totalDepth = 0;
+            let pixelsInBand = 0, pixelsOutsideBand = 0;
+            let bandDepthSum = 0, outsideDepthSum = 0;
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = y * width + x;
+                    const pixelIdx = idx * 4;
+                    
+                    const r = data[pixelIdx] / 255;
+                    const g = data[pixelIdx + 1] / 255;
+                    const b = data[pixelIdx + 2] / 255;
+                    
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    const maxCol = Math.max(r, g, b);
+                    const minCol = Math.min(r, g, b);
+                    const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
+                    
+                    const result = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
+                    const { sCoord, sMagnitude } = result;
+                    
+                    const isInBand = sMagnitude >= detectedBand.min && sMagnitude <= detectedBand.max;
+                    const distanceFromBandCenter = Math.abs(sMagnitude - detectedBand.center);
+                    const bandPosition = Math.max(0, Math.min(1, (sMagnitude - detectedBand.min) / Math.max(0.001, detectedBand.width)));
+                    
+                    let depth = 0.1;
+                    
+                    if (isInBand) {
+                        pixelsInBand++;
+                        
+                        const bandCenteredness = detectedBand.width > 0 ? 
+                            1.0 - (distanceFromBandCenter / (detectedBand.width * 0.5)) : 1.0;
+                        const contentWeight = lum * 0.5 + sat * 0.3;
+                        
+                        depth = 0.3 + bandPosition * 0.6;
+                        depth *= (1 + Math.max(0, bandCenteredness) * config.focusFactor * 0.2);
+                        depth *= (1 + contentWeight * 0.3);
+                        
+                        bandDepthSum += depth;
+                        
+                    } else {
+                        pixelsOutsideBand++;
+                        
+                        if (config.focusOnlyBand) {
+                            depth = 0.05 + (lum * 0.1);
+                        } else {
+                            const falloffDistance = Math.min(
+                                Math.abs(sMagnitude - detectedBand.min),
+                                Math.abs(sMagnitude - detectedBand.max)
+                            );
+                            const falloffFactor = 1.0 / (1.0 + falloffDistance * 0.5);
+                            depth = 0.1 + lum * 0.2 * falloffFactor;
+                        }
+                        
+                        outsideDepthSum += depth;
+                    }
+                    
+                    if (isInBand && config.focusFactor > 1.0) {
+                        depth = 0.5 + (depth - 0.5) * config.focusFactor;
+                    }
+                    
+                    depth = Math.max(0.05, Math.min(1.0, depth));
+                    
+                    minDepth = Math.min(minDepth, depth);
+                    maxDepth = Math.max(maxDepth, depth);
+                    totalDepth += depth;
+                    
+                    depthBuffer[idx] = {
+                        depth: depth,
+                        sCoord: sCoord,
+                        sMagnitude: sMagnitude,
+                        isInBand: isInBand,
+                        bandPosition: bandPosition,
+                        distanceFromBandCenter: distanceFromBandCenter,
+                        luminance: lum,
+                        saturation: sat,
+                        haditResult: result,
+                        coverage: true
+                    };
+                }
+            }
+            
+            const processingTime = performance.now() - startTime;
+            const avgDepth = totalDepth / (width * height);
+            const avgBandDepth = pixelsInBand > 0 ? bandDepthSum / pixelsInBand : 0;
+            const avgOutsideDepth = pixelsOutsideBand > 0 ? outsideDepthSum / pixelsOutsideBand : 0;
+            
+            console.log(`✅ Precise depth generated in ${processingTime.toFixed(2)}ms`);
+            console.log(`   θ=${config.haditTheta.toFixed(1)}°, φ=${config.haditPhi.toFixed(1)}°`);
+            console.log(`   Pixels in band: ${pixelsInBand}/${width * height} (${(pixelsInBand/(width*height)*100).toFixed(1)}%)`);
+            
+            return {
+                depthBuffer,
+                stats: {
+                    processingTime,
+                    minDepth,
+                    maxDepth,
+                    avgDepth,
+                    avgBandDepth,
+                    avgOutsideDepth,
+                    pixelsInBand,
+                    pixelsOutsideBand,
+                    bandCoverage: pixelsInBand / (width * height),
+                    detectedBand: detectedBand,
+                    haditTheta: config.haditTheta,
+                    haditPhi: config.haditPhi,
+                    focusFactor: config.focusFactor,
+                    focusOnlyBand: config.focusOnlyBand,
+                    bandSizeMultiplier: config.bandSizeMultiplier
+                }
+            };
+        }
+
+        // ==================== ENHANCED CAMERA SYSTEM WITH COMPLETE BAND PROCESSING ====================
         
         class LiveHaditCamera {
             constructor() {
-                this.video = null; // For processing, will be hidden
-                this.debugVideo = document.getElementById('debugVideo'); // For direct user view if toggled
+                this.video = null;
+                this.debugVideo = document.getElementById('debugVideo');
                 this.stream = null;
                 this.isRunning = false;
                 this.animationFrameId = null;
-                this.animationId = null; // For theta/phi animation
+                this.animationId = null;
                 this.availableCameras = [];
                 this.currentCameraIndex = 0;
                 
@@ -534,25 +991,27 @@
                 this.processingCanvas = document.createElement('canvas');
                 this.processingCtx = this.processingCanvas.getContext('2d');
                 
+                // Band detection state
+                this.currentBandDetectionResult = null;
+                this.currentDepthResult = null;
+                
                 this.initializeControls();
                 this.setupCanvases();
-                this.setupDebugVideo(); // Ensures debugVideo properties are set
+                this.setupDebugVideo();
                 this.checkCameraPermissions();
-                this.updateInfoPanel(`Live Hadit camera system ready! | Angledcrystals | ${new Date().toISOString()}`);
+                this.updateInfoPanel(`Complete Live Hadit camera system ready! | Angledcrystals | 2025-06-07 07:52:00`);
                 
-                console.log('✅ Live Hadit Camera System initialized!');
-                console.log('🐛 Debug mode enabled - raw video feed available via toggle');
+                console.log('✅ Complete Live Hadit Camera System initialized!');
+                console.log('🎯 Full band detection modes available');
                 console.log('θ (Theta) range: 0° to 360° in 0.1° increments');
                 console.log('φ (Phi) range: 0.1° to 179.9° in 0.1° increments');
             }
 
             setupDebugVideo() {
-                // this.debugVideo is already assigned in constructor
                 if (this.debugVideo) {
                     this.debugVideo.autoplay = true;
                     this.debugVideo.playsInline = true;
                     this.debugVideo.muted = true;
-                    // initial display style is handled by HTML
                 } else {
                     console.error("Debug video element not found in HTML!");
                 }
@@ -562,7 +1021,6 @@
                 try {
                     if (!navigator.permissions || !navigator.permissions.query) {
                         this.updateAnalysisInfo('Camera permission: query API not supported, will try direct access on start.');
-                        console.log('Permission query not supported, will try direct access');
                         return;
                     }
                     const permissionStatus = await navigator.permissions.query({ name: 'camera' });
@@ -572,15 +1030,12 @@
                         await this.enumerateCameras();
                     } else if (permissionStatus.state === 'prompt') {
                         this.updateAnalysisInfo('Camera permission: will prompt when starting');
-                    } else { // 'denied'
+                    } else {
                         this.showError('Camera permission denied. Please enable camera access in browser settings.');
                     }
                     
-                    permissionStatus.onchange = () => { // Use onchange for broader compatibility
+                    permissionStatus.onchange = () => {
                         this.updateAnalysisInfo(`Camera permission changed: ${permissionStatus.state}`);
-                        if (permissionStatus.state === 'granted' && !this.isRunning) {
-                           // Optionally, re-enumerate or prompt user to start if they grant later
-                        }
                     };
                     
                 } catch (error) {
@@ -601,9 +1056,6 @@
                     this.availableCameras.forEach((camera, index) => {
                         console.log(`Camera ${index}: ${camera.label || `Camera ${index+1}`} (ID: ${camera.deviceId})`);
                     });
-                    if (this.availableCameras.length === 0) {
-                        this.updateAnalysisInfo("No video input devices found.");
-                    }
                 } catch (error) {
                     console.error('Camera enumeration error:', error);
                     this.updateAnalysisInfo('Camera enumeration failed.');
@@ -628,22 +1080,33 @@
 
             getConfiguration() {
                 return {
+                    // Hadit parameters
                     haditTheta: parseFloat(document.getElementById('haditTheta')?.value || 45),
                     haditPhi: parseFloat(document.getElementById('haditPhi')?.value || 60),
                     haditInfluence: parseFloat(document.getElementById('haditInfluence')?.value || 1.0),
+                    
+                    // Band detection parameters
+                    bandDetectionMode: document.getElementById('bandDetectionMode')?.value || 'auto_detect',
+                    bandSizeMultiplier: parseFloat(document.getElementById('bandSizeMultiplier')?.value || 1.0),
                     focusFactor: parseFloat(document.getElementById('focusFactor')?.value || 2.0),
+                    
+                    // Processing parameters
                     separation: parseFloat(document.getElementById('separation')?.value || 8),
                     depthIntensity: parseFloat(document.getElementById('depthIntensity')?.value || 1.5),
                     sBounds: parseFloat(document.getElementById('sBounds')?.value || 10.0),
                     luminosityWeight: parseFloat(document.getElementById('luminosityWeight')?.value || 0.7),
                     saturationWeight: parseFloat(document.getElementById('saturationWeight')?.value || 0.3),
                     quality: parseFloat(document.getElementById('qualitySelect')?.value || 0.75),
+                    
+                    // Options
                     enableStereo: document.getElementById('enableStereo')?.checked ?? true,
                     showDepthMap: document.getElementById('showDepthMap')?.checked ?? true,
+                    showBandVisualization: document.getElementById('showBandVisualization')?.checked ?? false,
+                    focusOnlyBand: document.getElementById('focusOnlyBand')?.checked ?? false,
                     mirrorCamera: document.getElementById('mirrorCamera')?.checked ?? false,
                     showFPS: document.getElementById('showFPS')?.checked ?? true,
                     debugMode: document.getElementById('debugMode')?.checked ?? false,
-                    showRawFeed: document.getElementById('showRawFeed')?.checked ?? false // For the debugVideo visibility
+                    showRawFeed: document.getElementById('showRawFeed')?.checked ?? false
                 };
             }
 
@@ -651,17 +1114,16 @@
                 try {
                     this.updateCameraStatus('📹 Requesting camera permissions...', 'connecting');
                     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                         this.showError('getUserMedia is not supported in this browser.');
-                         this.updateCameraStatus('❌ getUserMedia not supported', 'error');
-                         return;
+                        this.showError('getUserMedia is not supported in this browser.');
+                        this.updateCameraStatus('❌ getUserMedia not supported', 'error');
+                        return;
                     }
-                    // Request basic camera access to trigger permission prompt
                     const testStream = await navigator.mediaDevices.getUserMedia({ 
                         video: { width: { ideal: 320 }, height: { ideal: 240 } } 
                     });
-                    testStream.getTracks().forEach(track => track.stop()); // Stop the test stream immediately
+                    testStream.getTracks().forEach(track => track.stop());
                     this.updateCameraStatus('✅ Camera permissions granted', 'active');
-                    await this.checkCameraPermissions(); // Re-check and enumerate
+                    await this.checkCameraPermissions();
                 } catch (error) {
                     console.error('Failed to get camera permissions:', error);
                     this.showError(`Failed to get camera permissions: ${error.message} (Name: ${error.name})`);
@@ -689,7 +1151,7 @@
 
                     if (this.availableCameras.length > 0 && this.availableCameras[this.currentCameraIndex]?.deviceId) {
                         constraints.video.deviceId = { exact: this.availableCameras[this.currentCameraIndex].deviceId };
-                         console.log(`Attempting to use camera by ID: ${constraints.video.deviceId.exact}`);
+                        console.log(`Attempting to use camera by ID: ${constraints.video.deviceId.exact}`);
                     } else {
                         constraints.video.facingMode = { ideal: facingMode };
                         console.log(`Attempting to use camera by facingMode: ${constraints.video.facingMode.ideal}`);
@@ -703,75 +1165,56 @@
                     }
 
                     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                         this.showError('getUserMedia is not supported in this browser.');
-                         this.updateCameraStatus('❌ getUserMedia not supported', 'error');
-                         return;
+                        this.showError('getUserMedia is not supported in this browser.');
+                        this.updateCameraStatus('❌ getUserMedia not supported', 'error');
+                        return;
                     }
                     this.stream = await navigator.mediaDevices.getUserMedia(constraints);
                     console.log('✅ Camera stream obtained');
-                    if (this.stream.getVideoTracks().length === 0) {
-                        console.error("Stream obtained but has no video tracks.");
-                        this.showError("Failed to obtain a video track from the camera.");
-                        this.updateCameraStatus('❌ No video track', 'error');
-                        return;
-                    }
-                    console.log(`Stream active: ${this.stream.active}, Video track readyState: ${this.stream.getVideoTracks()[0].readyState}`);
 
-                    // Setup main processing video element
                     if (!this.video) {
                         this.video = document.createElement('video');
                         this.video.autoplay = true;
                         this.video.playsInline = true;
                         this.video.muted = true;
-                        this.video.style.display = 'none'; // Keep it hidden
-                        document.body.appendChild(this.video); // ***FIX 1: Add to DOM***
+                        this.video.style.display = 'none';
+                        document.body.appendChild(this.video);
                         console.log("Processing video element created and added to DOM.");
                     }
                     
                     this.video.srcObject = this.stream;
-                    // Also ensure debugVideo gets the stream if it exists
                     if (this.debugVideo) {
-                        this.debugVideo.srcObject = this.stream; // Share the same stream
+                        this.debugVideo.srcObject = this.stream;
                         console.log("Stream assigned to debugVideo.");
                     }
                     
-                    // ***FIX 2: Explicitly play both video elements***
                     const playPromises = [];
                     if (this.video) {
                         playPromises.push(this.video.play().catch(e => {
                             console.error("Processing video play error:", e);
-                            this.showError(`Processing video play error: ${e.message}`);
                         }));
                     }
-                    if (this.debugVideo) { // debugVideo is from HTML, should exist
+                    if (this.debugVideo) {
                         playPromises.push(this.debugVideo.play().catch(e => {
-                             console.error("Debug video play error:", e);
-                             this.showError(`Debug video play error: ${e.message}`);
+                            console.error("Debug video play error:", e);
                         }));
                     }
                     
                     await Promise.all(playPromises);
                     console.log('▶️ Play initiated for video elements');
 
-                    // Wait for video metadata to be ready (for this.video, which is used for processing)
                     await new Promise((resolve, reject) => {
                         if (!this.video) {
                             reject(new Error("Processing video element not found for loadedmetadata event"));
                             return;
                         }
                         const timeout = setTimeout(() => {
-                            reject(new Error(`Video load timeout for processing video. ReadyState: ${this.video?.readyState}. Stream active: ${this.stream?.active}`));
-                        }, 10000); // 10 second timeout
+                            reject(new Error(`Video load timeout. ReadyState: ${this.video?.readyState}. Stream active: ${this.stream?.active}`));
+                        }, 10000);
                         
                         const handleLoad = () => {
                             clearTimeout(timeout);
-                            if (!this.video || this.video.videoWidth === 0 || this.video.videoHeight === 0) {
-                                console.warn(`📺 Processing video metadata loaded, but dimensions are zero or video element missing: ${this.video?.videoWidth}x${this.video?.videoHeight}`);
-                                // Do not reject here, as some browsers might still stream. Log and continue.
-                                // The processVideoFrame will check dimensions again.
-                            } else {
-                                console.log(`📺 Processing video ready: ${this.video.videoWidth}x${this.video.videoHeight}`);
-                            }
+                            console.log(`📺 Processing video ready: ${this.video.videoWidth}x${this.video.videoHeight}`);
                             resolve();
                         };
                         
@@ -779,22 +1222,21 @@
                         this.video.addEventListener('error', (e) => {
                             clearTimeout(timeout);
                             let errorMsg = 'Processing video load error';
-                            if (this.video && this.video.error) { // Check if this.video exists
+                            if (this.video && this.video.error) {
                                 errorMsg += `: Code ${this.video.error.code}, Message: ${this.video.error.message}`;
                             }
-                            console.error(errorMsg, e);
                             reject(new Error(errorMsg));
                         }, { once: true });
 
-                        if (this.video.readyState >= HTMLMediaElement.HAVE_METADATA) { // Use constant
-                           console.log("Video metadata already loaded, calling handleLoad directly.");
-                           handleLoad();
+                        if (this.video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+                            console.log("Video metadata already loaded, calling handleLoad directly.");
+                            handleLoad();
                         }
                     });
                     
                     this.isRunning = true;
-                    this.updateCameraStatus('📹 Camera active - Live Hadit processing', 'active');
-                    this.updateInfoPanel(`Camera started: ${this.video?.videoWidth || 'N/A'}x${this.video?.videoHeight || 'N/A'} | Live Hadit processing active`);
+                    this.updateCameraStatus('📹 Camera active - Live Hadit Band processing', 'active');
+                    this.updateInfoPanel(`Camera started: ${this.video?.videoWidth || 'N/A'}x${this.video?.videoHeight || 'N/A'} | Live Hadit band processing active`);
                     
                     this.startProcessingLoop();
                     
@@ -812,17 +1254,14 @@
                     } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
                         this.showError('No camera found. Please connect a camera and try again.');
                     } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-                        this.showError('Camera is busy or unreadable. Close other apps using the camera, or try a different camera/resolution, and then try again.');
-                    } else if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {
+                        this.showError('Camera is busy or unreadable. Close other apps using the camera and try again.');
+                    } else if (error.name === 'OverconstrainedError') {
                         this.showError(`The selected resolution/camera is not supported. Try different settings. Error: ${error.message}`);
-                    } else if (error.message && error.message.includes("Video load timeout")) {
-                         this.showError('Video stream failed to load in time. Check camera connection and permissions.');
                     } else {
                         this.showError(`Camera error: ${error.name} - ${error.message}`);
                     }
                 }
             }
-
 
             stopCamera() {
                 this.isRunning = false;
@@ -832,7 +1271,7 @@
                     cancelAnimationFrame(this.animationFrameId);
                     this.animationFrameId = null;
                 }
-                 if (this.animationId) { // Stop theta/phi animation
+                if (this.animationId) {
                     cancelAnimationFrame(this.animationId);
                     this.animationId = null;
                 }
@@ -845,21 +1284,16 @@
                 
                 if (this.video) {
                     this.video.srcObject = null;
-                    // Optionally remove from DOM if you want to recreate it each time
-                    // if (this.video.parentNode) {
-                    //    this.video.parentNode.removeChild(this.video);
-                    // }
-                    // this.video = null; // If you want to recreate it fully
                     console.log("Processing video srcObject cleared.");
                 }
                 
-                if (this.debugVideo) { // This is the one from HTML
+                if (this.debugVideo) {
                     this.debugVideo.srcObject = null;
                     console.log("Debug video srcObject cleared.");
                 }
                 
-                this.updateCameraStatus('📹 Camera stopped', 'connecting'); // Or 'idle'
-                this.updateInfoPanel('Camera stopped. Click Start Camera to resume live Hadit processing.');
+                this.updateCameraStatus('📹 Camera stopped', 'connecting');
+                this.updateInfoPanel('Camera stopped. Click Start Camera to resume live Hadit band processing.');
                 
                 document.getElementById('startCamera').style.display = 'inline-block';
                 document.getElementById('switchCamera').style.display = 'none';
@@ -867,12 +1301,12 @@
                 
                 // Clear canvases
                 [this.leftCtx, this.rightCtx, this.depthCtx].forEach(ctx => {
-                    if (ctx && ctx.canvas) { // Ensure context and canvas exist
-                        ctx.fillStyle = '#000'; // Set to black
+                    if (ctx && ctx.canvas) {
+                        ctx.fillStyle = '#000';
                         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
                     }
                 });
-                this.updateFpsDisplay(true); // Reset FPS to 0
+                this.updateFpsDisplay(true);
                 console.log("Camera stopped and canvases cleared.");
             }
 
@@ -882,16 +1316,8 @@
                     this.currentCameraIndex = (this.currentCameraIndex + 1) % this.availableCameras.length;
                     const selectedCamera = this.availableCameras[this.currentCameraIndex];
                     this.updateInfoPanel(`Switching to camera ${selectedCamera.label || `Camera ${this.currentCameraIndex + 1}`}...`);
-                    await this.startCamera(); // Restart with new camera ID
-                } else if (this.availableCameras.length === 1) {
-                    this.updateInfoPanel(`Only one camera available. Attempting to toggle facing mode as fallback.`);
-                     // Fallback: toggle facing mode if only one camera or enumeration failed but we might have front/back
-                    const facingModeSelect = document.getElementById('facingMode');
-                    facingModeSelect.value = facingModeSelect.value === 'user' ? 'environment' : 'user';
-                    this.updateInfoPanel(`Switched facing mode to ${facingModeSelect.value}. Restarting camera...`);
-                    await this.startCamera(); // Restart with new facing mode
+                    await this.startCamera();
                 } else {
-                    this.updateInfoPanel('No other cameras available to switch to. Trying to toggle facing mode.');
                     const facingModeSelect = document.getElementById('facingMode');
                     facingModeSelect.value = facingModeSelect.value === 'user' ? 'environment' : 'user';
                     this.updateInfoPanel(`Switched facing mode to ${facingModeSelect.value}. Restarting camera...`);
@@ -900,7 +1326,6 @@
             }
 
             toggleDebugVideo() {
-                // const debugVideo = document.getElementById('debugVideo'); // Already this.debugVideo
                 const showRawFeedCheckbox = document.getElementById('showRawFeed');
                 
                 if (!this.debugVideo) {
@@ -909,7 +1334,7 @@
                 }
 
                 if (this.debugVideo.style.display === 'none') {
-                    this.debugVideo.style.display = 'block'; // Or 'inline-block' or '' depending on desired layout
+                    this.debugVideo.style.display = 'block';
                     if (showRawFeedCheckbox) showRawFeedCheckbox.checked = true;
                     this.updateInfoPanel('Debug video enabled - raw camera feed should be visible.');
                 } else {
@@ -920,12 +1345,11 @@
             }
 
             startProcessingLoop() {
-                const targetFPS = parseInt(document.getElementById('targetFpsSelect')?.value || 30); // Example if you add a target FPS selector
-                // const targetFPS = 30; // Or fixed
+                const targetFPS = 30;
                 const targetInterval = 1000 / targetFPS;
-                let lastTime = performance.now(); // Use performance.now() for higher precision
+                let lastTime = performance.now();
                 
-                console.log(`🔄 Starting processing loop with target FPS: ${targetFPS}`);
+                console.log(`🔄 Starting complete Hadit band processing loop with target FPS: ${targetFPS}`);
                 
                 const processFrame = (currentTime) => {
                     if (!this.isRunning) {
@@ -933,20 +1357,18 @@
                         return;
                     }
                     
-                    this.animationFrameId = requestAnimationFrame(processFrame); // Request next frame immediately for smoother animation timing
+                    this.animationFrameId = requestAnimationFrame(processFrame);
 
                     const deltaTime = currentTime - lastTime;
                     if (deltaTime >= targetInterval) {
-                        lastTime = currentTime - (deltaTime % targetInterval); // Adjust lastTime to maintain target interval
+                        lastTime = currentTime - (deltaTime % targetInterval);
                         
-                        this.processVideoFrame();
+                        this.processVideoFrameWithBandDetection();
                         
-                        // Update FPS
                         this.frameCount++;
-                        // FPS calculation should be independent of processing interval, based on real time
                     }
-                    // Moved FPS calculation outside the interval check to be based on actual time passed
-                    if (currentTime - this.lastFpsTime >= 1000) { // Update FPS counter every second
+
+                    if (currentTime - this.lastFpsTime >= 1000) {
                         this.currentFps = this.frameCount;
                         this.frameCount = 0;
                         this.lastFpsTime = currentTime;
@@ -959,9 +1381,8 @@
                 this.animationFrameId = requestAnimationFrame(processFrame);
             }
 
-            processVideoFrame() {
+            processVideoFrameWithBandDetection() {
                 if (!this.video || this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || this.video.videoWidth === 0 || this.video.videoHeight === 0) {
-                    // console.log('⚠️ Video not ready yet or dimensions are zero...');
                     return;
                 }
                 
@@ -971,7 +1392,7 @@
                 try {
                     const sourceWidth = this.video.videoWidth;
                     const sourceHeight = this.video.videoHeight;
-                    const processWidth = Math.max(1, Math.floor(sourceWidth * config.quality)); // Ensure at least 1px
+                    const processWidth = Math.max(1, Math.floor(sourceWidth * config.quality));
                     const processHeight = Math.max(1, Math.floor(sourceHeight * config.quality));
                     
                     if (this.processingCanvas.width !== processWidth) this.processingCanvas.width = processWidth;
@@ -983,7 +1404,7 @@
                         this.processingCtx.translate(-processWidth, 0);
                     }
                     
-                    this.processingCtx.clearRect(0, 0, processWidth, processHeight); // Clear before drawing
+                    this.processingCtx.clearRect(0, 0, processWidth, processHeight);
                     this.processingCtx.drawImage(this.video, 0, 0, processWidth, processHeight);
                     this.processingCtx.restore();
                     
@@ -993,21 +1414,27 @@
                         return;
                     }
                     
-                    this.generateHaditStereoViews(imageData, config);
+                    // Perform band detection on current frame
+                    this.currentBandDetectionResult = detectHaditInformationBand(imageData, config);
+                    detectedBand = this.currentBandDetectionResult.band;
+                    
+                    // Generate band-focused depth
+                    this.currentDepthResult = generateBandFocusedDepth(imageData, config, this.currentBandDetectionResult.band);
+                    
+                    // Generate stereo views using band-focused depth
+                    this.generateHaditStereoViewsWithBand(imageData, config, this.currentDepthResult);
                     
                     const processingTime = performance.now() - startTime;
                     if (config.debugMode) {
-                        this.updateAnalysisPanel(processingTime, config, processWidth, processHeight);
+                        this.updateAnalysisPanelWithBand(processingTime, config, processWidth, processHeight);
                     }
                     
                 } catch (error) {
                     console.error('🚫 Frame processing error:', error);
-                    // this.showError('Frame processing error: ' + error.message); // Can be too spammy
-                    // this.stopCamera(); // Optionally stop on critical error
                 }
             }
 
-            generateHaditStereoViews(imageData, config) {
+            generateHaditStereoViewsWithBand(imageData, config, depthResult) {
                 const { width, height, data } = imageData;
                 
                 if (width === 0 || height === 0 || !data || data.length === 0) {
@@ -1015,13 +1442,13 @@
                     return;
                 }
                 
-                // Resize output canvases if necessary and not already matching processing size
+                // Resize output canvases if necessary
                 if (this.leftCanvas.width !== width) this.leftCanvas.width = width;
                 if (this.leftCanvas.height !== height) this.leftCanvas.height = height;
                 if (this.rightCanvas.width !== width) this.rightCanvas.width = width;
                 if (this.rightCanvas.height !== height) this.rightCanvas.height = height;
                 
-                const depthDisplayWidth = config.showDepthMap ? Math.floor(width / 2) : width; // Example: depth map half size
+                const depthDisplayWidth = config.showDepthMap ? Math.floor(width / 2) : width;
                 const depthDisplayHeight = config.showDepthMap ? Math.floor(height / 2) : height;
                 if (this.depthCanvas.width !== depthDisplayWidth) this.depthCanvas.width = depthDisplayWidth;
                 if (this.depthCanvas.height !== depthDisplayHeight) this.depthCanvas.height = depthDisplayHeight;
@@ -1033,69 +1460,73 @@
                 const leftData = leftImageData.data;
                 const rightData = rightImageData.data;
                 const depthOutData = depthImageData ? depthImageData.data : null;
-                
-                let minDepth = 1.0, maxDepth = 0.0;
 
                 for (let y = 0; y < height; y++) {
                     for (let x = 0; x < width; x++) {
                         const idx = (y * width + x) * 4;
+                        const depthIdx = y * width + x;
                         
-                        const r = data[idx] / 255;
-                        const g = data[idx + 1] / 255;
-                        const b = data[idx + 2] / 255;
+                        // Get depth from band-focused depth result
+                        const depthData = depthResult.depthBuffer[depthIdx];
+                        const depth = depthData ? depthData.depth : 0.5;
+                        const isInBand = depthData ? depthData.isInBand : false;
                         
-                        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                        const maxCol = Math.max(r, g, b);
-                        const minCol = Math.min(r, g, b);
-                        const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0; // Avoid division by zero
-                        
-                        const sCoord = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
-                        const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
-                        
-                        const normalizedDepthFromS = Math.min(sMagnitude / (config.sBounds * 2), 1.0); // Normalize based on sBounds
-                        let depth = 0.2 + (normalizedDepthFromS * 0.8);
-                        depth = 0.5 + (depth - 0.5) * config.focusFactor;
-                        const contentWeight = lum * 0.5 + sat * 0.3; // Simplified content weight
-                        depth *= (1 + contentWeight * 0.3);
-                        depth = Math.max(0.05, Math.min(1.0, depth)); // Clamp depth
-
-                        minDepth = Math.min(minDepth, depth);
-                        maxDepth = Math.max(maxDepth, depth);
-                        
-                        const normalizedDepthDisplacement = (depth - 0.5) * 2; // Range -1 to 1
+                        // Calculate stereo displacement
+                        const normalizedDepthDisplacement = (depth - 0.5) * 2;
                         const displacement = Math.round(normalizedDepthDisplacement * config.separation * config.depthIntensity);
                         
+                        // Apply band visualization if enabled
+                        let r = data[idx];
+                        let g = data[idx + 1];
+                        let b = data[idx + 2];
+                        
+                        if (config.showBandVisualization && isInBand) {
+                            // Highlight band pixels with a subtle overlay
+                            r = Math.min(255, r + 20);
+                            g = Math.min(255, g + 20);
+                            b = Math.max(0, b - 10);
+                        }
+                        
                         if (config.enableStereo) {
+                            // Left eye: sample from right-shifted position
                             const leftSampleX = Math.max(0, Math.min(width - 1, x + displacement));
                             const leftSampleIdx = (y * width + leftSampleX) * 4;
-                            leftData[idx]     = data[leftSampleIdx];
+                            leftData[idx] = data[leftSampleIdx];
                             leftData[idx + 1] = data[leftSampleIdx + 1];
                             leftData[idx + 2] = data[leftSampleIdx + 2];
                             leftData[idx + 3] = 255;
                             
+                            // Right eye: sample from left-shifted position
                             const rightSampleX = Math.max(0, Math.min(width - 1, x - displacement));
                             const rightSampleIdx = (y * width + rightSampleX) * 4;
-                            rightData[idx]     = data[rightSampleIdx];
+                            rightData[idx] = data[rightSampleIdx];
                             rightData[idx + 1] = data[rightSampleIdx + 1];
                             rightData[idx + 2] = data[rightSampleIdx + 2];
                             rightData[idx + 3] = 255;
                         } else {
-                            leftData[idx] = rightData[idx] = data[idx];
-                            leftData[idx + 1] = rightData[idx + 1] = data[idx + 1];
-                            leftData[idx + 2] = rightData[idx + 2] = data[idx + 2];
+                            leftData[idx] = rightData[idx] = r;
+                            leftData[idx + 1] = rightData[idx + 1] = g;
+                            leftData[idx + 2] = rightData[idx + 2] = b;
                             leftData[idx + 3] = rightData[idx + 3] = 255;
                         }
 
                         if (config.showDepthMap && depthOutData) {
-                            // For depth map, scale x, y to depthDisplayWidth, depthDisplayHeight
                             const dx = Math.floor(x * depthDisplayWidth / width);
                             const dy = Math.floor(y * depthDisplayHeight / height);
-                            if (dx < depthDisplayWidth && dy < depthDisplayHeight) { // Check bounds
+                            if (dx < depthDisplayWidth && dy < depthDisplayHeight) {
                                 const depthIdx = (dy * depthDisplayWidth + dx) * 4;
-                                const depthColor = Math.floor(depth * 255);
-                                depthOutData[depthIdx] = depthColor;     // R
-                                depthOutData[depthIdx + 1] = depthColor; // G
-                                depthOutData[depthIdx + 2] = depthColor; // B
+                                let depthColor = Math.floor(depth * 255);
+                                
+                                // Color-code band pixels in depth map
+                                if (config.showBandVisualization && isInBand) {
+                                    depthOutData[depthIdx] = Math.min(255, depthColor + 50);     // R (enhanced for band)
+                                    depthOutData[depthIdx + 1] = depthColor;                     // G
+                                    depthOutData[depthIdx + 2] = Math.max(0, depthColor - 30);  // B (reduced for band)
+                                } else {
+                                    depthOutData[depthIdx] = depthColor;     // R
+                                    depthOutData[depthIdx + 1] = depthColor; // G
+                                    depthOutData[depthIdx + 2] = depthColor; // B
+                                }
                                 depthOutData[depthIdx + 3] = 255;        // Alpha
                             }
                         }
@@ -1108,21 +1539,43 @@
                     this.depthCtx.putImageData(depthImageData, 0, 0);
                 } else if (!config.showDepthMap) {
                     this.depthCtx.fillStyle = '#000';
-                    this.depthCtx.fillRect(0,0, this.depthCanvas.width, this.depthCanvas.height);
+                    this.depthCtx.fillRect(0, 0, this.depthCanvas.width, this.depthCanvas.height);
                 }
-                 this.latestMinDepth = minDepth; // Store for analysis panel
-                 this.latestMaxDepth = maxDepth;
+            }
+
+            // Band control methods
+            detectBand() {
+                if (!this.isRunning) {
+                    this.updateInfoPanel('Start camera first to detect bands.');
+                    return;
+                }
+                this.updateInfoPanel('Manual band detection triggered - processing current frame...');
+            }
+
+            expandBandFull() {
+                document.getElementById('bandDetectionMode').value = 'full_image';
+                document.getElementById('bandSizeMultiplier').value = '10.0';
+                this.updateControlValues();
+                this.updateInfoPanel('Band expanded to full image coverage with 10x multiplier.');
+            }
+
+            resetBand() {
+                document.getElementById('bandDetectionMode').value = 'auto_detect';
+                document.getElementById('bandSizeMultiplier').value = '1.0';
+                document.getElementById('focusFactor').value = '2.0';
+                this.updateControlValues();
+                this.updateInfoPanel('Band detection reset to auto-detect with default settings.');
             }
             
             // UI Update methods
             updateFpsDisplay(reset = false) {
                 const fps = reset ? 0 : this.currentFps;
                 document.getElementById('leftFps').textContent = `${fps} FPS`;
-                document.getElementById('rightFps').textContent = `${fps} FPS`; // Assuming same FPS for both
-                document.getElementById('depthFps').textContent = `${fps} FPS`; // And for depth
+                document.getElementById('rightFps').textContent = `${fps} FPS`;
+                document.getElementById('depthFps').textContent = `${fps} FPS`;
             }
 
-            updateCameraStatus(message, statusClass) { // statusClass: 'connecting', 'active', 'error'
+            updateCameraStatus(message, statusClass) {
                 const statusEl = document.getElementById('cameraStatus');
                 statusEl.innerHTML = `<span class="status-${statusClass}">${message}</span>`;
             }
@@ -1132,7 +1585,7 @@
                 const errorMessageDiv = document.getElementById('errorMessage');
                 errorMessageDiv.textContent = message;
                 errorPanel.style.display = 'block';
-                console.error("Error Displayed:", message); // Log to console as well
+                console.error("Error Displayed:", message);
             }
 
             hideError() {
@@ -1140,7 +1593,8 @@
             }
             
             updateInfoPanel(message) {
-                document.getElementById('infoPanel').innerHTML = `<div>Status: ${message}</div>`;
+                const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                document.getElementById('infoPanel').innerHTML = `<div>Status: ${message} | Angledcrystals | ${timestamp} UTC</div>`;
             }
 
             updateAnalysisInfo(message) {
@@ -1148,24 +1602,40 @@
                 const div = document.createElement('div');
                 div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
                 analysisPanel.appendChild(div);
-                analysisPanel.scrollTop = analysisPanel.scrollHeight; // Auto-scroll
+                analysisPanel.scrollTop = analysisPanel.scrollHeight;
             }
             
-            updateAnalysisPanel(processingTime, config, processWidth, processHeight) {
+            updateAnalysisPanelWithBand(processingTime, config, processWidth, processHeight) {
                 const panel = document.getElementById('analysisPanel');
+                
+                let bandInfo = 'No band detected';
+                let depthInfo = 'No depth data';
+                
+                if (this.currentBandDetectionResult) {
+                    const band = this.currentBandDetectionResult.band;
+                    bandInfo = `Band: ${band.min.toFixed(2)}-${band.max.toFixed(2)} (${band.width.toFixed(2)} wide, ${(band.confidence*100).toFixed(1)}% conf)`;
+                }
+                
+                if (this.currentDepthResult) {
+                    const stats = this.currentDepthResult.stats;
+                    depthInfo = `Depth: ${stats.minDepth.toFixed(3)}-${stats.maxDepth.toFixed(3)} (${(stats.bandCoverage*100).toFixed(1)}% in band)`;
+                }
+                
                 panel.innerHTML = `
-                    <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Analysis</div>
+                    <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Band Analysis</div>
                     <div>Processing Time: ${processingTime.toFixed(2)} ms</div>
-                    <div>Resolution (Processing): ${processWidth}x${processHeight}</div>
+                    <div>Resolution: ${processWidth}x${processHeight}</div>
+                    <div>Band Mode: ${config.bandDetectionMode}</div>
+                    <div>${bandInfo}</div>
+                    <div>${depthInfo}</div>
                     <div>Hadit θ: ${config.haditTheta.toFixed(1)}°, φ: ${config.haditPhi.toFixed(1)}°</div>
-                    <div>Influence: ${config.haditInfluence.toFixed(2)}, Focus: ${config.focusFactor.toFixed(1)}x</div>
+                    <div>Band Size Multiplier: ${config.bandSizeMultiplier.toFixed(1)}x</div>
+                    <div>Focus Factor: ${config.focusFactor.toFixed(1)}x, Focus Only Band: ${config.focusOnlyBand}</div>
+                    <div>Influence: ${config.haditInfluence.toFixed(2)}, S Bounds: ±${config.sBounds.toFixed(1)}</div>
                     <div>Separation: ${config.separation}px, Depth Intensity: ${config.depthIntensity.toFixed(1)}x</div>
-                    <div>S Bounds: ±${config.sBounds.toFixed(1)}</div>
                     <div>Lum Weight: ${config.luminosityWeight.toFixed(2)}, Sat Weight: ${config.saturationWeight.toFixed(2)}</div>
-                    <div>Quality Setting: ${config.quality * 100}%</div>
-                    <div>FPS: ${this.currentFps}</div>
-                    <div>Depth Range: ${this.latestMinDepth?.toFixed(3) || 'N/A'} - ${this.latestMaxDepth?.toFixed(3) || 'N/A'}</div>
-                    <div>Mirror: ${config.mirrorCamera}, Stereo: ${config.enableStereo}, Show Depth: ${config.showDepthMap}</div>
+                    <div>Quality: ${config.quality * 100}%, FPS: ${this.currentFps}</div>
+                    <div>Options: Stereo=${config.enableStereo}, Mirror=${config.mirrorCamera}, Band Viz=${config.showBandVisualization}</div>
                 `;
             }
 
@@ -1178,13 +1648,18 @@
                 document.getElementById('requestPermissions').addEventListener('click', () => this.requestPermissions());
                 document.getElementById('toggleDebugVideo').addEventListener('click', () => this.toggleDebugVideo());
 
+                // Band controls
+                document.getElementById('detectBand').addEventListener('click', () => this.detectBand());
+                document.getElementById('expandBandFull').addEventListener('click', () => this.expandBandFull());
+                document.getElementById('resetBand').addEventListener('click', () => this.resetBand());
+
                 // Settings with live updates for labels
                 const setupSliderWithValue = (sliderId, valueId, suffix = '', multiplier = 1, digits = 1) => {
                     const slider = document.getElementById(sliderId);
                     const valueLabel = document.getElementById(valueId);
                     const update = () => valueLabel.textContent = `${(parseFloat(slider.value) * multiplier).toFixed(digits)}${suffix}`;
                     slider.addEventListener('input', update);
-                    update(); // Initial call
+                    update();
                 };
                 
                 const setupDualInput = (rangeId, numberId, valueLabelId, suffix = '', digits = 1) => {
@@ -1199,31 +1674,32 @@
                     };
                     const updateFromNumber = () => {
                         let val = parseFloat(numberInput.value);
-                        val = Math.max(parseFloat(rangeInput.min), Math.min(parseFloat(rangeInput.max), val)); // Clamp
-                        if (isNaN(val)) val = parseFloat(rangeInput.value); // Fallback if NaN
+                        val = Math.max(parseFloat(rangeInput.min), Math.min(parseFloat(rangeInput.max), val));
+                        if (isNaN(val)) val = parseFloat(rangeInput.value);
                         rangeInput.value = val;
-                         if (valueLabel) valueLabel.textContent = `${val.toFixed(digits)}${suffix}`;
+                        if (valueLabel) valueLabel.textContent = `${val.toFixed(digits)}${suffix}`;
                     };
                     rangeInput.addEventListener('input', updateFromRange);
-                    numberInput.addEventListener('change', updateFromNumber); // Use change to avoid rapid updates while typing
-                    numberInput.addEventListener('input', () => { // Live update label from number input too
-                         if (valueLabel) valueLabel.textContent = `${parseFloat(numberInput.value).toFixed(digits)}${suffix}`;
+                    numberInput.addEventListener('change', updateFromNumber);
+                    numberInput.addEventListener('input', () => {
+                        if (valueLabel) valueLabel.textContent = `${parseFloat(numberInput.value).toFixed(digits)}${suffix}`;
                     });
-                    updateFromRange(); // Initial call
+                    updateFromRange();
                 };
 
                 setupDualInput('haditTheta', 'haditThetaNumber', 'haditThetaValue', '°', 1);
                 setupDualInput('haditPhi', 'haditPhiNumber', 'haditPhiValue', '°', 1);
                 
-                setupSliderWithValue('haditInfluence', 'haditInfluenceValue', '', 1, 2);
+                setupSliderWithValue('bandSizeMultiplier', 'bandSizeMultiplierValue', 'x', 1, 1);
                 setupSliderWithValue('focusFactor', 'focusFactorValue', 'x', 1, 1);
+                setupSliderWithValue('haditInfluence', 'haditInfluenceValue', '', 1, 2);
                 setupSliderWithValue('separation', 'separationValue', 'px', 1, 0);
                 setupSliderWithValue('depthIntensity', 'depthIntensityValue', 'x', 1, 1);
                 setupSliderWithValue('sBounds', 'sBoundsValue', '', 1, 1);
                 setupSliderWithValue('luminosityWeight', 'luminosityWeightValue', '', 1, 2);
                 setupSliderWithValue('saturationWeight', 'saturationWeightValue', '', 1, 2);
 
-                // Checkboxes - their state is read directly in getConfiguration()
+                // Show raw feed checkbox
                 document.getElementById('showRawFeed').addEventListener('change', (e) => {
                     if (e.target.checked) {
                         if (this.debugVideo && this.debugVideo.style.display === 'none') this.toggleDebugVideo();
@@ -1236,23 +1712,48 @@
                 document.getElementById('setHaditPole').addEventListener('click', () => this.setHaditValue('haditPhi', 0.1));
                 document.getElementById('setHaditEquator').addEventListener('click', () => this.setHaditValue('haditPhi', 90));
                 document.getElementById('setHaditNear180').addEventListener('click', () => this.setHaditValue('haditPhi', 179.9));
-                document.getElementById('animateTheta').addEventListener('click', () => this.animateHadit('haditTheta', 360, 2)); // Animate theta over 2 degrees/sec
-                document.getElementById('animatePhi').addEventListener('click', () => this.animateHadit('haditPhi', 179.9, 1, true)); // Animate phi (ping-pong)
+                document.getElementById('animateTheta').addEventListener('click', () => this.animateHadit('haditTheta', 360, 2));
+                document.getElementById('animatePhi').addEventListener('click', () => this.animateHadit('haditPhi', 179.9, 1, true));
                 document.getElementById('stopAnimation').addEventListener('click', () => this.stopHaditAnimation());
+            }
+
+            updateControlValues() {
+                // This method updates all the value display labels
+                const controls = [
+                    { id: 'bandSizeMultiplier', suffix: 'x', precision: 1 },
+                    { id: 'focusFactor', suffix: 'x', precision: 1 },
+                    { id: 'haditTheta', suffix: '°', precision: 1 },
+                    { id: 'haditPhi', suffix: '°', precision: 1 },
+                    { id: 'haditInfluence', suffix: '', precision: 2 },
+                    { id: 'separation', suffix: 'px' },
+                    { id: 'depthIntensity', suffix: 'x', precision: 1 },
+                    { id: 'sBounds', suffix: '', precision: 1 },
+                    { id: 'luminosityWeight', suffix: '', precision: 2 },
+                    { id: 'saturationWeight', suffix: '', precision: 2 }
+                ];
+
+                controls.forEach(({ id, suffix, precision }) => {
+                    const element = document.getElementById(id);
+                    const valueElement = document.getElementById(id + 'Value');
+                    if (element && valueElement) {
+                        const value = precision ? parseFloat(element.value).toFixed(precision) : element.value;
+                        valueElement.textContent = `${value}${suffix}`;
+                    }
+                });
             }
             
             setHaditValue(param, value) {
                 const rangeInput = document.getElementById(param);
-                const numberInput = document.getElementById(param + 'Number'); // e.g., haditPhiNumber
-                const valueLabel = document.getElementById(param + 'Value'); // e.g., haditPhiValue
+                const numberInput = document.getElementById(param + 'Number');
+                const valueLabel = document.getElementById(param + 'Value');
                 
                 if (rangeInput) rangeInput.value = value;
                 if (numberInput) numberInput.value = value.toFixed(1);
-                if (valueLabel) valueLabel.textContent = `${value.toFixed(1)}°`; // Assuming degrees for these params
+                if (valueLabel) valueLabel.textContent = `${value.toFixed(1)}°`;
             }
 
             animateHadit(param, range, speed, pingPong = false) {
-                this.stopHaditAnimation(); // Stop any existing animation
+                this.stopHaditAnimation();
                 
                 const input = document.getElementById(param);
                 const numberInput = document.getElementById(param + 'Number');
@@ -1265,7 +1766,7 @@
                 let lastTime = performance.now();
 
                 const step = (currentTime) => {
-                    const deltaTime = (currentTime - lastTime) / 1000; // Seconds
+                    const deltaTime = (currentTime - lastTime) / 1000;
                     lastTime = currentTime;
 
                     currentValue += direction * speed * deltaTime;
@@ -1273,9 +1774,9 @@
                     if (pingPong) {
                         if (currentValue >= max) { currentValue = max; direction = -1; }
                         if (currentValue <= min) { currentValue = min; direction = 1; }
-                    } else { // Loop
+                    } else {
                         if (currentValue > max) currentValue = min;
-                        if (currentValue < min) currentValue = max; // In case speed is negative
+                        if (currentValue < min) currentValue = max;
                     }
                     
                     input.value = currentValue.toFixed(1);
@@ -1295,9 +1796,18 @@
             }
         }
 
-        // Initialize the camera system when the DOM is ready
+        // Initialize the complete camera system when the DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('⚡ Initializing Complete Live Hadit Camera System...');
+            console.log('Current Date and Time (UTC): 2025-06-07 07:55:45');
+            console.log('Current User Login: Angledcrystals');
+            console.log('🎯 Full band detection and processing system enabled');
+            
             window.haditCamera = new LiveHaditCamera();
+            
+            console.log('✅ Complete Live Hadit Camera system ready!');
+            console.log('📹 Click "Start Camera" to begin live band processing');
+            console.log('🎛️ All band detection modes: Auto, Content, Gradient, Statistical, Manual, Full Image');
         });
     </script>
 </body>
