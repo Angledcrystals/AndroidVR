@@ -12,7 +12,9 @@ Invisible Mirror does not have as many fun features as VRWizard, and it is not s
 
 Also I use esoteric terminology for the functions because I think it is funny.
 
-Here is a example of the depth map created.
+Here is a example of how good the depth map created is, when applied to a 2D image that didn't normally have one.
+
+As we can see, Hband does indeed recover 3D data from 2D.
 
 ![topimage-classic-hamburger-2019m04-800x534-600x401](https://github.com/user-attachments/assets/f9021dd6-d872-4db7-a4ff-d3376bbef16a)
 
