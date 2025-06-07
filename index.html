@@ -1256,35 +1256,217 @@
         }
         
         // NEW: Enhanced depth map display function
-        function updateDepthMapDisplay(depthMap, width, height) {
-            if (!depthMapVisible || !depthMap) return;
-            
-            const depthMapCanvas = document.getElementById('depthMapCanvas');
-            const depthMapCtx = depthMapCanvas.getContext('2d');
-            
-            // Set canvas size
-            depthMapCanvas.width = width;
-            depthMapCanvas.height = height;
-            
-            // Create visualization
-            const visualData = createDepthVisualization(depthMap, width, height);
-            depthMapCtx.putImageData(visualData, 0, 0);
-            
-            // Store latest depth map
-            latestDepthMap = { depthMap, width, height };
-            
-            // Log depth statistics
-            let minDepth = 1.0, maxDepth = 0.0, avgDepth = 0.0;
-            for (let i = 0; i < depthMap.length; i++) {
-                const depth = depthMap[i];
-                minDepth = Math.min(minDepth, depth);
-                maxDepth = Math.max(maxDepth, depth);
-                avgDepth += depth;
-            }
-            avgDepth /= depthMap.length;
-            
-            debugLog(`Hadit depth stats: min=${minDepth.toFixed(3)}, max=${maxDepth.toFixed(3)}, avg=${avgDepth.toFixed(3)}, φ=${haditConfig.haditPhi}°, θ=${haditConfig.haditTheta}°, band=${haditConfig.bandSizeMultiplier}x`);
+// FIXED depth visualization functions - replace in the JavaScript section
+
+// Current Date and Time (UTC): 2025-06-07 02:38:29
+// Current User's Login: Angledcrystals
+
+// NEW: Enhanced depth map display function with proper value handling
+function updateDepthMapDisplay(depthMap, width, height) {
+    if (!depthMapVisible || !depthMap) return;
+    
+    const depthMapCanvas = document.getElementById('depthMapCanvas');
+    const depthMapCtx = depthMapCanvas.getContext('2d');
+    const depthMapStats = document.getElementById('depthMapStats');
+    
+    // Set canvas size
+    depthMapCanvas.width = width;
+    depthMapCanvas.height = height;
+    
+    // FIXED: Analyze depth range first
+    let minDepth = Number.MAX_VALUE;
+    let maxDepth = Number.MIN_VALUE;
+    let avgDepth = 0;
+    let validPixels = 0;
+    
+    for (let i = 0; i < depthMap.length; i++) {
+        const depth = depthMap[i];
+        if (!isNaN(depth) && isFinite(depth)) {
+            minDepth = Math.min(minDepth, depth);
+            maxDepth = Math.max(maxDepth, depth);
+            avgDepth += depth;
+            validPixels++;
         }
+    }
+    
+    if (validPixels === 0) {
+        debugLog("ERROR: No valid depth values found!");
+        return;
+    }
+    
+    avgDepth /= validPixels;
+    const depthRange = maxDepth - minDepth;
+    
+    // FIXED: Create properly normalized visualization
+    const visualData = createEnhancedDepthVisualization(depthMap, width, height, minDepth, maxDepth);
+    depthMapCtx.putImageData(visualData, 0, 0);
+    
+    // Store latest depth map
+    latestDepthMap = { depthMap, width, height };
+    
+    // Update stats display
+    depthMapStats.textContent = `Min: ${minDepth.toFixed(3)} Max: ${maxDepth.toFixed(3)} Avg: ${avgDepth.toFixed(3)} Range: ${depthRange.toFixed(3)}`;
+    
+    // Enhanced logging
+    debugLog(`✅ Depth map updated: ${validPixels}/${depthMap.length} valid pixels`);
+    debugLog(`📊 Stats: min=${minDepth.toFixed(3)}, max=${maxDepth.toFixed(3)}, avg=${avgDepth.toFixed(3)}, range=${depthRange.toFixed(3)}`);
+    debugLog(`⚡ Hadit: φ=${haditConfig.haditPhi}°, θ=${haditConfig.haditTheta}°, band=${haditConfig.bandSizeMultiplier}x`);
+    
+    // Warn if depth range is too small
+    if (depthRange < 0.01) {
+        debugLog("⚠️ WARNING: Very small depth range detected - may appear flat");
+    }
+}
+
+// FIXED: Enhanced depth visualization with proper normalization
+function createEnhancedDepthVisualization(depthMap, width, height, minDepth, maxDepth) {
+    const visualData = new ImageData(width, height);
+    const depthRange = maxDepth - minDepth;
+    
+    // Handle edge case where all depths are the same
+    if (depthRange < 1e-6) {
+        debugLog("WARNING: Uniform depth values detected, using default gray");
+        for (let i = 0; i < depthMap.length; i++) {
+            const pixelIdx = i * 4;
+            visualData.data[pixelIdx] = 128;     // R
+            visualData.data[pixelIdx + 1] = 128; // G  
+            visualData.data[pixelIdx + 2] = 128; // B
+            visualData.data[pixelIdx + 3] = 255; // A
+        }
+        return visualData;
+    }
+    
+    // Create color-coded depth map for better visualization
+    for (let i = 0; i < depthMap.length; i++) {
+        const depth = depthMap[i];
+        const pixelIdx = i * 4;
+        
+        if (!isNaN(depth) && isFinite(depth)) {
+            // Normalize depth to 0-1 range
+            const normalizedDepth = (depth - minDepth) / depthRange;
+            
+            // Create color gradient: black (far) -> white (near)
+            const intensity = Math.round(normalizedDepth * 255);
+            
+            // Alternative: Color-coded depth map
+            const useColorCoding = true;
+            
+            if (useColorCoding) {
+                // Create heat map: blue (far) -> green (mid) -> red (near)
+                if (normalizedDepth < 0.5) {
+                    // Blue to green transition
+                    const t = normalizedDepth * 2;
+                    visualData.data[pixelIdx] = 0;                           // R
+                    visualData.data[pixelIdx + 1] = Math.round(t * 255);    // G
+                    visualData.data[pixelIdx + 2] = Math.round((1-t) * 255); // B
+                } else {
+                    // Green to red transition
+                    const t = (normalizedDepth - 0.5) * 2;
+                    visualData.data[pixelIdx] = Math.round(t * 255);         // R
+                    visualData.data[pixelIdx + 1] = Math.round((1-t) * 255); // G
+                    visualData.data[pixelIdx + 2] = 0;                       // B
+                }
+            } else {
+                // Simple grayscale
+                visualData.data[pixelIdx] = intensity;     // R
+                visualData.data[pixelIdx + 1] = intensity; // G
+                visualData.data[pixelIdx + 2] = intensity; // B
+            }
+            
+            visualData.data[pixelIdx + 3] = 255; // A
+        } else {
+            // Invalid depth - mark as magenta
+            visualData.data[pixelIdx] = 255;     // R
+            visualData.data[pixelIdx + 1] = 0;   // G
+            visualData.data[pixelIdx + 2] = 255; // B
+            visualData.data[pixelIdx + 3] = 255; // A
+        }
+    }
+    
+    return visualData;
+}
+
+// FIXED: Fallback depth visualization (replaces createDepthVisualization)
+function createDepthVisualization(depthMap, width, height) {
+    // Find actual depth range
+    let minDepth = Number.MAX_VALUE;
+    let maxDepth = Number.MIN_VALUE;
+    
+    for (let i = 0; i < depthMap.length; i++) {
+        const depth = depthMap[i];
+        if (!isNaN(depth) && isFinite(depth)) {
+            minDepth = Math.min(minDepth, depth);
+            maxDepth = Math.max(maxDepth, depth);
+        }
+    }
+    
+    // Use enhanced visualization
+    return createEnhancedDepthVisualization(depthMap, width, height, minDepth, maxDepth);
+}
+
+// DIAGNOSTIC: Add depth map testing function
+function createTestDepthMapPattern(width, height) {
+    debugLog("🧪 Creating test depth pattern for diagnosis");
+    
+    const testDepthMap = new Float32Array(width * height);
+    
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = y * width + x;
+            
+            // Create a test pattern: gradient + some variation
+            const gradientDepth = x / width; // 0 to 1 left to right
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const distFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+            const maxDist = Math.sqrt(centerX ** 2 + centerY ** 2);
+            const radialDepth = 1.0 - (distFromCenter / maxDist);
+            
+            // Combine gradient and radial patterns
+            testDepthMap[idx] = (gradientDepth * 0.7 + radialDepth * 0.3) * 0.8 + 0.1;
+        }
+    }
+    
+    debugLog(`🧪 Test pattern created: ${width}x${height} pixels`);
+    return testDepthMap;
+}
+
+// Add test button functionality (add this to the initialization section)
+function addDepthTestButton() {
+    // Create test button
+    const testButton = document.createElement('button');
+    testButton.textContent = 'Test Depth';
+    testButton.style.opacity = '0.7';
+    testButton.style.fontSize = '0.7rem';
+    testButton.style.padding = '3px 6px';
+    testButton.style.backgroundColor = '#330033';
+    testButton.style.border = '1px solid #ff00ff';
+    testButton.style.color = '#ff00ff';
+    testButton.style.borderRadius = '5px';
+    testButton.style.marginLeft = '5px';
+    
+    testButton.addEventListener('click', function() {
+        debugLog("🧪 Testing depth map visualization...");
+        
+        if (!video || video.videoWidth === 0) {
+            debugLog("⚠️ No video - using test pattern");
+            const testDepthMap = createTestDepthMapPattern(320, 240);
+            updateDepthMapDisplay(testDepthMap, 320, 240);
+            
+            if (!depthMapVisible) {
+                toggleDepthMapDisplay();
+            }
+        } else {
+            debugLog("🔍 Forcing depth map update with current frame");
+            // Force regeneration with current frame
+            generateHaditStereoViews();
+        }
+    });
+    
+    // Add to top controls
+    const topControls = document.querySelector('.top-controls');
+    topControls.insertBefore(testButton, document.getElementById('toggleDepthMap'));
+}
         
         // NEW: Toggle depth map display
         function toggleDepthMapDisplay() {
