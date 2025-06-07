@@ -173,6 +173,10 @@ That's right, by converting the image coordinate to S-space which the S-coordina
 
 The part I focus on is the part that contains 'proper decoding instructions' for 2D objects, then I expand that to hit the entire image creating a superior depth map.
 
+**Licensing**
+
+Invisible Mirror is licensed under the GNU General Public License v3.0 (GPLv3).
+This ensures that all modified versions and redistributions remain free and open.
 ---
 
 
