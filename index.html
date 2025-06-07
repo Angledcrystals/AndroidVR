@@ -599,7 +599,7 @@
         debugLog("- iOS: " + isIOS);
         debugLog("- Mobile: " + isMobile);
         debugLog("- User Agent: " + navigator.userAgent);
-        debugLog("- Session: Angledcrystals - 2025-06-07 06:15:38 UTC");
+        debugLog("- Session: Angledcrystals - 2025-06-07 06:35:39 UTC");
         
         // Add a GPU acceleration hint specific for Android WebView
         if (isAndroid) {
@@ -627,7 +627,7 @@
         let vectorFieldTime = 0;
         let lastUpdateTime = 0;
         
-        // Hadit mode parameters (ONLY ADDITION)
+        // HADIT MODE PARAMETERS - ONLY ADDITION
         let haditParams = {
             bandSizeMultiplier: 10.0,
             focusFactor: 4.0,
@@ -684,7 +684,7 @@
             }
         }
         
-        // HADIT FUNCTIONS - MINIMAL ADDITION
+        // HADIT FUNCTION - ONLY ADDITION
         function calculateHaditDepth(px, py, width, height, lum, sat) {
             // Simple Hadit calculation based on specified parameters
             const gTheta = (px / width) * 360 * (Math.PI / 180);
@@ -1269,7 +1269,7 @@
             return new ImageData(output, width, height);
         }
 
-        // Create depth map from S-coordinates (MODIFIED FOR HADIT)
+        // Create depth map from S-coordinates - MODIFIED TO ADD HADIT CASE
         function createDepthMapFromSCoordinates(imageData, width, height) {
             const depthData = new Uint8ClampedArray(width * height * 4);
             const data = imageData.data;
@@ -1307,11 +1307,10 @@
                     
                     let depth;
                     
+                    // HADIT CASE ADDED HERE
                     if (depthMode === 'hadit') {
-                        // Use Hadit depth calculation
                         depth = calculateHaditDepth(x, y, width, height, lum, sat);
                     } else {
-                        // Use standard S-coordinate calculation
                         const sCoord = pixelToSCoordinate(x, y, width, height, lum, sat, luminosityWeight, saturationWeight);
                         depth = calculateNuitDistanceDepth(sCoord, nuitRadius, falloffFactor);
                     }
@@ -1451,7 +1450,7 @@
                 const imageData = processingCtx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
                 
                 // Create depth map from S-coordinates
-                                const depthImageData = createDepthMapFromSCoordinates(imageData, processingCanvas.width, processingCanvas.height);
+                const depthImageData = createDepthMapFromSCoordinates(imageData, processingCanvas.width, processingCanvas.height);
                 
                 // Show depth map debug if enabled
                 if (document.getElementById('debugOutput').style.display !== 'none') {
@@ -1783,7 +1782,7 @@
             }
         }
 
-        // HADIT MODE INITIALIZATION (MINIMAL ADDITION)
+        // HADIT MODE INITIALIZATION FUNCTION - ONLY ADDITION
         function initializeHaditMode() {
             if (document.getElementById('depthMode').value === 'hadit') {
                 // Set S bounds to Hadit-specific value
@@ -1864,7 +1863,7 @@
             document.getElementById('recordButton').addEventListener('click', startRecording);
             document.getElementById('stopRecordButton').addEventListener('click', stopRecording);
             
-            // HADIT MODE EVENT LISTENER (MINIMAL ADDITION)
+            // HADIT MODE EVENT LISTENER - ONLY ADDITION
             const depthModeSelect = document.getElementById('depthMode');
             if (depthModeSelect) {
                 depthModeSelect.addEventListener('change', function() {
