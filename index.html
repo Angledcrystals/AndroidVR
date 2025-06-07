@@ -260,6 +260,60 @@
             border: 1px solid #ff00ff !important;
         }
 
+        /* Depth map display */
+        #depthMapDisplay {
+            position: fixed;
+            top: 150px;
+            left: 5px;
+            width: 200px;
+            height: 133px;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            z-index: 1002;
+            opacity: 0.9;
+            display: none;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        #depthMapDisplay canvas {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 3px;
+        }
+
+        #depthMapLabel {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            font-size: 0.6rem;
+            color: #00ff00;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        /* Toggle depth map button */
+        #toggleDepthMap {
+            opacity: 0.7;
+            font-size: 0.7rem;
+            padding: 3px 6px;
+            background-color: #003300;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            border-radius: 5px;
+        }
+
+        #toggleDepthMap:hover {
+            opacity: 1;
+            background-color: #005500;
+        }
+
+        #toggleDepthMap.active {
+            background-color: #007700;
+            opacity: 1;
+        }
+
         /* Portrait mode warning */
         @media (orientation: portrait) {
             body::before {
@@ -432,6 +486,12 @@
         </div>
     </div>
     
+    <!-- Depth Map Display -->
+    <div id="depthMapDisplay">
+        <div id="depthMapLabel">Hadit Depth Map</div>
+        <canvas id="depthMapCanvas"></canvas>
+    </div>
+    
     <div class="top-controls">
         <div class="recording-controls">
             <button id="recordButton" class="record-button">
@@ -445,6 +505,7 @@
                 <span id="recordingTimer">00:00</span>
             </div>
         </div>
+        <button id="toggleDepthMap">Show Depth</button>
         <select id="qualitySelect">
             <option value="1.0">High Quality</option>
             <option value="0.5" selected>Medium Quality</option>
@@ -517,6 +578,11 @@
                     <label for="focusFactor">Focus</label>
                     <input id="focusFactor" type="range" min="1.0" max="10.0" step="0.1" value="4.3" class="hadit-control">
                     <span id="focusFactorValue" class="value-display">4.3x</span>
+                </div>
+                <div class="control-item">
+                    <label for="bandSizeMultiplier">Band Size</label>
+                    <input id="bandSizeMultiplier" type="range" min="0.1" max="5.0" step="0.1" value="1.0" class="hadit-control">
+                    <span id="bandSizeMultiplierValue" class="value-display">1.0x</span>
                 </div>
                 <div class="control-item">
                     <label for="bandMode">Band Mode</label>
@@ -641,7 +707,7 @@
     </div>
 
     <script>
-        // Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-07 02:11:50
+        // Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-07 02:25:16
         // Current User's Login: Angledcrystals
 
         // ==================== HADIT MATHEMATICS ====================
@@ -722,18 +788,20 @@
         function detectHaditInformationBand(imageData, config) {
             const { width, height, data } = imageData;
             const bandMode = config.bandMode || 'full_image';
+            const bandSizeMultiplier = config.bandSizeMultiplier || 1.0;
             
             if (bandMode === 'full_image') {
+                const bandWidth = config.sBounds * 10 * bandSizeMultiplier;
                 return {
                     min: 0,
-                    max: config.sBounds * 10, // Large enough to cover full image
-                    center: config.sBounds * 5,
-                    width: config.sBounds * 10,
+                    max: bandWidth,
+                    center: bandWidth / 2,
+                    width: bandWidth,
                     confidence: 1.0
                 };
             }
             
-            // For other modes, implement basic detection
+            // For other modes, implement detection with band size multiplier
             const sMagnitudeHistogram = new Array(100).fill(0);
             const maxSMagnitude = config.sBounds * 2;
             
@@ -775,7 +843,8 @@
             }
             
             const centerS = (maxBin / (sMagnitudeHistogram.length - 1)) * maxSMagnitude;
-            const bandWidth = maxSMagnitude * 0.3; // 30% of range
+            const baseBandWidth = maxSMagnitude * 0.3; // Base 30% of range
+            const bandWidth = baseBandWidth * bandSizeMultiplier; // Apply multiplier
             
             return {
                 min: Math.max(0, centerS - bandWidth / 2),
@@ -837,7 +906,7 @@
         const isMobile = isAndroid || isIOS;
         
         // Log useful browser information
-        debugLog("Hadit AndroidVR - Current Date and Time (UTC): 2025-06-07 02:11:50");
+        debugLog("Hadit AndroidVR - Current Date and Time (UTC): 2025-06-07 02:25:16");
         debugLog("Current User Login: Angledcrystals");
         debugLog("Browser Detection:");
         debugLog("- Firefox: " + isFirefox);
@@ -864,6 +933,10 @@
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
         
+        // Depth map display state
+        let depthMapVisible = false;
+        let latestDepthMap = null;
+        
         // Hadit configuration with your specified values
         let haditConfig = {
             haditTheta: 0.0,
@@ -871,6 +944,7 @@
             haditInfluence: 1.0,
             focusFactor: 4.3,
             bandMode: 'full_image',
+            bandSizeMultiplier: 1.0, // NEW: Band size multiplier
             luminosityWeight: 0.0,
             saturationWeight: 0.0,
             depthContrast: 0.1,
@@ -1181,41 +1255,66 @@
             return testDepthData;
         }
         
-        // Add depth map visualization for debugging
-        function showDepthMapDebug(depthImgData) {
-            // Create or get debug canvas
-            let debugCanvas = document.getElementById('depthMapDebug');
-            if (!debugCanvas) {
-                debugCanvas = document.createElement('canvas');
-                debugCanvas.id = 'depthMapDebug';
-                debugCanvas.style.position = 'fixed';
-                debugCanvas.style.top = '130px';
-                debugCanvas.style.left = '5px';
-                debugCanvas.style.width = '150px';
-                debugCanvas.style.height = '100px';
-                debugCanvas.style.border = '1px solid white';
-                debugCanvas.style.zIndex = '1002';
-                debugCanvas.style.opacity = '0.8';
-                debugCanvas.title = 'Hadit Depth Map Visualization';
-                document.body.appendChild(debugCanvas);
-            }
+        // NEW: Enhanced depth map display function
+        function updateDepthMapDisplay(depthMap, width, height) {
+            if (!depthMapVisible || !depthMap) return;
             
-            debugCanvas.width = depthImgData.width;
-            debugCanvas.height = depthImgData.height;
-            const debugCtx = debugCanvas.getContext('2d');
-            debugCtx.putImageData(depthImgData, 0, 0);
+            const depthMapCanvas = document.getElementById('depthMapCanvas');
+            const depthMapCtx = depthMapCanvas.getContext('2d');
+            
+            // Set canvas size
+            depthMapCanvas.width = width;
+            depthMapCanvas.height = height;
+            
+            // Create visualization
+            const visualData = createDepthVisualization(depthMap, width, height);
+            depthMapCtx.putImageData(visualData, 0, 0);
+            
+            // Store latest depth map
+            latestDepthMap = { depthMap, width, height };
             
             // Log depth statistics
-            let minDepth = 255, maxDepth = 0, avgDepth = 0;
-            for (let i = 0; i < depthImgData.data.length; i += 4) {
-                const depth = depthImgData.data[i];
+            let minDepth = 1.0, maxDepth = 0.0, avgDepth = 0.0;
+            for (let i = 0; i < depthMap.length; i++) {
+                const depth = depthMap[i];
                 minDepth = Math.min(minDepth, depth);
                 maxDepth = Math.max(maxDepth, depth);
                 avgDepth += depth;
             }
-            avgDepth /= (depthImgData.data.length / 4);
+            avgDepth /= depthMap.length;
             
-            debugLog(`Hadit depth stats: min=${minDepth}, max=${maxDepth}, avg=${avgDepth.toFixed(1)}, φ=${haditConfig.haditPhi}°, θ=${haditConfig.haditTheta}°`);
+            debugLog(`Hadit depth stats: min=${minDepth.toFixed(3)}, max=${maxDepth.toFixed(3)}, avg=${avgDepth.toFixed(3)}, φ=${haditConfig.haditPhi}°, θ=${haditConfig.haditTheta}°, band=${haditConfig.bandSizeMultiplier}x`);
+        }
+        
+        // NEW: Toggle depth map display
+        function toggleDepthMapDisplay() {
+            const depthMapDisplay = document.getElementById('depthMapDisplay');
+            const toggleButton = document.getElementById('toggleDepthMap');
+            
+            depthMapVisible = !depthMapVisible;
+            
+            if (depthMapVisible) {
+                depthMapDisplay.style.display = 'block';
+                toggleButton.textContent = 'Hide Depth';
+                toggleButton.classList.add('active');
+                debugLog('Depth map display enabled');
+                
+                // If we have a cached depth map, display it
+                if (latestDepthMap) {
+                    updateDepthMapDisplay(latestDepthMap.depthMap, latestDepthMap.width, latestDepthMap.height);
+                }
+            } else {
+                depthMapDisplay.style.display = 'none';
+                toggleButton.textContent = 'Show Depth';
+                toggleButton.classList.remove('active');
+                debugLog('Depth map display disabled');
+            }
+        }
+        
+        // Add depth map visualization for debugging
+        function showDepthMapDebug(depthImgData) {
+            // This function is now replaced by updateDepthMapDisplay
+            updateDepthMapDisplay(depthImgData.data, depthImgData.width, depthImgData.height);
         }
         
         // Try to set up WebGL for GPU acceleration
@@ -1343,6 +1442,7 @@
             haditConfig.haditInfluence = parseFloat(document.getElementById('haditInfluence').value);
             haditConfig.focusFactor = parseFloat(document.getElementById('focusFactor').value);
             haditConfig.bandMode = document.getElementById('bandMode').value;
+            haditConfig.bandSizeMultiplier = parseFloat(document.getElementById('bandSizeMultiplier').value); // NEW
             haditConfig.luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
             haditConfig.saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
             haditConfig.depthContrast = parseFloat(document.getElementById('depthContrast').value);
@@ -1354,7 +1454,7 @@
             // Update indicator
             const haditIndicator = document.getElementById('haditIndicator');
             if (haditIndicator) {
-                haditIndicator.textContent = `Hadit: φ=${haditConfig.haditPhi.toFixed(1)}° θ=${haditConfig.haditTheta.toFixed(1)}° Focus=${haditConfig.focusFactor.toFixed(1)}x`;
+                haditIndicator.textContent = `Hadit: φ=${haditConfig.haditPhi.toFixed(1)}° θ=${haditConfig.haditTheta.toFixed(1)}° Focus=${haditConfig.focusFactor.toFixed(1)}x Band=${haditConfig.bandSizeMultiplier.toFixed(1)}x`;
             }
         }
 
@@ -1365,6 +1465,7 @@
                 { id: 'haditPhi', suffix: '°' },
                 { id: 'haditInfluence', suffix: '' },
                 { id: 'focusFactor', suffix: 'x' },
+                { id: 'bandSizeMultiplier', suffix: 'x' }, // NEW
                 { id: 'luminosityWeight', suffix: '' },
                 { id: 'saturationWeight', suffix: '' },
                 { id: 'depthContrast', suffix: 'x' },
@@ -1388,12 +1489,12 @@
         // Initialize everything when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             debugLog("Hadit AndroidVR initializing...");
-            debugLog("Current Date and Time (UTC): 2025-06-07 02:15:34");
+            debugLog("Current Date and Time (UTC): 2025-06-07 02:30:11");
             debugLog("Current User Login: Angledcrystals");
             
             // Set up event listeners for Hadit controls
             const haditControls = ['haditTheta', 'haditPhi', 'haditInfluence', 'focusFactor', 'bandMode', 
-                                 'luminosityWeight', 'saturationWeight', 'depthContrast', 'sBounds'];
+                                 'bandSizeMultiplier', 'luminosityWeight', 'saturationWeight', 'depthContrast', 'sBounds'];
             
             haditControls.forEach(id => {
                 const element = document.getElementById(id);
@@ -1411,6 +1512,9 @@
                     element.addEventListener('input', updateValueDisplays);
                 }
             });
+            
+            // Set up depth map toggle
+            document.getElementById('toggleDepthMap').addEventListener('click', toggleDepthMapDisplay);
             
             // Initialize value displays
             updateValueDisplays();
@@ -1438,6 +1542,8 @@
             });
             
             debugLog("Hadit AndroidVR initialization complete");
+            debugLog("✅ NEW: Band Size Multiplier control added (0.1x - 5.0x range)");
+            debugLog("✅ NEW: Real-time depth map display toggle added");
         });
 
         function setupCameraControls() {
@@ -1700,6 +1806,11 @@
             // Generate depth map using Hadit S-coordinate transformation
             const depthMap = generateHaditDepthMap(imageData, detectedBand);
             
+            // Update depth map display if visible
+            if (depthMapVisible) {
+                updateDepthMapDisplay(depthMap, imageData.width, imageData.height);
+            }
+            
             // Create stereo views
             const leftImageData = ctx1.createImageData(canvas1.width, canvas1.height);
             const rightImageData = ctx2.createImageData(canvas2.width, canvas2.height);
@@ -1709,11 +1820,6 @@
             // Apply the stereo views to canvases
             ctx1.putImageData(leftImageData, 0, 0);
             ctx2.putImageData(rightImageData, 0, 0);
-            
-            // Optional: Show depth map for debugging
-            if (document.getElementById('debugOutput').style.display !== 'none') {
-                showDepthMapDebug(createDepthVisualization(depthMap, imageData.width, imageData.height));
-            }
         }
         
         function generateHaditDepthMap(imageData, detectedBand) {
@@ -1947,7 +2053,7 @@
             canvas1.classList.add('frozen-canvas');
             canvas2.classList.add('frozen-canvas');
             
-            debugLog('Frame frozen for analysis');
+            debugLog('Frame frozen for analysis - Band Size: ' + haditConfig.bandSizeMultiplier + 'x');
         }
         
         function unfreeze() {
@@ -2094,7 +2200,7 @@
                 }
                 renderRecordFrame();
                 
-                debugLog('Recording started');
+                debugLog('Recording started - Band Size: ' + haditConfig.bandSizeMultiplier + 'x');
                 
             } catch (error) {
                 debugLog('Recording start error: ' + error.message);
