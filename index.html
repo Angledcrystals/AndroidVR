@@ -695,6 +695,14 @@
                         this.video.playsInline = true;
                         this.video.muted = true;
                         this.video.style.display = 'none';
+                        if (!this.video) {
+                            this.video = document.createElement('video');
+                            this.video.autoplay = true;
+                            this.video.playsInline = true;
+                            this.video.muted = true;
+                            this.video.style.display = 'none';
+                            document.body.appendChild(this.video);
+}
                     }
                     
                     this.video.srcObject = this.stream;
