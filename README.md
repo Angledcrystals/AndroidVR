@@ -8,6 +8,8 @@ Rewritten by AI for readability.
 
 Invisible Mirror is computationally expensive, only the very best hardware for phones can run it in this era; this is a case of the HW not being able to run the code efficiently...
 
+To give an idea of the requirements, it will run on iPhone SE3 at 25 FPS on high quality, lol.
+
 Invisible Mirror does not have as many fun features as VRWizard, and it is not suitable for training perception; it is just theory put into practice.
 
 Also I use esoteric terminology for the functions because I think it is funny.
