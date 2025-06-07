@@ -599,7 +599,7 @@
         debugLog("- iOS: " + isIOS);
         debugLog("- Mobile: " + isMobile);
         debugLog("- User Agent: " + navigator.userAgent);
-        debugLog("- Session: Angledcrystals - 2025-06-07 06:05:14 UTC");
+        debugLog("- Session: Angledcrystals - 2025-06-07 06:15:38 UTC");
         
         // Add a GPU acceleration hint specific for Android WebView
         if (isAndroid) {
@@ -627,7 +627,7 @@
         let vectorFieldTime = 0;
         let lastUpdateTime = 0;
         
-        // Hadit mode parameters
+        // Hadit mode parameters (ONLY ADDITION)
         let haditParams = {
             bandSizeMultiplier: 10.0,
             focusFactor: 4.0,
@@ -684,114 +684,30 @@
             }
         }
         
-        // Hadit mathematics functions
-        function sphericalToCartesian(theta, phi) {
-            const clampedPhi = Math.max(0.1, Math.min(179.9, phi));
-            const thetaRad = theta * Math.PI / 180;
-            const phiRad = clampedPhi * Math.PI / 180;
+        // HADIT FUNCTIONS - MINIMAL ADDITION
+        function calculateHaditDepth(px, py, width, height, lum, sat) {
+            // Simple Hadit calculation based on specified parameters
+            const gTheta = (px / width) * 360 * (Math.PI / 180);
+            const gPhi = (py / height) * 180 * (Math.PI / 180);
             
-            return {
-                x: Math.sin(phiRad) * Math.cos(thetaRad),
-                y: Math.sin(phiRad) * Math.sin(thetaRad),
-                z: Math.cos(phiRad)
-            };
-        }
-
-        function vectorDot(a, b) {
-            return a.x * b.x + a.y * b.y + a.z * b.z;
-        }
-
-        function vectorSubtract(a, b) {
-            return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
-        }
-
-        function vectorScale(v, s) {
-            return { x: v.x * s, y: v.y * s, z: v.z * s };
-        }
-
-        function vectorNormalize(v) {
-            const mag = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-            return mag > 1e-10 ? vectorScale(v, 1 / mag) : { x: 0, y: 0, z: 1 };
-        }
-
-        function householderReflection(G_3d, hadit_3d) {
-            const haditUnit = vectorNormalize(hadit_3d);
-            const dotProduct = vectorDot(haditUnit, G_3d);
-            return vectorSubtract(G_3d, vectorScale(haditUnit, 2 * dotProduct));
-        }
-
-        function stereographicProjection(G_reflected) {
-            if (Math.abs(1 - G_reflected.z) < 1e-10) {
-                return { x: 0, y: 0 };
-            }
-            return {
-                x: G_reflected.x / (1 - G_reflected.z),
-                y: G_reflected.y / (1 - G_reflected.z)
-            };
-        }
-
-        function calculateHaditModulatedSCoordinate(px, py, width, height, lum, sat) {
-            const gTheta = (px / width) * 360;
-            const gPhi = (py / height) * 180;
-            const G_3d = sphericalToCartesian(gTheta, gPhi);
+            // Hadit spherical coordinates  
+            const haditTheta = haditParams.theta * (Math.PI / 180);
+            const haditPhi = haditParams.phi * (Math.PI / 180);
             
-            const hadit_3d = sphericalToCartesian(haditParams.theta, haditParams.phi);
-            const G_reflected = householderReflection(G_3d, hadit_3d);
-            const S_hadit = stereographicProjection(G_reflected);
+            // Calculate distance in spherical space
+            const distance = Math.abs(gTheta - haditTheta) + Math.abs(gPhi - haditPhi);
             
-            const lumMapWeight = haditParams.luminosityWeight;
-            const satMapWeight = haditParams.saturationWeight;
-            const contentModulation = (1 + lum * lumMapWeight + sat * satMapWeight);
-            
-            const S_modulated = {
-                x: S_hadit.x * contentModulation * haditParams.influence,
-                y: S_hadit.y * contentModulation * haditParams.influence
-            };
-            
-            const sMagnitude = Math.sqrt(S_modulated.x * S_modulated.x + S_modulated.y * S_modulated.y);
-            
-            return {
-                sCoord: S_modulated,
-                sMagnitude: sMagnitude,
-                originalG: G_3d,
-                reflectedG: G_reflected,
-                haditVector: hadit_3d,
-                contentModulation: contentModulation,
-                luminance: lum,
-                saturation: sat
-            };
-        }
-
-        function calculateHaditDepth(sCoord, px, py, width, height, lum, sat) {
-            // Use Hadit-specific S-coordinate calculation
-            const haditResult = calculateHaditModulatedSCoordinate(px, py, width, height, lum, sat);
-            const { sMagnitude } = haditResult;
-            
-            // Define information band around specific S-magnitude values
-            const bandCenter = haditParams.sBounds * 0.5; // Center of information band
+            // Define information band
+            const bandCenter = haditParams.sBounds * 0.5;
             const bandWidth = haditParams.sBounds * haditParams.bandSizeMultiplier * 0.1;
-            const distanceFromBand = Math.abs(sMagnitude - bandCenter);
+            const distanceFromBand = Math.abs(distance - bandCenter);
             
-            // Check if point is within the information band
-            const isInBand = distanceFromBand <= bandWidth;
-            const bandPosition = Math.max(0, Math.min(1, distanceFromBand / Math.max(0.001, bandWidth)));
-            
-            let depth = 0.1; // Base depth
-            
-            if (isInBand) {
-                // Points in the band get enhanced depth
-                const bandCenteredness = 1.0 - bandPosition;
-                depth = 0.3 + bandPosition * 0.6;
-                depth *= (1 + bandCenteredness * haditParams.focusFactor * 0.2);
-                
-                // Content modulation
-                const contentWeight = lum * haditParams.luminosityWeight + sat * haditParams.saturationWeight;
-                depth *= (1 + contentWeight * 0.3);
+            let depth = 0.1;
+            if (distanceFromBand <= bandWidth) {
+                const bandCenteredness = 1.0 - (distanceFromBand / bandWidth);
+                depth = 0.3 + bandCenteredness * 0.6 * haditParams.focusFactor * 0.2;
             } else {
-                // Points outside the band get reduced depth
-                const falloffDistance = distanceFromBand - bandWidth;
-                const falloffFactor = 1.0 / (1.0 + falloffDistance * 0.5);
-                depth = 0.1 + lum * 0.2 * falloffFactor;
+                depth = 0.1 + lum * 0.2;
             }
             
             // Apply depth contrast
@@ -882,12 +798,6 @@
                 case 'vectorfield':
                     // Vector field depth calculation
                     finalDepth = calculateVectorFieldDepth(sCoord);
-                    break;
-                    
-                case 'hadit':
-                    // Hadit mode - calculate depth using Hadit mathematics
-                    // This will be calculated differently in the main processing loop
-                    finalDepth = 0.5; // Placeholder
                     break;
                     
                 default:
@@ -1024,22 +934,6 @@
             debugLog(`Depth map stats: min=${minDepth}, max=${maxDepth}, avg=${avgDepth.toFixed(1)}, range=${maxDepth-minDepth}`);
         }
         
-        // Initialize Hadit mode when depth mode changes
-        function initializeHaditMode() {
-            if (document.getElementById('depthMode').value === 'hadit') {
-                // Set S bounds to Hadit-specific value
-                currentSBounds = haditParams.sBounds;
-                document.getElementById('sBounds').value = haditParams.sBounds;
-                document.getElementById('sBoundsValue').textContent = `±${haditParams.sBounds}`;
-                
-                // Set luminosity and saturation weights to Hadit values
-                document.getElementById('luminosityWeight').value = haditParams.luminosityWeight;
-                document.getElementById('saturationWeight').value = haditParams.saturationWeight;
-                
-                debugLog(`Hadit mode initialized: θ=${haditParams.theta}°, φ=${haditParams.phi}°, S-bounds=±${haditParams.sBounds}`);
-            }
-        }
-        
         // Try to set up WebGL for GPU acceleration
         function setupWebGL() {
             try {
@@ -1090,7 +984,7 @@
             }
         }
         
-        // Improved camera enumeration - FIXED VERSION
+        // Improved camera enumeration
         async function enumerateCameras() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -1158,7 +1052,7 @@
             }
         }
         
-        // FIXED: Get the user's camera based on the desired facing mode
+        // Get the user's camera based on the desired facing mode
         async function getUserMedia(useFront = false) {
             // First, enumerate cameras to understand what's available
             await enumerateCameras();
@@ -1224,7 +1118,7 @@
             }
         }
 
-        // FIXED: Start the camera and set up video
+        // Start the camera and set up video
         async function startCamera() {
             try {
                 debugLog("Starting camera...");
@@ -1375,7 +1269,7 @@
             return new ImageData(output, width, height);
         }
 
-        // Modified createDepthMapFromSCoordinates function to support Hadit mode
+        // Create depth map from S-coordinates (MODIFIED FOR HADIT)
         function createDepthMapFromSCoordinates(imageData, width, height) {
             const depthData = new Uint8ClampedArray(width * height * 4);
             const data = imageData.data;
@@ -1386,11 +1280,6 @@
             const luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
             const saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
             const depthMode = document.getElementById('depthMode').value;
-            
-            // Initialize Hadit mode if selected
-            if (depthMode === 'hadit') {
-                initializeHaditMode();
-            }
             
             // Update vector field time if using vector field mode
             if (depthMode === 'vectorfield') {
@@ -1419,8 +1308,8 @@
                     let depth;
                     
                     if (depthMode === 'hadit') {
-                        // Use Hadit-specific depth calculation
-                        depth = calculateHaditDepth(null, x, y, width, height, lum, sat);
+                        // Use Hadit depth calculation
+                        depth = calculateHaditDepth(x, y, width, height, lum, sat);
                     } else {
                         // Use standard S-coordinate calculation
                         const sCoord = pixelToSCoordinate(x, y, width, height, lum, sat, luminosityWeight, saturationWeight);
@@ -1451,7 +1340,6 @@
             const width = originalImageData.width;
             const height = originalImageData.height;
             
-            const ctx1 = canvas1.getContext('2d');
             const ctx1 = canvas1.getContext('2d');
             const ctx2 = canvas2.getContext('2d');
             
@@ -1563,7 +1451,7 @@
                 const imageData = processingCtx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
                 
                 // Create depth map from S-coordinates
-                const depthImageData = createDepthMapFromSCoordinates(imageData, processingCanvas.width, processingCanvas.height);
+                                const depthImageData = createDepthMapFromSCoordinates(imageData, processingCanvas.width, processingCanvas.height);
                 
                 // Show depth map debug if enabled
                 if (document.getElementById('debugOutput').style.display !== 'none') {
@@ -1895,6 +1783,22 @@
             }
         }
 
+        // HADIT MODE INITIALIZATION (MINIMAL ADDITION)
+        function initializeHaditMode() {
+            if (document.getElementById('depthMode').value === 'hadit') {
+                // Set S bounds to Hadit-specific value
+                currentSBounds = haditParams.sBounds;
+                document.getElementById('sBounds').value = haditParams.sBounds;
+                document.getElementById('sBoundsValue').textContent = `±${haditParams.sBounds}`;
+                
+                // Set luminosity and saturation weights to Hadit values
+                document.getElementById('luminosityWeight').value = haditParams.luminosityWeight;
+                document.getElementById('saturationWeight').value = haditParams.saturationWeight;
+                
+                debugLog(`Hadit mode initialized: θ=${haditParams.theta}°, φ=${haditParams.phi}°, S-bounds=±${haditParams.sBounds}`);
+            }
+        }
+
         // Initialize application
         function initializeApp() {
             debugLog("Initializing AndroidVR application...");
@@ -1960,7 +1864,7 @@
             document.getElementById('recordButton').addEventListener('click', startRecording);
             document.getElementById('stopRecordButton').addEventListener('click', stopRecording);
             
-            // Add event listener for depth mode changes to initialize Hadit mode
+            // HADIT MODE EVENT LISTENER (MINIMAL ADDITION)
             const depthModeSelect = document.getElementById('depthMode');
             if (depthModeSelect) {
                 depthModeSelect.addEventListener('change', function() {
