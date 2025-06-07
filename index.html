@@ -676,8 +676,14 @@
                         <label><input type="checkbox" id="debugMode" checked> Debug Mode</label>
                         <label><input type="checkbox" id="showRawFeed"> Show Raw Feed</label>
                         <!-- NEW GPU CONTROL - but disabled by default -->
-                        <label><input type="checkbox" id="useGPU"> 🔥 GPU Acceleration (Beta)</label>
-                    </div>
+    <label>🔥 GPU Processing</label>
+    <label><input type="checkbox" id="useGPU"> Enable GPU Acceleration</label>
+    <select id="gpuStereoMode" class="camera-control" disabled>
+        <option value="cpu">CPU Stereo Only</option>
+        <option value="gpu_forward">GPU Forward + Hole Fill</option>
+        <option value="gpu_bidirectional">GPU Bidirectional + Hole Fill</option>
+    </select>
+    <small style="color: #888; font-size: 9px;">GPU hole filling uses CPU depth data</small>                  
                 </div>
             </div>
             
@@ -1136,143 +1142,6 @@
                 }
             };
         }
-
-// ==================== CPU HOLE FILLING FOR OFFSET PIXELS ====================
-
-function fillMissingPixels(imageData, width, height) {
-    console.log('🔧 CPU hole filling: Processing missing pixels...');
-    const startTime = performance.now();
-    
-    const data = new Uint8ClampedArray(imageData.data);
-    const holeThreshold = 10; // Pixels darker than this are considered holes
-    let holesFixed = 0;
-    
-    // First pass: identify holes and mark them
-    const holes = new Set();
-    for (let y = 1; y < height - 1; y++) {
-        for (let x = 1; x < width - 1; x++) {
-            const idx = (y * width + x) * 4;
-            const r = data[idx];
-            const g = data[idx + 1];
-            const b = data[idx + 2];
-            
-            // Check if this pixel is a hole (very dark/black)
-            if (r + g + b < holeThreshold) {
-                holes.add(y * width + x);
-            }
-        }
-    }
-    
-    // Second pass: fill holes using surrounding pixels
-    for (const pixelIndex of holes) {
-        const y = Math.floor(pixelIndex / width);
-        const x = pixelIndex % width;
-        const centerIdx = (y * width + x) * 4;
-        
-        let totalR = 0, totalG = 0, totalB = 0, totalA = 0;
-        let validSamples = 0;
-        
-        // Sample in a cross pattern around the hole
-        const samplePattern = [
-            [-2, 0], [-1, 0], [1, 0], [2, 0],   // Horizontal
-            [0, -2], [0, -1], [0, 1], [0, 2],   // Vertical
-            [-1, -1], [-1, 1], [1, -1], [1, 1], // Diagonal
-            [-2, -1], [-2, 1], [2, -1], [2, 1], // Extended diagonal
-        ];
-        
-        for (const [dx, dy] of samplePattern) {
-            const sampleX = x + dx;
-            const sampleY = y + dy;
-            
-            // Check bounds
-            if (sampleX >= 0 && sampleX < width && sampleY >= 0 && sampleY < height) {
-                const sampleIdx = (sampleY * width + sampleX) * 4;
-                const sampleR = data[sampleIdx];
-                const sampleG = data[sampleIdx + 1];
-                const sampleB = data[sampleIdx + 2];
-                const sampleA = data[sampleIdx + 3];
-                
-                // Only use non-hole pixels for filling
-                if (sampleR + sampleG + sampleB >= holeThreshold) {
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    const weight = 1.0 / (1.0 + distance * 0.5);
-                    
-                    totalR += sampleR * weight;
-                    totalG += sampleG * weight;
-                    totalB += sampleB * weight;
-                    totalA += sampleA * weight;
-                    validSamples += weight;
-                }
-            }
-        }
-        
-        // Apply the fill if we found valid samples
-        if (validSamples > 0) {
-            data[centerIdx] = Math.round(totalR / validSamples);
-            data[centerIdx + 1] = Math.round(totalG / validSamples);
-            data[centerIdx + 2] = Math.round(totalB / validSamples);
-            data[centerIdx + 3] = Math.round(totalA / validSamples);
-            holesFixed++;
-        } else {
-            // Fallback: use a neutral gray if no valid samples found
-            data[centerIdx] = 64;     // Dark gray
-            data[centerIdx + 1] = 64;
-            data[centerIdx + 2] = 64;
-            data[centerIdx + 3] = 255;
-            holesFixed++;
-        }
-    }
-    
-    const processingTime = performance.now() - startTime;
-    console.log(`✅ CPU hole filling completed: ${holesFixed} holes fixed in ${processingTime.toFixed(2)}ms`);
-    
-    return new ImageData(data, width, height);
-}
-
-// Enhanced stereo processing with CPU hole filling
-function applyHaditStereoWithDepthAndHoleFilling(sourceCanvas, depthBuffer, config, isRightEye) {
-    const ctx = sourceCanvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
-    const { width, height, data } = imageData;
-    
-    const outputData = new Uint8ClampedArray(data.length);
-    const separation = config.separation;
-    const depthIntensity = config.depthIntensity;
-    
-    // Clear output to black (creates holes where no pixels map)
-    outputData.fill(0);
-    
-    // Forward mapping: map source pixels to output positions
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const idx = y * width + x;
-            const pixelIdx = idx * 4;
-            
-            if (idx < depthBuffer.length && depthBuffer[idx]) {
-                const depth = depthBuffer[idx].depth;
-                const offsetX = Math.round((depth - 0.5) * separation * depthIntensity);
-                const finalOffsetX = isRightEye ? -offsetX : offsetX;
-                
-                const targetX = x + finalOffsetX;
-                
-                if (targetX >= 0 && targetX < width) {
-                    const targetIdx = (y * width + targetX) * 4;
-                    
-                    outputData[targetIdx] = data[pixelIdx];
-                    outputData[targetIdx + 1] = data[pixelIdx + 1];
-                    outputData[targetIdx + 2] = data[pixelIdx + 2];
-                    outputData[targetIdx + 3] = 255;
-                }
-            }
-        }
-    }
-    
-    // Create ImageData and apply CPU hole filling
-    let outputImageData = new ImageData(outputData, width, height);
-    outputImageData = fillMissingPixels(outputImageData, width, height);
-    
-    return outputImageData;
-}
 
         function autoDetectBand(sMagnitudeHistogram, contentHistogram, maxSMagnitude, sensitivity) {
             const smoothedContent = smoothHistogram(contentHistogram, 3);
@@ -1743,7 +1612,7 @@ function processFrame() {
         
         const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
         
-        // Your original CPU Hadit processing
+        // ALWAYS use CPU for your core Hadit processing - this never changes
         const bandResult = detectHaditInformationBand(imageData, currentConfig);
         detectedBand = bandResult.band;
         
@@ -1766,21 +1635,68 @@ function processFrame() {
         const leftCtx = leftCanvas.getContext('2d');
         leftCtx.putImageData(imageData, 0, 0);
         
-        // Apply stereo processing with CPU hole filling
+        // Stereo processing with multiple options
         if (currentConfig.enableStereo) {
-            const leftStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, false);
-            const rightStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, true);
+            let usedGPUHoleFilling = false;
+            let stereoMode = 'CPU';
             
-            leftCtx.putImageData(leftStereoData, 0, 0);
+            // Try GPU hole filling ONLY for stereo rendering (uses CPU depth data)
+            if (currentConfig.useGPU && 
+                currentConfig.gpuStereoMode !== 'cpu' &&
+                gpuProcessor.isInitialized && 
+                gpuProcessor.gpuEnabled) {
+                
+                try {
+                    // Convert YOUR CPU depth buffer to GPU format for hole filling
+                    const gpuDepthData = convertDepthBufferToGPUFormat(depthResult.depthBuffer, tempCanvas.width, tempCanvas.height);
+                    
+                    const success = gpuProcessor.renderStereoWithHoleFilling(
+                        leftCanvas, rightCanvas, imageData, gpuDepthData, currentConfig
+                    );
+                    
+                    if (success) {
+                        usedGPUHoleFilling = true;
+                        stereoMode = `GPU ${currentConfig.useBidirectional ? 'Bidirectional' : 'Forward'} Hole Fill`;
+                    }
+                } catch (error) {
+                    console.warn('GPU hole filling failed, using CPU:', error);
+                }
+            }
             
-            const rightCtx = rightCanvas.getContext('2d');
-            rightCtx.putImageData(rightStereoData, 0, 0);
+            // Use CPU stereo if GPU hole filling not used
+            if (!usedGPUHoleFilling) {
+                if (currentConfig.useCPUHoleFilling) {
+                    // CPU stereo with CPU hole filling
+                    const leftStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, false);
+                    const rightStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, true);
+                    
+                    leftCtx.putImageData(leftStereoData, 0, 0);
+                    
+                    const rightCtx = rightCanvas.getContext('2d');
+                    rightCtx.putImageData(rightStereoData, 0, 0);
+                    
+                    stereoMode = 'CPU + CPU Hole Fill';
+                } else {
+                    // Your original CPU stereo (no hole filling)
+                    const leftStereoData = applyHaditStereoWithDepth(leftCanvas, depthResult.depthBuffer, currentConfig, false);
+                    const rightStereoData = applyHaditStereoWithDepth(leftCanvas, depthResult.depthBuffer, currentConfig, true);
+                    
+                    leftCtx.putImageData(leftStereoData, 0, 0);
+                    
+                    const rightCtx = rightCanvas.getContext('2d');
+                    rightCtx.putImageData(rightStereoData, 0, 0);
+                    
+                    stereoMode = 'CPU Original';
+                }
+            }
+            
+            console.log(`🎮 Stereo mode: ${stereoMode}`);
         } else {
             const rightCtx = rightCanvas.getContext('2d');
             rightCtx.putImageData(imageData, 0, 0);
         }
         
-        // Update depth map visualization
+        // ALWAYS update depth map visualization using YOUR CPU Hadit depth buffer
         if (currentConfig.showDepthMap) {
             visualizeDepthMap(depthResult.depthBuffer, depthCanvas, currentConfig, detectedBand);
         }
@@ -1794,7 +1710,11 @@ function processFrame() {
         // Update processing mode indicator
         const analysisPanel = document.getElementById('analysisPanel');
         if (analysisPanel) {
-            const performanceText = `⚙️ CPU Hadit + 🔧 CPU Hole Fill: ${processingTime.toFixed(1)}ms/frame`;
+            const depthMode = '⚙️ Pure CPU Hadit';
+            const stereoMode = usedGPUHoleFilling ? 
+                              `🔥 GPU Hole Fill (CPU Depth)` : 
+                              (currentConfig.useCPUHoleFilling ? '🔧 CPU + CPU Hole Fill' : '⚙️ CPU Original');
+            const performanceText = `Depth: ${depthMode} | Stereo: ${stereoMode} | ${processingTime.toFixed(1)}ms/frame`;
             
             const lines = analysisPanel.innerHTML.split('<div>');
             if (lines.length > 3) {
