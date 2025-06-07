@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>AndroidVR - Hadit S-Coordinate Depth Detection</title>
+    <title>Virtual spectrum based on S-values</title>
     <style>
         /* All your existing styles unchanged */
         body {
@@ -217,20 +217,6 @@
             transition: opacity 0.3s;
         }
 
-        /* Hadit indicator */
-        #haditIndicator {
-            position: fixed;
-            top: 100px;
-            right: 5px;
-            font-size: 0.65rem;
-            color: #ff00ff;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 2px 5px;
-            border-radius: 3px;
-            opacity: 1;
-            transition: opacity 0.3s;
-        }
-
         /* Debug output */
         #debugOutput {
             position: fixed;
@@ -252,66 +238,6 @@
             color: #aaa;
             margin-left: 5px;
             min-width: 30px;
-        }
-
-        /* Hadit controls */
-        .hadit-control {
-            background-color: #2a0a2a !important;
-            border: 1px solid #ff00ff !important;
-        }
-
-        /* Depth map display */
-        #depthMapDisplay {
-            position: fixed;
-            top: 150px;
-            left: 5px;
-            width: 200px;
-            height: 133px;
-            border: 2px solid #00ff00;
-            border-radius: 5px;
-            z-index: 1002;
-            opacity: 0.9;
-            display: none;
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-
-        #depthMapDisplay canvas {
-            width: 100%;
-            height: 100%;
-            border: none;
-            border-radius: 3px;
-        }
-
-        #depthMapLabel {
-            position: absolute;
-            top: -20px;
-            left: 0;
-            font-size: 0.6rem;
-            color: #00ff00;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 1px 5px;
-            border-radius: 3px;
-        }
-
-        /* Toggle depth map button */
-        #toggleDepthMap {
-            opacity: 0.7;
-            font-size: 0.7rem;
-            padding: 3px 6px;
-            background-color: #003300;
-            border: 1px solid #00ff00;
-            color: #00ff00;
-            border-radius: 5px;
-        }
-
-        #toggleDepthMap:hover {
-            opacity: 1;
-            background-color: #005500;
-        }
-
-        #toggleDepthMap.active {
-            background-color: #007700;
-            opacity: 1;
         }
 
         /* Portrait mode warning */
@@ -369,16 +295,16 @@
         }
         
         .flicker-active canvas {
-            position: absolute !important; /* Added !important */
-            transition: none !important; /* Disable transitions for flicker mode, added !important */
+            position: absolute;
+            transition: none; /* Disable transitions for flicker mode */
         }
         
         .canvas-left {
-            left: calc(25% - 50px); /* Original positioning for flicker */
+            left: calc(25% - 50px);
         }
         
         .canvas-right {
-            left: calc(75% - 50px); /* Original positioning for flicker */
+            left: calc(75% - 50px);
         }
         
         /* Frozen frame styles */
@@ -480,14 +406,8 @@
     <div class="container">
         <canvas id="canvas1"></canvas>
         <canvas id="canvas2"></canvas>
-        <div id="freezeCountdown" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(255, 0, 0, 0.7); color: white; padding: 20px 30px; border-radius: 10px; font-size: 2rem; font-weight: bold; z-index: 1000;">
-            Freezing in <span id="countdownValue">3</span>
-        </div>
-    </div>
-    
-    <div id="depthMapDisplay">
-        <div id="depthMapLabel">Hadit Depth Map</div>
-        <canvas id="depthMapCanvas"></canvas>
+        <!-- Freeze countdown display -->
+        <div id="freezeCountdown" style="display: none; position: absolute; background-color: rgba(255, 0, 0, 0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 1.2rem; font-weight: bold; z-index: 200; text-align: center; pointer-events: none;"></div>
     </div>
     
     <div class="top-controls">
@@ -503,7 +423,6 @@
                 <span id="recordingTimer">00:00</span>
             </div>
         </div>
-        <button id="toggleDepthMap">Show Depth</button>
         <select id="qualitySelect">
             <option value="1.0">High Quality</option>
             <option value="0.5" selected>Medium Quality</option>
@@ -515,7 +434,6 @@
     
     <div id="qualityIndicator">Processing at 50% resolution</div>
     <div id="flickerIndicator">3D Flicker Mode Active</div>
-    <div id="haditIndicator">Hadit: φ=0.1° θ=0.0° Focus=4.0x</div>
     <div id="debugOutput" style="display: none;"></div>
     
     <div class="control-panel" id="controlPanel">
@@ -524,10 +442,7 @@
                 <div class="section-header">Camera</div>
                 <div class="control-item">
                     <button id="startButton">Start Camera</button>
-                    <button id="switchButton" disabled>Switch Camera</button>
-                </div>
-                 <div class="control-item">
-                    <button id="freezeButton">Freeze Frame</button>
+                    <button id="switchButton">Switch Camera</button>
                 </div>
             </div>
             
@@ -559,55 +474,14 @@
             <div class="divider"></div>
             
             <div class="control-section">
-                <div class="section-header">⚡ Hadit S-Coordinate Depth</div>
-                <div class="control-item">
-                    <label for="haditTheta">θ (Theta)</label>
-                    <input id="haditTheta" type="range" min="0" max="360" step="0.1" value="0.0" class="hadit-control">
-                    <span id="haditThetaValue" class="value-display">0.0°</span>
-                </div>
-                <div class="control-item">
-                    <label for="haditPhi">φ (Phi)</label>
-                    <input id="haditPhi" type="range" min="0.1" max="179.9" step="0.1" value="0.1" class="hadit-control">
-                    <span id="haditPhiValue" class="value-display">0.1°</span>
-                </div>
-                <div class="control-item">
-                    <label for="haditInfluence">Influence</label>
-                    <input id="haditInfluence" type="range" min="0" max="2" step="0.1" value="1.0" class="hadit-control">
-                    <span id="haditInfluenceValue" class="value-display">1.0</span>
-                </div>
-                <div class="control-item">
-                    <label for="focusFactor">Focus</label>
-                    <input id="focusFactor" type="range" min="1.0" max="10.0" step="0.1" value="4.0" class="hadit-control">
-                    <span id="focusFactorValue" class="value-display">4.0x</span>
-                </div>
-                <div class="control-item">
-                    <label for="bandSizeMultiplier">Band Size</label>
-                    <input id="bandSizeMultiplier" type="range" min="0.1" max="10.0" step="0.1" value="10.0" class="hadit-control">
-                    <span id="bandSizeMultiplierValue" class="value-display">10.0x</span>
-                </div>
-                <div class="control-item">
-                    <label for="bandMode">Band Mode</label>
-                    <select id="bandMode" class="hadit-control">
-                        <option value="full_image" selected>Full Image</option>
-                        <option value="auto_detect">Auto Detect</option>
-                        <option value="content_analysis">Content Analysis</option>
-                        <option value="manual_range">Manual Range</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="control-section">
                 <div class="section-header">Enhanced Nuit Depth</div>
                 <div class="control-item">
                     <label for="depthMode">Mode</label>
                     <select id="depthMode">
-                        <option value="hadit_scoord" selected>Hadit S-Coord</option>
                         <option value="nuit">Nuit Only</option>
                         <option value="radial">Radial Zones</option>
                         <option value="hybrid">Hybrid</option>
-                        <option value="sum_xy">Sum XY S-Coords</option>
+                        <option value="sum_xy" selected>Sum XY S-Coords</option>
                         <option value="vectorfield">Vector Field</option>
                     </select>
                 </div>
@@ -618,8 +492,8 @@
                 </div>
                 <div class="control-item">
                     <label for="sBounds">S Bounds</label>
-                    <input id="sBounds" type="range" min="1.0" max="50.0" step="0.1" value="20.0">
-                    <span id="sBoundsValue" class="value-display">±20.0</span>
+                    <input id="sBounds" type="range" min="1.0" max="10.0" step="0.1" value="5.0">
+                    <span id="sBoundsValue" class="value-display">±5.0</span>
                 </div>
                 <div class="control-item">
                     <label for="depthIntensity">Intensity</label>
@@ -654,18 +528,11 @@
                 <div class="section-header">S-Coordinate Mapping</div>
                 <div class="control-item">
                     <label for="luminosityWeight">Luminosity</label>
-                    <input id="luminosityWeight" type="range" min="0" max="1" step="0.05" value="0.0">
-                    <span id="luminosityWeightValue" class="value-display">0.0</span>
+                    <input id="luminosityWeight" type="range" min="0" max="1" step="0.05" value="0.7">
                 </div>
                 <div class="control-item">
                     <label for="saturationWeight">Saturation</label>
-                    <input id="saturationWeight" type="range" min="0" max="1" step="0.05" value="0.0">
-                    <span id="saturationWeightValue" class="value-display">0.0</span>
-                </div>
-                <div class="control-item">
-                    <label for="depthContrast">Contrast</label>
-                    <input id="depthContrast" type="range" min="0.1" max="3.0" step="0.1" value="0.2">
-                    <span id="depthContrastValue" class="value-display">0.2x</span>
+                    <input id="saturationWeight" type="range" min="0" max="1" step="0.05" value="0.3">
                 </div>
             </div>
             
@@ -708,189 +575,6 @@
     </div>
 
     <script>
-        // Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-07 04:53:34
-        // Current User's Login: Angledcrystals
-
-        // ==================== HADIT MATHEMATICS ====================
-        
-        const vectorOps = {
-            dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
-            subtract: (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }),
-            scale: (v, s) => ({ x: v.x * s, y: v.y * s, z: v.z * s }),
-            normalize: (v) => {
-                const mag = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-                return mag > 1e-10 ? vectorOps.scale(v, 1 / mag) : { x: 0, y: 0, z: 1 };
-            }
-        };
-
-        function sphericalToCartesian(theta, phi) {
-            const clampedPhi = Math.max(0.1, Math.min(179.9, phi));
-            const thetaRad = theta * Math.PI / 180;
-            const phiRad = clampedPhi * Math.PI / 180;
-            return {
-                x: Math.sin(phiRad) * Math.cos(thetaRad),
-                y: Math.sin(phiRad) * Math.sin(thetaRad),
-                z: Math.cos(phiRad)
-            };
-        }
-
-        function householderReflection(G_3d, hadit_3d) {
-            const haditUnit = vectorOps.normalize(hadit_3d);
-            const dotProduct = vectorOps.dot(haditUnit, G_3d);
-            return vectorOps.subtract(G_3d, vectorOps.scale(haditUnit, 2 * dotProduct));
-        }
-
-        function stereographicProjection(G_reflected) {
-            if (Math.abs(1 - G_reflected.z) < 1e-10) return { x: 0, y: 0 };
-            return {
-                x: G_reflected.x / (1 - G_reflected.z),
-                y: G_reflected.y / (1 - G_reflected.z)
-            };
-        }
-
-        function calculateHaditSCoordinate(px, py, width, height, lum, sat, config) {
-            const gTheta = (px / width) * 360;
-            const gPhi = (py / height) * 180;
-            const G_3d = sphericalToCartesian(gTheta, gPhi);
-            const hadit_3d = sphericalToCartesian(config.haditTheta, config.haditPhi);
-            const G_reflected = householderReflection(G_3d, hadit_3d);
-            const S_hadit = stereographicProjection(G_reflected);
-            const contentModulation = (1 + lum * config.luminosityWeight + sat * config.saturationWeight);
-            const S_modulated = {
-                x: S_hadit.x * contentModulation * config.haditInfluence,
-                y: S_hadit.y * contentModulation * config.haditInfluence
-            };
-            const sMagnitude = Math.sqrt(S_modulated.x * S_modulated.x + S_modulated.y * S_modulated.y);
-            return { sCoord: S_modulated, sMagnitude: sMagnitude };
-        }
-
-        let detectedBand = null; // Global detected band for Hadit
-
-        function detectHaditInformationBand(imageData, config) {
-            const { width, height } = imageData; // data property not used directly here
-            const bandMode = config.bandMode || 'full_image';
-            const bandSizeMultiplier = config.bandSizeMultiplier || 1.0; // Default to 1 if not in config
-            
-            if (bandMode === 'full_image') {
-                const bandWidth = config.sBounds * 10 * bandSizeMultiplier;
-                return { min: 0, max: bandWidth, center: bandWidth / 2, width: bandWidth, confidence: 1.0 };
-            }
-            
-            // Simplified auto-detection for now, can be expanded later
-            const sMagnitudeHistogram = new Array(100).fill(0);
-            const maxSMagnitude = config.sBounds * 2;
-            const sampleStep = Math.max(1, Math.floor(Math.min(width, height) / 50));
-            
-            // This part needs imageData.data, assuming it's available if not full_image
-            // For brevity, this example will assume full_image or a pre-set band if not full_image
-            // In a full implementation, you'd process imageData.data for other modes here.
-
-            // Fallback for non-full_image modes if data processing is omitted for brevity:
-            const fallbackCenterS = maxSMagnitude / 2;
-            const fallbackBandWidth = maxSMagnitude * 0.5 * bandSizeMultiplier;
-
-            return {
-                min: Math.max(0, fallbackCenterS - fallbackBandWidth / 2),
-                max: fallbackCenterS + fallbackBandWidth / 2,
-                center: fallbackCenterS,
-                width: fallbackBandWidth,
-                confidence: 0.5 // Lower confidence for fallback
-            };
-        }
-
-        function calculateHaditDepth(sResult, currentDetectedBand, focusFactor, depthContrastVal) {
-            const { sMagnitude } = sResult;
-            let depth;
-
-            if (currentDetectedBand && currentDetectedBand.width > 0) {
-                const bandPosition = Math.max(0, Math.min(1, (sMagnitude - currentDetectedBand.min) / currentDetectedBand.width));
-                depth = 0.2 + bandPosition * 0.8; // Base depth within band: 0.2 (far edge) to 1.0 (near edge)
-                
-                // Apply focus factor for in-band pixels
-                if (sMagnitude >= currentDetectedBand.min && sMagnitude <= currentDetectedBand.max && focusFactor > 1.0) {
-                    depth = 0.5 + (depth - 0.5) * focusFactor; // Focus around mid-point (0.5)
-                }
-            } else {
-                // Fallback if no valid band (e.g. width is 0) or band not provided
-                const maxS = parseFloat(document.getElementById('sBounds').value) * 2 || 40.0; // Use sBounds from UI
-                depth = 0.2 + Math.min(1.0, sMagnitude / maxS) * 0.8;
-            }
-            
-            // Apply depth contrast
-            depth = Math.pow(Math.max(0.01, depth), 1.0 / Math.max(0.1, depthContrastVal));
-            return { depth: Math.min(1.0, Math.max(0.01, depth)) };
-        }
-        
-        // Convert depth value to color
-        function depthToColor(depth) {
-            depth = Math.max(0, Math.min(1, depth));
-            if (depth < 0.2) { const t = depth / 0.2; return { r: 0, g: 0, b: Math.floor(128 + 127 * t) }; }
-            else if (depth < 0.4) { const t = (depth - 0.2) / 0.2; return { r: 0, g: Math.floor(255 * t), b: 255 }; }
-            else if (depth < 0.6) { const t = (depth - 0.4) / 0.2; return { r: 0, g: 255, b: Math.floor(255 * (1 - t)) }; }
-            else if (depth < 0.8) { const t = (depth - 0.6) / 0.2; return { r: Math.floor(255 * t), g: 255, b: 0 }; }
-            else { const t = (depth - 0.8) / 0.2; return { r: 255, g: Math.floor(255 * (1 - t)), b: 0 }; }
-        }
-
-        // Generate depth map for visual display
-        function generateDepthMapFromCurrentFrame() {
-            if (!depthMapVisible || !video || video.readyState < 2) return;
-
-            const tempCanvas = document.createElement('canvas');
-            const tempWidth = Math.round(video.videoWidth * 0.25); // Smaller for performance
-            const tempHeight = Math.round(video.videoHeight * 0.25);
-            tempCanvas.width = tempWidth; tempCanvas.height = tempHeight;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(video, 0, 0, tempWidth, tempHeight);
-            const imageData = tempCtx.getImageData(0, 0, tempWidth, tempHeight);
-
-            const depthMapDisplayCanvas = document.getElementById('depthMapCanvas');
-            depthMapDisplayCanvas.width = tempWidth; depthMapDisplayCanvas.height = tempHeight;
-            const depthCtx = depthMapDisplayCanvas.getContext('2d');
-            const depthImageData = depthCtx.createImageData(tempWidth, tempHeight);
-
-            const currentHaditConfig = getHaditConfigFromUI(); // Get current settings
-
-            // Ensure detectedBand is up-to-date for this frame's config, or recalculate
-            // For visual map, a fresh band detection might be good if config changed
-            const currentFrameBand = detectHaditInformationBand(imageData, currentHaditConfig);
-
-            let minVisDepth = 1.0, maxVisDepth = 0.0;
-            const visDepthValues = new Float32Array(tempWidth * tempHeight);
-
-            for (let y = 0; y < tempHeight; y++) {
-                for (let x = 0; x < tempWidth; x++) {
-                    const pixelIdx = (y * tempWidth + x) * 4;
-                    const r = imageData.data[pixelIdx] / 255, g = imageData.data[pixelIdx + 1] / 255, b = imageData.data[pixelIdx + 2] / 255;
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    const maxCol = Math.max(r, g, b), minCol = Math.min(r, g, b);
-                    const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
-                    
-                    const sResult = calculateHaditSCoordinate(x, y, tempWidth, tempHeight, lum, sat, currentHaditConfig);
-                    const depthResult = calculateHaditDepth(sResult, currentFrameBand, currentHaditConfig.focusFactor, currentHaditConfig.depthContrast);
-                    
-                    visDepthValues[y * tempWidth + x] = depthResult.depth;
-                    minVisDepth = Math.min(minVisDepth, depthResult.depth);
-                    maxVisDepth = Math.max(maxVisDepth, depthResult.depth);
-                }
-            }
-
-            const visDepthRange = maxVisDepth - minVisDepth;
-            for (let i = 0; i < visDepthValues.length; i++) {
-                let normalizedDepth = 0.5;
-                if (visDepthRange > 0.001) {
-                    normalizedDepth = (visDepthValues[i] - minVisDepth) / visDepthRange;
-                }
-                const color = depthToColor(normalizedDepth);
-                const pixelIdx = i * 4;
-                depthImageData.data[pixelIdx] = color.r;
-                depthImageData.data[pixelIdx + 1] = color.g;
-                depthImageData.data[pixelIdx + 2] = color.b;
-                depthImageData.data[pixelIdx + 3] = 255;
-            }
-            depthCtx.putImageData(depthImageData, 0, 0);
-            latestDepthMap = depthImageData; // Store for other uses if needed
-        }
-        
         // Utility function for debugging
         function debugLog(message) {
             console.log(message);
@@ -907,6 +591,23 @@
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isMobile = isAndroid || isIOS;
         
+        // Log useful browser information
+        debugLog("Browser Detection:");
+        debugLog("- Firefox: " + isFirefox);
+        debugLog("- Android: " + isAndroid);
+        debugLog("- iOS: " + isIOS);
+        debugLog("- Mobile: " + isMobile);
+        debugLog("- User Agent: " + navigator.userAgent);
+        debugLog("- Session: Angledcrystals - 2025-06-05 14:43:21 UTC");
+        
+        // Add a GPU acceleration hint specific for Android WebView
+        if (isAndroid) {
+            const meta = document.createElement('meta');
+            meta.name = 'viewport';
+            meta.content = 'width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover, minimal-ui';
+            document.getElementsByTagName('head')[0].appendChild(meta);
+        }
+
         // App state variables
         let currentStream = null;
         let video = null;
@@ -916,607 +617,2132 @@
         let lastFrameTime = 0;
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
-        let isFrozen = false; // Added for freeze frame functionality
         
-        let haditConfig = { // Global config, will be updated by UI and defaults
-            haditTheta: 0.0,
-            haditPhi: 0.1,
-            haditInfluence: 1.0,
-            focusFactor: 4.0,
-            bandMode: 'full_image',
-            bandSizeMultiplier: 10.0,
-            luminosityWeight: 0.0,
-            saturationWeight: 0.0,
-            depthContrast: 0.2,
-            sBounds: 20.0
-        };
-        
+        // Dynamic Nuit Distance Method Parameters
         let currentNuitRadius = 7.0;
-        let currentSBounds = 20.0; 
+        let currentSBounds = 5.0;
         
-        let detectedCameras = { front: null, back: null, current: null, all: [] };
+        // Vector Field globals
+        let vectorFieldTime = 0;
+        let lastUpdateTime = 0;
         
-        let flickerMode = false;
-        let flickerFrame = 0; 
-        let flickerInterval = null;
-        let flickerSpeed = 16; 
-        let originalCanvasPositions = {
-            canvas1: { left: '', margin: '', transform: '' }, // Ensure properties are strings
-            canvas2: { left: '', margin: '', transform: '' }
+        // Improved camera tracking
+        let detectedCameras = {
+            front: null,
+            back: null,
+            current: null,
+            all: []
         };
         
+        // Window size variables
+        let canvasSizeFactor = 1.0; // Default canvas size factor
+        
+        // Variables for flicker mode
+        let flickerMode = false;
+        let flickerFrame = 0; // 0 = normal, 1 = swapped
+        let flickerInterval = null;
+        let flickerSpeed = 16; // milliseconds (about 60fps)
+        let originalCanvasPositions = {
+            canvas1: { left: 0, margin: 0, transform: '' },
+            canvas2: { left: 0, margin: 0, transform: '' }
+        };
+        
+        // Method indicator - we'll determine the right method based on device capabilities
+        let renderMethod = 'canvas2d'; // Start with standard canvas, will try to upgrade to WebGL
+        
+        // Canvas setup
         let processingCanvas = document.createElement('canvas');
         let processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
+        let depthMapCanvas = document.createElement('canvas');
+        let depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
         
-        // Function to get current Hadit configuration from UI or defaults
-        function getHaditConfigFromUI() {
+        // Try to use OffscreenCanvas for better performance if available
+        if (typeof OffscreenCanvas !== 'undefined') {
+            try {
+                processingCanvas = new OffscreenCanvas(1, 1);
+                processingCtx = processingCanvas.getContext('2d', { willReadFrequently: true });
+                depthMapCanvas = new OffscreenCanvas(1, 1);
+                depthMapCtx = depthMapCanvas.getContext('2d', { willReadFrequently: true });
+                debugLog("Using OffscreenCanvas for better performance");
+            } catch (e) {
+                debugLog("OffscreenCanvas failed: " + e.message);
+                // Fall back to regular canvas (already defined)
+            }
+        }
+        
+        // S-coordinate mapping functions from Python script (with dynamic parameters)
+        function pixelToSCoordinate(px, py, width, height, lum, sat, lumMapWeight, satMapWeight) {
+            // Normalize pixel coordinates to -1 to 1 range, centered
+            const normX = (px / (width - 1)) * 2 - 1;
+            const normY = (py / (height - 1)) * 2 - 1;
+            
+            // Base S-coordinate range using current S_BOUNDS
+            const sMinX = -currentSBounds;
+            const sMaxX = currentSBounds;
+            const sMinY = -currentSBounds;
+            const sMaxY = currentSBounds;
+            
+            // Apply color mediation to influence the S-coordinate mapping
+            const effectiveSMaxX = sMaxX * (1 + lum * lumMapWeight + sat * satMapWeight);
+            const effectiveSMinX = sMinX * (1 + lum * lumMapWeight + sat * satMapWeight);
+            const effectiveSMaxY = sMaxY * (1 + lum * lumMapWeight + sat * satMapWeight);
+            const effectiveSMinY = sMinY * (1 + lum * lumMapWeight + sat * satMapWeight);
+            
+            const sX = (normX + 1) / 2 * (effectiveSMaxX - effectiveSMinX) + effectiveSMinX;
+            const sY = (normY + 1) / 2 * (effectiveSMaxY - effectiveSMinY) + effectiveSMinY;
+            
+            // Clip to reasonable bounds
+            const clipVal = currentSBounds * 5;
             return {
-                haditTheta: parseFloat(document.getElementById('haditTheta').value) || haditConfig.haditTheta,
-                haditPhi: parseFloat(document.getElementById('haditPhi').value) || haditConfig.haditPhi,
-                haditInfluence: parseFloat(document.getElementById('haditInfluence').value) || haditConfig.haditInfluence,
-                focusFactor: parseFloat(document.getElementById('focusFactor').value) || haditConfig.focusFactor,
-                bandMode: document.getElementById('bandMode').value || haditConfig.bandMode,
-                bandSizeMultiplier: parseFloat(document.getElementById('bandSizeMultiplier').value) || haditConfig.bandSizeMultiplier,
-                luminosityWeight: parseFloat(document.getElementById('luminosityWeight').value) || haditConfig.luminosityWeight,
-                saturationWeight: parseFloat(document.getElementById('saturationWeight').value) || haditConfig.saturationWeight,
-                depthContrast: parseFloat(document.getElementById('depthContrast').value) || haditConfig.depthContrast,
-                sBounds: parseFloat(document.getElementById('sBounds').value) || haditConfig.sBounds
+                x: Math.max(-clipVal, Math.min(clipVal, sX)),
+                y: Math.max(-clipVal, Math.min(clipVal, sY))
             };
         }
+        
+        // Enhanced Nuit distance depth calculation with multiple modes and better depth distribution
+        function calculateNuitDistanceDepth(sCoord, nuitRadius, falloffFactor) {
+            const distanceFromOrigin = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+            const distanceFromNuit = Math.abs(distanceFromOrigin - nuitRadius);
+            
+            // Get depth mode from selector
+            const depthMode = document.getElementById('depthMode').value;
+            
+            let finalDepth;
+            
+            switch (depthMode) {
+                case 'nuit':
+                    // Original Nuit distance method - max depth at boundary
+                    const baseDepth = 1.0 / (1.0 + distanceFromNuit * falloffFactor);
+                    const contrastedDepth = Math.pow(baseDepth, 0.7);
+                    const minDepth = 0.1;
+                    finalDepth = minDepth + (contrastedDepth * (1.0 - minDepth));
+                    break;
+                    
+                case 'radial':
+                    // Radial depth - center is closest, edges are farthest
+                    const maxDistance = Math.max(currentSBounds * 2, 10);
+                    const normalizedDistance = Math.min(distanceFromOrigin / maxDistance, 1.0);
+                    // Invert so center (distance 0) = max depth (1.0), edges = min depth
+                    finalDepth = 1.0 - (normalizedDistance * 1.0); // Range: 1.0 to 0.2
+                    break;
+                    
+                case 'hybrid':
+                    // Combination: radial base + Nuit boundary enhancement
+                    const maxDist = Math.max(currentSBounds * 2, 10);
+                    const normDist = Math.min(distanceFromOrigin / maxDist, 1.0);
+                    const radialDepth = 1.0 - (normDist * 0.7); // Base radial depth
+                    
+                    // Add Nuit boundary enhancement
+                    const nuitDepth = 1.0 / (1.0 + distanceFromNuit * falloffFactor * 0.5);
+                    const nuitBoost = (nuitDepth - 0.5) * 0.3; // Boost around boundary
+                    
+                    finalDepth = radialDepth + nuitBoost;
+                    break;
+                    
+                case 'sum_xy':
+                    // Sum XY S-coordinates method - depth based on sum of absolute S-coordinate values
+                    const sumXY = Math.abs(sCoord.x) + Math.abs(sCoord.y);
+                    const maxSum = currentSBounds * 2; // Maximum possible sum
+                    const normalizedSum = Math.min(sumXY / maxSum, 1.0);
+                    
+                    // Invert so that higher sums (edges/corners) = closer, lower sums (center) = farther
+                    finalDepth = 0.2 + (normalizedSum * 0.8); // Range: 0.2 to 1.0
+                    break;
+                
+                case 'vectorfield':
+                    // Vector field depth calculation
+                    finalDepth = calculateVectorFieldDepth(sCoord);
+                    break;
+                    
+                default:
+                    finalDepth = 0.5;
+            }
+            
+            // Apply contrast enhancement
+            const contrastedDepth = Math.pow(Math.max(0, finalDepth), 0.7);
+            
+            // Ensure reasonable bounds
+            return Math.min(1.0, Math.max(0.05, contrastedDepth));
+        }
+        
+        /**
+         * Calculate depth based on vector field in S-coordinate space
+         */
+        function calculateVectorFieldDepth(sCoord) {
+            // The pattern type - can be hardcoded or added as a UI option later
+            const patternType = 'waves';  // Options: 'waves', 'spiral', 'vortex', 'checkerboard'
+            
+            // Get vector field from pattern
+            const vector = getVectorFieldPattern(sCoord, patternType, vectorFieldTime);
+            
+            // Calculate magnitude of the vector field
+            const fieldMagnitude = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+            
+            // Normalize to 0-1 range
+            let depthValue = fieldMagnitude % 1.0;
+            if (depthValue < 0) depthValue += 1.0;
+            
+            // Ensure minimum depth for better stereo effect
+            return 0.1 + (depthValue * 0.9);
+        }
 
-        // Apply stereo effect to frames - REVISED FOR HADIT OFFSETS
-        function applyStereoEffect(processingCtx, leftCtx, rightCtx, leftColor, rightColor, separation, intensity, depthMode) {
-            const width = processingCanvas.width;
-            const height = processingCanvas.height;
+        // Creates different vector field patterns
+        function getVectorFieldPattern(sCoord, patternType, time) {
+            switch (patternType) {
+                case 'waves':
+                    return {
+                        x: Math.sin(sCoord.x * 0.5 + time) * Math.cos(sCoord.y * 0.3),
+                        y: Math.cos(sCoord.x * 0.4) * Math.sin(sCoord.y * 0.6 + time)
+                    };
+                    
+                case 'spiral':
+                    const angle = Math.atan2(sCoord.y, sCoord.x) + time;
+                    const radius = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                    return {
+                        x: Math.cos(angle + radius * 0.5),
+                        y: Math.sin(angle + radius * 0.5)
+                    };
+                    
+                case 'vortex':
+                    const dx = sCoord.x;
+                    const dy = sCoord.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy) + 0.0001;
+                    return {
+                        x: -dy / dist + Math.sin(time),
+                        y: dx / dist + Math.cos(time)
+                    };
+                    
+                case 'checkerboard':
+                    const gridSize = 0.5;
+                    const xGrid = Math.floor((sCoord.x + time) / gridSize) % 2;
+                    const yGrid = Math.floor(sCoord.y / gridSize) % 2;
+                    return {
+                        x: xGrid === 0 ? 0.5 : 1.5,
+                        y: yGrid === 0 ? 0.5 : 1.5
+                    };
+                    
+                default:
+                    return {
+                        x: Math.sin(sCoord.x * 0.5 + time),
+                        y: Math.cos(sCoord.y * 0.6 + time)
+                    };
+            }
+        }
+        
+        // Test function to create a simple test depth map
+        function createTestDepthMap(width, height) {
+            const testDepthData = new Uint8ClampedArray(width * height * 4);
             
-            const originalFrameImageData = processingCtx.getImageData(0, 0, width, height);
-            const leftOutputImageData = leftCtx.createImageData(leftCtx.canvas.width, leftCtx.canvas.height);
-            const rightOutputImageData = rightCtx.createImageData(rightCtx.canvas.width, rightCtx.canvas.height);
-            
-            const scaleX = leftCtx.canvas.width / width;
-            const scaleY = leftCtx.canvas.height / height;
-            
-            const currentHaditConfig = getHaditConfigFromUI(); // Get current settings for Hadit
-            
-            // Ensure detectedBand is up-to-date for the current frame and config
-            // For performance, only recalculate if essential (e.g. config change or not yet detected)
-            // Simplified: assume detectedBand is either globally fresh or we use a new one for this frame
-            const currentFrameBand = detectHaditInformationBand(originalFrameImageData, currentHaditConfig);
-
-            const depthMap = new Float32Array(width * height);
-            let minFrameDepth = 1.0;
-            let maxFrameDepth = 0.0;
-            
+            // Create a simple gradient: left side = far (dark), right side = close (bright)
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    const pixelIdx = (y * width + x) * 4;
-                    const r = originalFrameImageData.data[pixelIdx] / 255;
-                    const g = originalFrameImageData.data[pixelIdx + 1] / 255;
-                    const b = originalFrameImageData.data[pixelIdx + 2] / 255;
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    const maxCol = Math.max(r, g, b), minCol = Math.min(r, g, b);
-                    const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
+                    const idx = (y * width + x) * 4;
                     
-                    let currentPixelDepth = 0.5; // Default
-                    if (depthMode === 'hadit_scoord') {
-                        const sResult = calculateHaditSCoordinate(x, y, width, height, lum, sat, currentHaditConfig);
-                        const depthResultObj = calculateHaditDepth(sResult, currentFrameBand, currentHaditConfig.focusFactor, currentHaditConfig.depthContrast);
-                        currentPixelDepth = depthResultObj.depth;
-                    } else { 
-                        currentPixelDepth = 0.2 + lum * 0.8; 
-                    }
+                    // Simple left-to-right gradient
+                    const depth = Math.floor((x / width) * 255);
                     
-                    depthMap[y * width + x] = currentPixelDepth;
-                    minFrameDepth = Math.min(minFrameDepth, currentPixelDepth);
-                    maxFrameDepth = Math.max(maxFrameDepth, currentPixelDepth);
+                    testDepthData[idx] = depth;     // R
+                    testDepthData[idx + 1] = depth; // G
+                    testDepthData[idx + 2] = depth; // B
+                    testDepthData[idx + 3] = 255;   // A
                 }
             }
             
-            const frameDepthRange = maxFrameDepth - minFrameDepth;
-            for (let i = 0; i < depthMap.length; i++) {
-                if (frameDepthRange > 0.001) {
-                    depthMap[i] = (depthMap[i] - minFrameDepth) / frameDepthRange; // Normalized 0-1
-                } else {
-                    depthMap[i] = 0.5; 
-                }
-            }
-            
-            const separationAmount = separation * leftCtx.canvas.width / 100; // Use output canvas width for separation %
-            let actualMaxOffset = Math.round(separationAmount * (intensity / 50.0)); // Intensity 0-50, map to 0-1 multiplier for offset
-
-            if (depthMode === 'hadit_scoord') {
-                 actualMaxOffset = Math.max(1, Math.round(actualMaxOffset * 1.2)); // Boost Hadit offset
-            }
-             if (actualMaxOffset === 0 && intensity > 0) actualMaxOffset = 1;
-
-
-            function getPixelSafe(imgData, xPos, yPos, w, h) {
-                xPos = Math.max(0, Math.min(w - 1, Math.round(xPos)));
-                yPos = Math.max(0, Math.min(h - 1, Math.round(yPos)));
-                const idx = (yPos * w + xPos) * 4;
-                return [ imgData.data[idx], imgData.data[idx+1], imgData.data[idx+2], imgData.data[idx+3] ];
-            }
-            
-            for (let yOut = 0; yOut < leftCtx.canvas.height; yOut++) {
-                for (let xOut = 0; xOut < leftCtx.canvas.width; xOut++) {
-                    const srcX = xOut / scaleX;
-                    const srcY = yOut / scaleY;
-                    
-                    const depthMapIndex = Math.round(srcY) * width + Math.round(srcX);
-                    const normalizedDepth = depthMap[depthMapIndex] || 0.5; // Should be 0 (far) to 1 (near)
-                    
-                    // Map normalizedDepth (0=far, 1=near) to displacement. 
-                    // Near objects (depth=1) shift more. Far objects (depth=0) shift less or none.
-                    const displacement = Math.round(normalizedDepth * actualMaxOffset);
-                    
-                    const outIdx = (yOut * leftCtx.canvas.width + xOut) * 4;
-                    
-                    // Left eye: near objects (positive displacement) shift source to their right
-                    const leftSamplePixel = getPixelSafe(originalFrameImageData, srcX + displacement, srcY, width, height);
-                    leftOutputImageData.data[outIdx]     = leftSamplePixel[0] * leftColor.r;
-                    leftOutputImageData.data[outIdx + 1] = leftSamplePixel[1] * leftColor.g;
-                    leftOutputImageData.data[outIdx + 2] = leftSamplePixel[2] * leftColor.b;
-                    leftOutputImageData.data[outIdx + 3] = 255;
-                    
-                    // Right eye: near objects (positive displacement) shift source to their left
-                    const rightSamplePixel = getPixelSafe(originalFrameImageData, srcX - displacement, srcY, width, height);
-                    rightOutputImageData.data[outIdx]     = rightSamplePixel[0] * rightColor.r;
-                    rightOutputImageData.data[outIdx + 1] = rightSamplePixel[1] * rightColor.g;
-                    rightOutputImageData.data[outIdx + 2] = rightSamplePixel[2] * rightColor.b;
-                    rightOutputImageData.data[outIdx + 3] = 255;
-                }
-            }
-            
-            leftCtx.putImageData(leftOutputImageData, 0, 0);
-            rightCtx.putImageData(rightOutputImageData, 0, 0);
-        }
-
-        // Initialize the video element
-        function initVideo() {
-            video = document.createElement('video');
-            video.setAttribute('playsinline', '');
-            video.setAttribute('autoplay', '');
-            video.setAttribute('muted', '');
-            video.style.width = 'auto'; // Changed for aspect ratio
-            video.style.height = '100%'; // Changed for aspect ratio
-            video.style.display = 'none'; // Hide video element
-            document.body.appendChild(video); // Append to body to allow playback
+            return testDepthData;
         }
         
-        // Main render frame function
-        function renderFrame() {
-            if (video && video.readyState >= 2) { // video.HAVE_CURRENT_DATA
-                const currentTime = performance.now();
-                const elapsed = currentTime - lastFrameTime;
-                
-                if (elapsed >= frameInterval) {
-                    lastFrameTime = currentTime - (elapsed % frameInterval);
-                    
-                    if (!isFrozen) {
-                        const canvas1 = document.getElementById('canvas1');
-                        const canvas2 = document.getElementById('canvas2');
-                        
-                        if (canvas1 && canvas2) {
-                            const ctx1 = canvas1.getContext('2d');
-                            const ctx2 = canvas2.getContext('2d');
-                            
-                            processingCtx.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
-                            
-                            const baselineSeparation = parseFloat(document.getElementById('baselineSeparation').value);
-                            const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
-                            const depthMode = document.getElementById('depthMode').value;
-                            
-                            const leftEyeColor = {
-                                r: parseInt(document.getElementById('redSlider1').value) / 255,
-                                g: parseInt(document.getElementById('greenSlider1').value) / 255,
-                                b: parseInt(document.getElementById('blueSlider1').value) / 255
-                            };
-                            const rightEyeColor = {
-                                r: parseInt(document.getElementById('redSlider2').value) / 255,
-                                g: parseInt(document.getElementById('greenSlider2').value) / 255,
-                                b: parseInt(document.getElementById('blueSlider2').value) / 255
-                            };
-                            
-                            applyStereoEffect(processingCtx, ctx1, ctx2, leftEyeColor, rightEyeColor, 
-                                baselineSeparation, depthIntensity, depthMode);
-                            updateCanvasTransforms();
-                        }
-                    }
-                    if (depthMapVisible) {
-                        generateDepthMapFromCurrentFrame();
-                    }
-                }
-            }
-            requestAnimationFrame(renderFrame);
-        }
-
-        // Set up rendering dimensions
-        function setupRendering() {
-            const canvas1 = document.getElementById('canvas1');
-            const canvas2 = document.getElementById('canvas2');
-            if (!canvas1 || !canvas2 || !video || !video.videoWidth || !video.videoHeight) return;
-
-            const videoAspect = video.videoWidth / video.videoHeight;
-            const container = document.querySelector('.container');
-            let targetCanvasHeight = container.clientHeight * 0.9; // Use 90% of container height
-            let targetCanvasWidth = targetCanvasHeight * videoAspect;
-
-            // If calculated width exceeds container width (e.g. very wide video), scale by width instead
-            if (targetCanvasWidth > container.clientWidth * 0.45) { // Each canvas takes up to 45%
-                targetCanvasWidth = container.clientWidth * 0.45;
-                targetCanvasHeight = targetCanvasWidth / videoAspect;
+        // Add depth map visualization for debugging
+        function showDepthMapDebug(depthImgData) {
+            // Create or get debug canvas
+            let debugCanvas = document.getElementById('depthMapDebug');
+            if (!debugCanvas) {
+                debugCanvas = document.createElement('canvas');
+                debugCanvas.id = 'depthMapDebug';
+                debugCanvas.style.position = 'fixed';
+                debugCanvas.style.top = '100px';
+                debugCanvas.style.left = '5px';
+                debugCanvas.style.width = '150px';
+                debugCanvas.style.height = '100px';
+                debugCanvas.style.border = '1px solid white';
+                debugCanvas.style.zIndex = '1002';
+                debugCanvas.style.opacity = '0.8';
+                debugCanvas.title = 'Depth Map Visualization (darker = closer)';
+                document.body.appendChild(debugCanvas);
             }
             
-            canvas1.width = canvas2.width = Math.round(targetCanvasWidth);
-            canvas1.height = canvas2.height = Math.round(targetCanvasHeight);
+            debugCanvas.width = depthImgData.width;
+            debugCanvas.height = depthImgData.height;
+            const debugCtx = debugCanvas.getContext('2d');
+            debugCtx.putImageData(depthImgData, 0, 0);
             
-            processingCanvas.width = Math.round(video.videoWidth * qualityFactor);
-            processingCanvas.height = Math.round(video.videoHeight * qualityFactor);
-            
-            // Ensure flicker mode canvases are positioned correctly after size change
-            if (flickerMode) {
-                positionFlickerCanvases();
+            // Log depth statistics
+            let minDepth = 255, maxDepth = 0, avgDepth = 0;
+            for (let i = 0; i < depthImgData.data.length; i += 4) {
+                const depth = depthImgData.data[i];
+                minDepth = Math.min(minDepth, depth);
+                maxDepth = Math.max(maxDepth, depth);
+                avgDepth += depth;
             }
-
-            debugLog(`Canvases resized: ${canvas1.width}x${canvas1.height}. Processing at: ${processingCanvas.width}x${processingCanvas.height}`);
-            requestAnimationFrame(renderFrame); // Start if not already running
+            avgDepth /= (depthImgData.data.length / 4);
+            
+            debugLog(`Depth map stats: min=${minDepth}, max=${maxDepth}, avg=${avgDepth.toFixed(1)}, range=${maxDepth-minDepth}`);
         }
         
-        // Start camera
-        async function startCamera() {
-            const startButton = document.getElementById('startButton');
-            startButton.disabled = true;
-            startButton.textContent = "Starting...";
-            
+        // Try to set up WebGL for GPU acceleration
+        function setupWebGL() {
             try {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error("Camera API not supported");
-                }
-                if (!video) initVideo();
+                // Create a test WebGL context
+                const testCanvas = document.createElement('canvas');
+                const gl = testCanvas.getContext('webgl', {
+                    powerPreference: 'high-performance',
+                    antialias: false,
+                    alpha: false
+                }) || testCanvas.getContext('experimental-webgl');
                 
+                if (!gl) {
+                    debugLog("WebGL not supported on this device");
+                    return false;
+                }
+                
+                // Check for required capabilities
+                const extensions = gl.getSupportedExtensions();
+                if (!extensions.includes('OES_texture_float') && !extensions.includes('OES_texture_half_float')) {
+                    debugLog("Required WebGL extensions not supported");
+                    return false;
+                }
+                
+                // Test if we can create basic textures and framebuffers
+                const texture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 2, 2, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+                
+                const framebuffer = gl.createFramebuffer();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+                
+                const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+                if (status !== gl.FRAMEBUFFER_COMPLETE) {
+                    debugLog("WebGL framebuffer creation failed");
+                    return false;
+                }
+                
+                // Clean up
+                gl.deleteTexture(texture);
+                gl.deleteFramebuffer(framebuffer);
+                
+                debugLog("WebGL acceleration available and working");
+                return true;
+            } catch (e) {
+                debugLog("WebGL setup error: " + e.message);
+                return false;
+            }
+        }
+        
+        // Improved camera enumeration
+        async function enumerateCameras() {
+            try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
-                detectedCameras.all = devices.filter(device => device.kind === 'videoinput');
-                debugLog(`Found ${detectedCameras.all.length} camera(s)`);
-
-                if (isMobile && detectedCameras.all.length > 1) {
-                    detectedCameras.front = detectedCameras.all.find(c => c.label.toLowerCase().includes('front'))?.deviceId;
-                    detectedCameras.back = detectedCameras.all.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear'))?.deviceId;
-                    if (!detectedCameras.front && !detectedCameras.back && detectedCameras.all.length >=2) { // Fallback
-                         detectedCameras.front = detectedCameras.all[0].deviceId; // often front
-                         detectedCameras.back = detectedCameras.all[1].deviceId; // often back
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                debugLog(`Found ${videoDevices.length} camera(s)`);
+                
+                detectedCameras.all = videoDevices;
+                
+                // Reset camera assignments for fresh detection
+                detectedCameras.front = null;
+                detectedCameras.back = null;
+                
+                // Try to identify front/back cameras by label
+                videoDevices.forEach((device, index) => {
+                    const label = (device.label || '').toLowerCase();
+                    debugLog(`Camera ${index+1}: ${label || 'Unnamed'} (${device.deviceId.substring(0, 8)}...)`);
+                    
+                    // Look for keywords that typically indicate front/back cameras
+                    if (/back|rear|environment|main/i.test(label)) {
+                        detectedCameras.back = device.deviceId;
+                        debugLog(`Identified back camera by label: ${label}`);
                     }
-                }
-                
-                const preferredCameraId = useFrontCamera ? 
-                    (detectedCameras.front || detectedCameras.all[0]?.deviceId) : 
-                    (detectedCameras.back || detectedCameras.all[0]?.deviceId);
-                detectedCameras.current = preferredCameraId;
-                
-                const constraints = {
-                    video: {
-                        deviceId: preferredCameraId ? { exact: preferredCameraId } : undefined,
-                        width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 }
-                    }, audio: false
-                };
-                
-                if (currentStream) currentStream.getTracks().forEach(track => track.stop());
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = currentStream;
-                
-                await new Promise(resolve => {
-                    video.onloadedmetadata = () => video.play().then(resolve).catch(e => {debugLog(`Play error: ${e}`); resolve();});
+                    if (/front|user|face|selfie/i.test(label)) {
+                        detectedCameras.front = device.deviceId;
+                        debugLog(`Identified front camera by label: ${label}`);
+                    }
                 });
                 
-                startButton.textContent = "Camera Active";
-                document.getElementById('switchButton').disabled = detectedCameras.all.length < 2;
-                isFrozen = false; // Unfreeze when camera starts
-                document.getElementById('canvas1').classList.remove('frozen-canvas');
-                document.getElementById('canvas2').classList.remove('frozen-canvas');
-                document.getElementById('freezeButton').textContent = "Freeze Frame";
+                // If we couldn't identify by keywords but have multiple cameras
+                if (videoDevices.length > 1) {
+                    // Different assumptions based on platform
+                    if (isAndroid) {
+                        // On Android, camera 0 is often back camera, camera 1 is front
+                        if (!detectedCameras.back) {
+                            detectedCameras.back = videoDevices[0]?.deviceId;
+                            debugLog("Using Android assumption: first camera is back camera");
+                        }
+                        if (!detectedCameras.front) {
+                            detectedCameras.front = videoDevices[1]?.deviceId;
+                            debugLog("Using Android assumption: second camera is front camera");
+                        }
+                    } else {
+                        // On iOS/others, camera 0 is often front, camera 1 is back
+                        if (!detectedCameras.front) {
+                            detectedCameras.front = videoDevices[0]?.deviceId;
+                            debugLog("Using iOS/default assumption: first camera is front camera");
+                        }
+                        if (!detectedCameras.back) {
+                            detectedCameras.back = videoDevices[1]?.deviceId;
+                            debugLog("Using iOS/default assumption: second camera is back camera");
+                        }
+                    }
+                } else if (videoDevices.length === 1) {
+                    // If only one camera, use it for both
+                    detectedCameras.front = detectedCameras.back = videoDevices[0].deviceId;
+                    debugLog("Only one camera found, using it for both front and back");
+                }
+                
+                debugLog(`Camera detection results - Front: ${detectedCameras.front ? 'Found' : 'Not found'}, Back: ${detectedCameras.back ? 'Found' : 'Not found'}`);
+                
+                return videoDevices;
+            } catch (error) {
+                debugLog("Error enumerating cameras: " + error.message);
+                return [];
+            }
+        }
+        
+        // Advanced camera access with multiple strategies
+        async function tryAccessCamera(preferredId) {
+            const strategies = [
+                // Strategy 1: Try with specific device ID if available
+                async () => {
+                    if (!preferredId) throw new Error("No device ID available");
+                    
+                    debugLog("Strategy 1: Using specific device ID");
+                    return navigator.mediaDevices.getUserMedia({
+                        video: {
+                            deviceId: { exact: preferredId },
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            frameRate: { ideal: 24, max: 30 }
+                        },
+                        audio: false
+                    });
+                },
+                
+                // Strategy 2: Try with facingMode constraint
+                async () => {
+                    debugLog("Strategy 2: Using facingMode");
+                    return navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: useFrontCamera ? "user" : "environment",
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            frameRate: { ideal: 24, max: 30 }
+                        },
+                        audio: false
+                    });
+                },
+                
+                // Strategy 3: Try with any camera but remember which one we got
+                async () => {
+                    debugLog("Strategy 3: Using any available camera");
+                    return navigator.mediaDevices.getUserMedia({ 
+                        video: true, 
+                        audio: false 
+                    });
+                }
+            ];
+            
+            // Try each strategy in sequence
+            for (let i = 0; i < strategies.length; i++) {
+                try {
+                    const stream = await strategies[i]();
+                    
+                    // If we got a stream, remember which camera we're using
+                    if (stream && stream.getVideoTracks().length > 0) {
+                        const track = stream.getVideoTracks()[0];
+                        const settings = track.getSettings();
+                        detectedCameras.current = settings.deviceId;
+                        
+                        // Learn from this successful access
+                        if (useFrontCamera) {
+                            detectedCameras.front = settings.deviceId;
+                        } else {
+                            detectedCameras.back = settings.deviceId;
+                        }
+                        
+                        debugLog(`Successfully accessed camera: ${track.label || "unnamed"}`);
+                        
+                        return stream;
+                    }
+                } catch (error) {
+                    debugLog(`Strategy ${i+1} failed: ${error.message}`);
+                    // Continue to next strategy
+                }
+            }
+            
+            throw new Error("All camera access strategies failed");
+        }
+        
+        // Improved start camera function
+        async function startCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
 
-
-                setupRendering(); // Setup rendering after video metadata is loaded
-                initializeDepthMap(); // Also initialize depth map settings
+            try {
+                // First ensure we have camera info
+                if (detectedCameras.all.length === 0) {
+                    await enumerateCameras();
+                }
+                
+                const cameraId = useFrontCamera ? detectedCameras.front : detectedCameras.back;
+                
+                debugLog(`Attempting to use ${useFrontCamera ? "front" : "back"} camera with ID: ${cameraId || "none"}`);
+                
+                // Try to access the camera with multiple strategies
+                const stream = await tryAccessCamera(cameraId);
+                
+                // Attach stream to video element
+                attachStreamToVideo(stream);
+                currentStream = stream;
                 
             } catch (error) {
-                debugLog(`Camera error: ${error.message}`);
-                startButton.textContent = "Start Camera";
-                startButton.disabled = false;
+                debugLog(`Camera access completely failed: ${error.message}`);
+                alert("Could not access the camera after multiple attempts. Please ensure camera permissions are granted.");
+            }
+        }
+
+        // Function to correct video orientation (especially for Firefox)
+        function correctVideoOrientation(videoElement, stream) {
+            // Get video tracks
+            const videoTrack = stream.getVideoTracks()[0];
+            
+            if (isFirefox && videoTrack) {
+                debugLog("Applying Firefox-specific orientation correction");
+                
+                // For Firefox, we need to apply manual rotation based on device orientation
+                const handleOrientationChange = () => {
+                    // Get current orientation
+                    const orientation = window.screen.orientation ? 
+                        window.screen.orientation.angle : window.orientation || 0;
+                    
+                    let rotation = 0;
+                    
+                    // Map orientation to rotation values
+                    switch (orientation) {
+                        case 90:
+                            rotation = 270;
+                            break;
+                        case -90:
+                        case 270:
+                            rotation = 90;
+                            break;
+                        case 180:
+                            rotation = 180;
+                            break;
+                        default:
+                            rotation = 0;
+                    }
+                    
+                    debugLog(`Firefox orientation correction: screen angle=${orientation}, applying rotation=${rotation}`);
+                    
+                    // Apply rotation as CSS transform
+                    // Need to combine acceleration style with rotation for Firefox
+                    videoElement.style.transform = `translateZ(0) rotate(${rotation}deg)`;
+                    
+                    // If we're in landscape mode, we may need to adjust canvas/video sizes
+                    if (rotation === 90 || rotation === 270) {
+                        debugLog("Firefox: correcting for landscape orientation");
+                        
+                        // Force layout recalculation
+                        window.dispatchEvent(new Event('resize'));
+                    }
+                };
+                
+                // Add event listener for orientation changes
+                window.addEventListener('orientationchange', handleOrientationChange);
+                
+                // Initial correction
+                handleOrientationChange();
             }
         }
         
-        // Switch camera
-        async function switchCamera() {
-            if (detectedCameras.all.length < 2) {
-                debugLog("Not enough cameras to switch.");
-                return;
+        // Attach camera stream to video element
+        function attachStreamToVideo(stream) {
+            if (video) {
+                video.srcObject = null;
+            } else {
+                video = document.createElement('video');
+                video.autoplay = true;
+                video.muted = true;
+                video.playsInline = true; // Important for iOS
+                
+                // Apply hardware acceleration hints
+                video.style.transform = 'translateZ(0)';
+                video.style.webkitTransform = 'translateZ(0)';
+                video.style.backfaceVisibility = 'hidden';
+                video.style.webkitBackfaceVisibility = 'hidden';
             }
+
+            video.srcObject = stream;
+
+            video.onloadedmetadata = () => {
+                video.play().catch(err => debugLog('Video play error: ' + err.message));
+                
+                // Apply Firefox-specific orientation correction
+                correctVideoOrientation(video, stream);
+                
+                // Try WebGL if we haven't determined rendering method yet
+                if (renderMethod === 'canvas2d' && setupWebGL()) {
+                    renderMethod = 'css3d'; // Use CSS3D transform for better performance
+                    debugLog("Using CSS3D acceleration");
+                }
+                
+                applyHardwareAcceleration();
+                renderFrames();
+                
+                // Store camera info from track settings
+                try {
+                    const videoTrack = stream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        const settings = videoTrack.getSettings();
+                        debugLog(`Active camera - Label: ${videoTrack.label}, Width: ${settings.width}, Height: ${settings.height}, FPS: ${settings.frameRate}`);
+                    }
+                } catch (e) {
+                    // Ignore errors reading camera info
+                }
+            };
+        }
+            
+        // Improved switch camera function
+        function switchCamera() {
             useFrontCamera = !useFrontCamera;
-            debugLog(`Switching to ${useFrontCamera ? 'front' : 'back'} camera.`);
-            await startCamera(); // Restart camera with new preference
-            document.getElementById('switchButton').textContent = useFrontCamera ? "Back Cam" : "Front Cam";
+            debugLog(`Switching to ${useFrontCamera ? "front" : "rear"} camera`);
+            
+            // If the currently active camera is the one we want to switch to, force re-enumeration
+            if (detectedCameras.current === (useFrontCamera ? detectedCameras.front : detectedCameras.back)) {
+                debugLog("Camera already active or incorrectly tracked, forcing re-enumeration");
+                // Force re-enumeration to get fresh camera list
+                detectedCameras.all = [];
+                
+                // For Firefox, we're more aggressive in forcing a refresh
+                if (isFirefox) {
+                    // Swap our understanding of which camera is which
+                    const temp = detectedCameras.front;
+                    detectedCameras.front = detectedCameras.back;
+                    detectedCameras.back = temp;
+                    debugLog("Firefox: Swapped front/back camera assignments");
+                }
+            }
+            
+            startCamera();
         }
 
-        function positionFlickerCanvases() {
+        // Apply hardware acceleration CSS to canvases
+        function applyHardwareAcceleration() {
             const canvas1 = document.getElementById('canvas1');
             const canvas2 = document.getElementById('canvas2');
-            const container = document.querySelector('.container');
-            if (!canvas1 || !canvas2 || !container) return;
-
-            const canvasWidth = canvas1.width; // Assuming both are same width
-            const containerWidth = container.clientWidth;
             
-            // Center the canvases for flicker mode
-            const commonLeft = (containerWidth - canvasWidth) / 2;
-
-            if (flickerFrame === 0) { // canvas1 visible
-                canvas1.style.left = `${commonLeft}px`;
-                canvas1.style.visibility = 'visible';
-                canvas2.style.visibility = 'hidden';
-            } else { // canvas2 visible
-                canvas2.style.left = `${commonLeft}px`;
-                canvas2.style.visibility = 'visible';
-                canvas1.style.visibility = 'hidden';
+            // Add hardware acceleration hints for better performance
+            const accelerationStyle = `
+                translate3d(0,0,0);
+                transform: translate3d(0,0,0);
+                backface-visibility: hidden;
+                perspective: 1000;
+                -webkit-transform: translate3d(0,0,0);
+                -webkit-backface-visibility: hidden;
+                -webkit-perspective: 1000;
+            `;
+            
+            canvas1.style.cssText += accelerationStyle;
+            canvas2.style.cssText += accelerationStyle;
+            
+            if (video) {
+                video.style.cssText += accelerationStyle;
             }
+            
+            if (isAndroid) {
+                // Additional hints for Android WebView
+                document.body.style.cssText += `-webkit-transform: translateZ(0); transform: translateZ(0);`;
+            }
+            
+            debugLog("Applied hardware acceleration CSS hints");
         }
-        
+
+        // Calculate luminosity of a pixel
+        function getLuminosity(r, g, b) {
+            return 0.299 * r + 0.587 * g + 0.114 * b;
+        }
+
+        // Calculate saturation of a pixel
+        function getSaturation(r, g, b) {
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            return max === 0 ? 0 : (max - min) / max;
+        }
+
+        // Apply fast blur to the depth map
+        function fastBlurDepthMap(depthData, width, height, radius) {
+            if (radius <= 0) return depthData;
+            
+            // Create result array
+            const result = new Uint8ClampedArray(depthData.length);
+            
+            // Simple box blur instead of Gaussian for performance
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    let sum = 0;
+                    let count = 0;
+                    
+                    // Sample neighboring pixels
+                    const blurSize = Math.min(radius, 5); // Limit blur size for performance
+                    for (let offsetY = -blurSize; offsetY <= blurSize; offsetY += 2) {
+                        for (let offsetX = -blurSize; offsetX <= blurSize; offsetX += 2) {
+                            const sampleX = Math.max(0, Math.min(width - 1, x + offsetX));
+                            const sampleY = Math.max(0, Math.min(height - 1, y + offsetY));
+                            const idx = (sampleY * width + sampleX) * 4;
+                            
+                            sum += depthData[idx];
+                            count++;
+                        }
+                    }
+                    
+                    // Calculate average
+                    const avg = Math.round(sum / count);
+                    
+                    // Set result
+                    const i = (y * width + x) * 4;
+                    result[i] = avg;
+                    result[i + 1] = avg;
+                    result[i + 2] = avg;
+                    result[i + 3] = 255;
+                }
+            }
+            
+            return result;
+        }
+
+        // Apply depth quantization to create distinct depth planes
+        function quantizeDepth(depthMap, width, height, levels) {
+            const result = new Uint8ClampedArray(depthMap.length);
+            
+            // Calculate the step size for quantization
+            const stepSize = 256 / levels;
+            
+            for (let i = 0; i < depthMap.length; i += 4) {
+                // Get original depth
+                const depth = depthMap[i];
+                
+                // Apply square wave quantization - converts depth to steps
+                const quantizedDepth = Math.floor(depth / stepSize) * stepSize;
+                
+                result[i] = quantizedDepth;
+                result[i+1] = quantizedDepth;
+                result[i+2] = quantizedDepth;
+                result[i+3] = 255; // Alpha channel
+            }
+            
+            return result;
+        }
+
+        // Generate depth map using Enhanced Nuit Distance method with multiple modes
+        function generateDepthMap(imgData, width, height) {
+            const depthMap = new Uint8ClampedArray(imgData.data.length);
+            const luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
+            const saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
+            const nuitFalloffFactor = parseFloat(document.getElementById('nuitFalloffFactor').value);
+            
+            // Get current dynamic values
+            currentNuitRadius = parseFloat(document.getElementById('nuitRadius').value);
+            currentSBounds = parseFloat(document.getElementById('sBounds').value);
+            
+            // Process pixel by pixel using Enhanced Nuit Distance method
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    const r = imgData.data[idx];
+                    const g = imgData.data[idx + 1];
+                    const b = imgData.data[idx + 2];
+                    
+                    const luminosity = getLuminosity(r, g, b) / 255; // Normalize to 0-1
+                    const saturation = getSaturation(r, g, b);
+                    
+                    // Map pixel to S-coordinate using current bounds
+                    const sCoord = pixelToSCoordinate(
+                        x, y, width, height,
+                        luminosity, saturation,
+                        luminosityWeight, saturationWeight
+                    );
+                    
+                    // Calculate depth using Enhanced Nuit Distance method with current radius and mode
+                    const nuitDepth = calculateNuitDistanceDepth(sCoord, currentNuitRadius, nuitFalloffFactor);
+                    
+                    // Convert to 0-255 range
+                    const depthValue = Math.round(nuitDepth * 255);
+                    
+                    depthMap[idx] = depthValue;
+                    depthMap[idx + 1] = depthValue;
+                    depthMap[idx + 2] = depthValue;
+                    depthMap[idx + 3] = 255;
+                }
+            }
+            
+            // Apply blur to smooth the depth map
+            const blurRadius = parseInt(document.getElementById('blurRadius').value);
+            let processedDepthMap = fastBlurDepthMap(depthMap, width, height, blurRadius);
+            
+            // Apply depth quantization if enabled
+            const quantizeEnabled = document.getElementById('depthQuantizeToggle').checked;
+            if (quantizeEnabled) {
+                const levels = parseInt(document.getElementById('depthLevels').value);
+                processedDepthMap = quantizeDepth(processedDepthMap, width, height, levels);
+            }
+            
+            return processedDepthMap;
+        }
+
         // Toggle flicker mode
         function toggleFlickerMode() {
             flickerMode = !flickerMode;
-            const container = document.querySelector('.container');
-            const canvas1 = document.getElementById('canvas1');
-            const canvas2 = document.getElementById('canvas2');
+            const toggleButton = document.getElementById('toggleFlickerMode');
             const flickerSpeedContainer = document.getElementById('flickerSpeedContainer');
             const flickerIndicator = document.getElementById('flickerIndicator');
-            const toggleBtn = document.getElementById('toggleFlickerMode');
-
-            if (flickerMode) {
-                originalCanvasPositions.canvas1 = { left: canvas1.style.left, margin: canvas1.style.margin, transform: canvas1.style.transform, position: canvas1.style.position };
-                originalCanvasPositions.canvas2 = { left: canvas2.style.left, margin: canvas2.style.margin, transform: canvas2.style.transform, position: canvas2.style.position };
-                
-                container.classList.add('flicker-active');
-                canvas1.style.position = 'absolute'; // Ensure absolute for flicker
-                canvas2.style.position = 'absolute';
-                
-                flickerSpeedContainer.style.display = 'flex';
-                flickerIndicator.style.opacity = '1';
-                toggleBtn.textContent = 'Disable 3D Flicker';
-                startFlicker();
-            } else {
-                if (flickerInterval) clearInterval(flickerInterval);
-                flickerInterval = null;
-                
-                container.classList.remove('flicker-active');
-                canvas1.style.left = originalCanvasPositions.canvas1.left;
-                canvas1.style.margin = originalCanvasPositions.canvas1.margin;
-                canvas1.style.transform = originalCanvasPositions.canvas1.transform;
-                canvas1.style.position = originalCanvasPositions.canvas1.position;
-                canvas1.style.visibility = 'visible';
-
-
-                canvas2.style.left = originalCanvasPositions.canvas2.left;
-                canvas2.style.margin = originalCanvasPositions.canvas2.margin;
-                canvas2.style.transform = originalCanvasPositions.canvas2.transform;
-                canvas2.style.position = originalCanvasPositions.canvas2.position;
-                canvas2.style.visibility = 'visible';
-                
-                flickerSpeedContainer.style.display = 'none';
-                flickerIndicator.style.opacity = '0';
-                toggleBtn.textContent = 'Enable 3D Flicker';
-                setupRendering(); // Re-adjust non-flicker layout
-            }
-        }
-
-        // Start flicker animation
-        function startFlicker() {
-            if (flickerInterval) clearInterval(flickerInterval);
-            flickerSpeed = parseInt(document.getElementById('flickerSpeedSlider').value);
+            const container = document.querySelector('.container');
             
-            flickerFrame = 0; // Start with canvas1
-            positionFlickerCanvases(); // Initial positioning
-
-            flickerInterval = setInterval(() => {
-                flickerFrame = 1 - flickerFrame; // Toggle between 0 and 1
-                positionFlickerCanvases();
-            }, flickerSpeed);
-        }
-        
-        // Toggle controls visibility
-        function toggleControls() {
-            controlsHidden = !controlsHidden;
-            document.getElementById('controlPanel').style.display = controlsHidden ? 'none' : 'flex';
-            document.getElementById('toggleControls').textContent = controlsHidden ? 'Show Controls' : 'Hide Controls';
-        }
-        
-        // Handle quality selection
-        function handleQualityChange() {
-            qualityFactor = parseFloat(document.getElementById('qualitySelect').value);
-            const qualityIndicator = document.getElementById('qualityIndicator');
-            qualityIndicator.textContent = `Processing at ${(qualityFactor * 100)}% resolution`;
-            qualityIndicator.style.opacity = 1;
-            setTimeout(() => { qualityIndicator.style.opacity = 0; }, 3000);
-            if (currentStream) setupRendering(); // Re-setup with new quality
-        }
-        
-        // Initialize slider display updates
-        function initSliderDisplays() {
-            document.querySelectorAll('input[type="range"]').forEach(slider => {
-                const valueSpan = document.getElementById(slider.id + 'Value');
-                if (valueSpan) {
-                    const updateValue = () => {
-                        let value = slider.value;
-                        let suffix = slider.dataset.suffix || '';
-                        let prefix = slider.dataset.prefix || '';
-                        if (slider.id === 'haditTheta' || slider.id === 'haditPhi') suffix = '°';
-                        else if (['focusFactor', 'bandSizeMultiplier', 'depthContrast'].includes(slider.id)) suffix = 'x';
-                        else if (slider.id === 'baselineSeparation') suffix = '%';
-                        else if (slider.id === 'sBounds') prefix = '±';
-                        
-                        valueSpan.textContent = prefix + parseFloat(value).toFixed(1) + suffix;
-                    };
-                    slider.addEventListener('input', updateValue);
-                    updateValue(); 
-                }
-            });
-        }
-        
-        // Freeze frame with countdown
-        function freezeFrameWithDelay() {
-            if (!document.getElementById('freezeDelayToggle').checked) {
-                freezeFrame(); return;
+            if (flickerMode) {
+                // Save canvas original styles
+                saveCanvasPositions();
+                
+                // Enable flicker mode
+                toggleButton.textContent = 'Disable 3D Flicker';
+                flickerSpeedContainer.style.display = 'flex';
+                container.classList.add('flicker-active');
+                
+                // Set up initial positions
+                positionCanvasesForFlicker(0);
+                
+                // Start the flicker animation
+                startFlickerAnimation();
+                
+                // Show the indicator
+                flickerIndicator.style.opacity = 1;
+                flickerIndicator.textContent = `3D Flicker Mode: ${Math.round(1000/flickerSpeed)} Hz`;
+                
+                debugLog("3D Flicker mode enabled at " + Math.round(1000/flickerSpeed) + " Hz");
+            } else {
+                // Disable flicker mode
+                toggleButton.textContent = 'Enable 3D Flicker';
+                flickerSpeedContainer.style.display = 'none';
+                container.classList.remove('flicker-active');
+                
+                // Stop the flicker animation
+                stopFlickerAnimation();
+                
+                // Hide the indicator
+                flickerIndicator.style.opacity = 0;
+                
+                // Restore original canvas positions
+                restoreCanvasPositions();
+                
+                debugLog("3D Flicker mode disabled");
             }
-            const countdownDisplay = document.getElementById('freezeCountdown');
-            const countdownValueEl = document.getElementById('countdownValue');
-            countdownDisplay.style.display = 'block';
-            let count = 3;
-            countdownValueEl.textContent = count;
-            const interval = setInterval(() => {
-                count--;
-                countdownValueEl.textContent = count;
-                if (count <= 0) {
-                    clearInterval(interval);
-                    countdownDisplay.style.display = 'none';
-                    freezeFrame();
+            
+            // Update frozen indicators positions after toggling flicker mode
+            setTimeout(updateFrozenIndicatorPositions, 100);
+        }
+        
+        // Save original canvas positions before flicker mode
+        function saveCanvasPositions() {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            
+            originalCanvasPositions = {
+                canvas1: {
+                    position: canvas1.style.position,
+                    left: canvas1.style.left,
+                    margin: canvas1.style.margin,
+                    transform: canvas1.style.transform,
+                    display: canvas1.style.display
+                },
+                canvas2: {
+                    position: canvas2.style.position,
+                    left: canvas2.style.left,
+                    margin: canvas2.style.margin,
+                    transform: canvas2.style.transform,
+                    display: canvas2.style.display
+                }
+            };
+            
+            debugLog("Saved original canvas positions");
+        }
+        
+        // Restore original canvas positions after flicker mode
+        function restoreCanvasPositions() {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            
+            // Restore original styles
+            canvas1.style.position = originalCanvasPositions.canvas1.position;
+            canvas1.style.left = originalCanvasPositions.canvas1.left;
+            canvas1.style.margin = originalCanvasPositions.canvas1.margin;
+            canvas1.style.transform = originalCanvasPositions.canvas1.transform;
+            canvas1.style.display = originalCanvasPositions.canvas1.display;
+            
+            canvas2.style.position = originalCanvasPositions.canvas2.position;
+            canvas2.style.left = originalCanvasPositions.canvas2.left;
+            canvas2.style.margin = originalCanvasPositions.canvas2.margin;
+            canvas2.style.transform = originalCanvasPositions.canvas2.transform;
+            canvas2.style.display = originalCanvasPositions.canvas2.display;
+            
+            // Apply tilt if there is any
+            const tiltValue = parseFloat(document.getElementById('tiltSlider').value);
+            if (tiltValue > 0) {
+                applyTilt(tiltValue);
+            }
+            
+            debugLog("Restored original canvas positions");
+        }
+        
+        // Position canvases for flicker mode
+        function positionCanvasesForFlicker(state) {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            const container = document.querySelector('.container');
+            
+            // Make sure canvases are visible
+            canvas1.style.display = 'block';
+            canvas2.style.display = 'block';
+            
+            // Set absolute positioning
+            canvas1.style.position = 'absolute';
+            canvas2.style.position = 'absolute';
+            
+            // Calculate positions based on container width
+            const containerWidth = container.offsetWidth;
+            const canvasWidth = canvas1.offsetWidth;
+            
+            // Position based on state (0 = normal, 1 = swapped)
+            if (state === 0) {
+                // Normal positions
+                canvas1.style.left = `${(containerWidth / 4) - (canvasWidth / 2)}px`;
+                canvas2.style.left = `${(3 * containerWidth / 4) - (canvasWidth / 2)}px`;
+            } else {
+                // Swapped positions
+                canvas1.style.left = `${(3 * containerWidth / 4) - (canvasWidth / 2)}px`;
+                canvas2.style.left = `${(containerWidth / 4) - (canvasWidth / 2)}px`;
+            }
+            
+            // Remove margins and transforms
+            canvas1.style.margin = '0';
+            canvas2.style.margin = '0';
+            canvas1.style.transform = 'none';
+            canvas2.style.transform = 'none';
+        }
+        
+        // Start flicker animation
+        function startFlickerAnimation() {
+            // Clear any existing interval
+            stopFlickerAnimation();
+            
+            // Initialize flicker frame counter
+            flickerFrame = 0;
+            
+            // Start the interval for position swapping
+            flickerInterval = setInterval(() => {
+                // Toggle between normal and swapped positions
+                flickerFrame = 1 - flickerFrame;
+                positionCanvasesForFlicker(flickerFrame);
+            }, flickerSpeed);
+            
+            debugLog(`Started flicker animation at ${Math.round(1000/flickerSpeed)} Hz`);
+        }
+        
+        // Stop flicker animation
+        function stopFlickerAnimation() {
+            if (flickerInterval) {
+                clearInterval(flickerInterval);
+                flickerInterval = null;
+                debugLog("Stopped flicker animation");
+            }
+        }
+        
+        // Update flicker speed
+        function updateFlickerSpeed() {
+            const speedSlider = document.getElementById('flickerSpeedSlider');
+            flickerSpeed = parseInt(speedSlider.value);
+            
+            // Update the flicker if active
+            if (flickerMode && flickerInterval) {
+                startFlickerAnimation(); // Restarts with new speed
+                
+                // Update the indicator
+                const flickerIndicator = document.getElementById('flickerIndicator');
+                flickerIndicator.textContent = `3D Flicker Mode: ${Math.round(1000/flickerSpeed)} Hz`;
+                
+                debugLog("Flicker speed updated to " + Math.round(1000/flickerSpeed) + " Hz");
+            }
+        }
+
+        // Main rendering function
+        function renderFrames() {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+            const ctx1 = canvas1.getContext('2d', { 
+                alpha: false,
+                desynchronized: true
+            });
+            const ctx2 = canvas2.getContext('2d', { 
+                alpha: false,
+                desynchronized: true
+            });
+            
+            // Get control panel height for calculations
+            const controlPanel = document.getElementById('controlPanel');
+            let controlPanelHeight = controlsHidden ? 0 : (controlPanel.offsetHeight || 0);
+
+            function adjustCanvasSize() {
+                if (!video) return;
+                
+                const videoAspect = video.videoWidth / video.videoHeight;
+                
+                // Calculate available space (account for padding)
+                const padding = 20; // top and bottom padding
+                const availableHeight = window.innerHeight - controlPanelHeight - padding;
+                
+                // Apply canvasSizeFactor to set size scaling
+                // Use a higher percentage of screen width for each canvas but apply the size factor
+                const maxCanvasWidth = Math.floor(window.innerWidth * 0.47 * canvasSizeFactor);
+                
+                // Calculate height based on width and aspect ratio
+                let canvasWidth = maxCanvasWidth;
+                let canvasHeight = canvasWidth / videoAspect;
+                
+                // If calculated height exceeds available space, recalculate from height
+                if (canvasHeight > availableHeight) {
+                    canvasHeight = availableHeight;
+                    canvasWidth = canvasHeight * videoAspect;
+                }
+                
+                // Size canvases as large as possible
+                canvas1.width = canvas2.width = Math.floor(canvasWidth);
+                canvas1.height = canvas2.height = Math.floor(canvasHeight);
+                
+                // Set processing canvas size based on quality factor
+                processingCanvas.width = Math.max(32, Math.floor(canvasWidth * qualityFactor));
+                processingCanvas.height = Math.max(32, Math.floor(canvasHeight * qualityFactor));
+                
+                // Adjust the depth map canvas size to match processing canvas
+                depthMapCanvas.width = processingCanvas.width;
+                depthMapCanvas.height = processingCanvas.height;
+                
+                // If in flicker mode, update positions
+                if (flickerMode) {
+                    positionCanvasesForFlicker(flickerFrame);
+                }
+                
+                // Apply tilt if there is any and not in flicker mode
+                if (!flickerMode) {
+                    const tiltValue = parseFloat(document.getElementById('tiltSlider').value);
+                    if (tiltValue > 0) {
+                        applyTilt(tiltValue);
+                    }
+                }
+                
+                // Update frozen indicators if needed
+                updateFrozenIndicatorPositions();
+            }
+
+            function drawFrame(timestamp) {
+                // Schedule next frame first for better performance
+                requestAnimationFrame(drawFrame);
+                
+                // Throttle frame rate for better performance on low-end devices
+                if (timestamp - lastFrameTime < frameInterval) {
+                    return;
+                }
+                lastFrameTime = timestamp;
+                
+                if (!video || video.paused || video.ended) {
+                    return;
+                }
+
+                // Get latest control panel height in case it changed
+                controlPanelHeight = controlsHidden ? 0 : (controlPanel.offsetHeight || 0);
+                
+                adjustCanvasSize();
+                
+                try {
+                    // Draw the original frame to the processing canvas (smaller size for performance)
+                    processingCtx.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
+                    
+                    // Get the image data to calculate the depth map
+                    const imgData = processingCtx.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
+                    
+                    // Generate depth map using Enhanced Nuit Distance method
+                    const depthData = generateDepthMap(imgData, processingCanvas.width, processingCanvas.height);
+                    
+                    // Create depth map image data
+                    const depthImgData = new ImageData(depthData, processingCanvas.width, processingCanvas.height);
+                    
+                    // Update vector field time if that mode is selected
+                    if (document.getElementById('depthMode').value === 'vectorfield') {
+                        const now = performance.now();
+                        const deltaTime = (now - lastUpdateTime) / 1000; // Convert to seconds
+                        lastUpdateTime = now;
+                        
+                        // Adjust animation speed - lower number = slower animation
+                        vectorFieldTime += deltaTime * 0.5; 
+                    }
+                    
+                    // Show depth map for debugging (only when debug is enabled)
+                    const debugOutput = document.getElementById('debugOutput');
+                    if (debugOutput && debugOutput.style.display !== 'none') {
+                        showDepthMapDebug(depthImgData);
+                    }
+                    
+                    // Apply stereoscopic 3D effect with the depth map
+                    applyStereoscopicEffect(ctx1, ctx2, imgData, depthImgData);
+                    
+                    // Apply color adjustments
+                    applyColorAdjustments(ctx1, canvas1, 'redSlider1', 'greenSlider1', 'blueSlider1');
+                    applyColorAdjustments(ctx2, canvas2, 'redSlider2', 'greenSlider2', 'blueSlider2');
+                } catch (error) {
+                    debugLog("Rendering error: " + error.message);
+                }
+            }
+
+            requestAnimationFrame(drawFrame);
+        }
+        
+        // Variables to track frozen state
+        let canvas1Frozen = false;
+        let canvas2Frozen = false;
+        let frozenImageData1 = null;
+        let frozenImageData2 = null;
+        
+        // Add visual indicators for frozen frames
+        function createFrozenIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'frozen-indicator';
+            indicator.textContent = 'FROZEN';
+            
+            // Style the indicator
+            Object.assign(indicator.style, {
+                position: 'absolute',
+                top: '10px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: 'rgba(255, 0, 0, 0.7)',
+                color: 'white',
+                padding: '3px 8px',
+                borderRadius: '3px',
+                fontSize: '0.7rem',
+                fontWeight: 'bold',
+                zIndex: '100',
+                pointerEvents: 'none',
+                opacity: '0.8'
+            });
+            
+            return indicator;
+        }
+        
+        // Create indicators but don't attach them yet
+        const frozenIndicator1 = createFrozenIndicator();
+        const frozenIndicator2 = createFrozenIndicator();
+        
+        // Function to toggle frozen state for a canvas
+        function toggleFrozenState(canvasNumber) {
+            if (canvasNumber === 1) {
+                canvas1Frozen = !canvas1Frozen;
+                const canvas1 = document.getElementById('canvas1');
+                
+                if (canvas1Frozen) {
+                    // Store current image data
+                    const ctx = canvas1.getContext('2d');
+                    frozenImageData1 = ctx.getImageData(0, 0, canvas1.width, canvas1.height);
+                    
+                    // Add frozen indicator
+                    canvas1.parentNode.appendChild(frozenIndicator1);
+                    frozenIndicator1.style.top = canvas1.offsetTop + 10 + 'px';
+                    frozenIndicator1.style.left = canvas1.offsetLeft + (canvas1.offsetWidth / 2) + 'px';
+                    
+                    // Add border highlight
+                    canvas1.classList.add('frozen-canvas');
+                    
+                    debugLog("Left view frozen");
+                } else {
+                    // Remove frozen image data
+                    frozenImageData1 = null;
+                    
+                    // Remove indicator
+                    if (frozenIndicator1.parentNode) {
+                        frozenIndicator1.parentNode.removeChild(frozenIndicator1);
+                    }
+                    
+                    // Remove border highlight
+                    canvas1.classList.remove('frozen-canvas');
+                    
+                    debugLog("Left view unfrozen");
+                }
+            } else if (canvasNumber === 2) {
+                canvas2Frozen = !canvas2Frozen;
+                const canvas2 = document.getElementById('canvas2');
+                
+                if (canvas2Frozen) {
+                    // Store current image data
+                    const ctx = canvas2.getContext('2d');
+                    frozenImageData2 = ctx.getImageData(0, 0, canvas2.width, canvas2.height);
+                    
+                    // Add frozen indicator
+                    canvas2.parentNode.appendChild(frozenIndicator2);
+                    frozenIndicator2.style.top = canvas2.offsetTop + 10 + 'px';
+                    frozenIndicator2.style.left = canvas2.offsetLeft + (canvas2.offsetWidth / 2) + 'px';
+                    
+                    // Add border highlight
+                    canvas2.classList.add('frozen-canvas');
+                    
+                    debugLog("Right view frozen");
+                } else {
+                    // Remove frozen image data
+                    frozenImageData2 = null;
+                    
+                    // Remove indicator
+                    if (frozenIndicator2.parentNode) {
+                        frozenIndicator2.parentNode.removeChild(frozenIndicator2);
+                    }
+                    
+                    // Remove border highlight
+                    canvas2.classList.remove('frozen-canvas');
+                    
+                    debugLog("Right view unfrozen");
+                }
+            }
+        }
+        
+        // Add event listeners to canvases for tap/click
+        document.getElementById('canvas1').addEventListener('click', () => {
+            toggleFrozenState(1);
+        });
+        
+        document.getElementById('canvas2').addEventListener('click', () => {
+            toggleFrozenState(2);
+        });
+        
+        // For mobile touch events
+        document.getElementById('canvas1').addEventListener('touchend', (e) => {
+            e.preventDefault(); // Prevent triggering click after touchend
+            toggleFrozenState(1);
+        });
+        
+        document.getElementById('canvas2').addEventListener('touchend', (e) => {
+            e.preventDefault(); // Prevent triggering click after touchend
+            toggleFrozenState(2);
+        });
+        
+        // FIXED: Enhanced stereoscopic effect function with proper parallax shifts
+function applyStereoscopicEffect(ctx1, ctx2, origImgData, depthImgData) {
+    const width = depthImgData.width;
+    const height = depthImgData.height;
+    
+    // Get depth intensity factor from slider
+    const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
+    
+    // Get baseline separation from slider (as percentage of image width)
+    const baselinePercentage = parseFloat(document.getElementById('baselineSeparation').value);
+    const baselineSeparation = Math.max(1, Math.floor(width * (baselinePercentage / 100)));
+    
+    // Use baseline directly instead of separate maxParallax calculation
+    const maxShift = Math.max(1, Math.floor(baselineSeparation * (depthIntensity/10)));
+    
+    debugLog(`STEREO DEBUG: w=${width}, h=${height}, baseline=${baselineSeparation}px, maxShift=${maxShift}px, intensity=${depthIntensity}`);
+    
+    // Clear both canvases first
+    if (!canvas1Frozen) ctx1.clearRect(0, 0, ctx1.canvas.width, ctx1.canvas.height);
+    if (!canvas2Frozen) ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
+    
+    // Create background color from average of image edges for filling gaps
+    const bgColor = getAverageEdgeColor(origImgData, width, height);
+    
+    // Process LEFT EYE (negative parallax)
+    if (!canvas1Frozen) {
+        const leftImgData = new ImageData(width, height);
+        // Pre-fill with background color to handle edge cases
+        fillImageData(leftImgData, bgColor);
+        
+        let leftShifts = 0;
+        let leftTotalShift = 0;
+        
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const idx = (y * width + x) * 4;
+                
+                // Get depth value and normalize
+                const depth = depthImgData.data[idx] / 255.0;
+                
+                // Calculate parallax shift using baseline and depth
+                const parallaxShift = Math.round(depth * maxShift);
+                
+                // Skip zero shifts for speed
+                if (parallaxShift <= 0) continue;
+                
+                // For LEFT eye, we need to sample from RIGHT side (positive x direction)
+                const sourceX = x + parallaxShift;
+                
+                // Skip if source is outside image bounds
+                if (sourceX >= width) continue;
+                
+                // Copy pixel from shifted source position
+                const srcIdx = (y * width + sourceX) * 4;
+                leftImgData.data[idx] = origImgData.data[srcIdx];
+                leftImgData.data[idx + 1] = origImgData.data[srcIdx + 1];
+                leftImgData.data[idx + 2] = origImgData.data[srcIdx + 2];
+                leftImgData.data[idx + 3] = 255;
+                
+                leftShifts++;
+                leftTotalShift += parallaxShift;
+            }
+        }
+        
+        if (leftShifts > 0) {
+            debugLog(`LEFT EYE: ${leftShifts} pixels shifted, avg=${(leftTotalShift/leftShifts).toFixed(1)}px`);
+        } else {
+            debugLog("LEFT EYE: NO SHIFTS APPLIED - CHECK DEPTH MAP!");
+        }
+        
+        // Draw to left canvas
+        const tempCanvas1 = document.createElement('canvas');
+        tempCanvas1.width = width;
+        tempCanvas1.height = height;
+        const tempCtx1 = tempCanvas1.getContext('2d');
+        tempCtx1.putImageData(leftImgData, 0, 0);
+        ctx1.drawImage(tempCanvas1, 0, 0, ctx1.canvas.width, ctx1.canvas.height);
+    }
+    
+    // Process RIGHT EYE (positive parallax) - similar approach but opposite direction
+    if (!canvas2Frozen) {
+        const rightImgData = new ImageData(width, height);
+        // Pre-fill with background color
+        fillImageData(rightImgData, bgColor);
+        
+        let rightShifts = 0;
+        let rightTotalShift = 0;
+        
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const idx = (y * width + x) * 4;
+                
+                // Get depth value and normalize
+                const depth = depthImgData.data[idx] / 255.0;
+                
+                // Calculate parallax shift using baseline and depth
+                const parallaxShift = Math.round(depth * maxShift);
+                
+                // Skip zero shifts for speed
+                if (parallaxShift <= 0) continue;
+                
+                // For RIGHT eye, we need to sample from LEFT side (negative x direction)
+                const sourceX = x - parallaxShift;
+                
+                // Skip if source is outside image bounds
+                if (sourceX < 0) continue;
+                
+                // Copy pixel from shifted source position
+                const srcIdx = (y * width + sourceX) * 4;
+                rightImgData.data[idx] = origImgData.data[srcIdx];
+                rightImgData.data[idx + 1] = origImgData.data[srcIdx + 1];
+                rightImgData.data[idx + 2] = origImgData.data[srcIdx + 2];
+                rightImgData.data[idx + 3] = 255;
+                
+                rightShifts++;
+                rightTotalShift += parallaxShift;
+            }
+        }
+        
+        // Draw to right canvas (similar to left eye processing)
+        const tempCanvas2 = document.createElement('canvas');
+        tempCanvas2.width = width;
+        tempCanvas2.height = height;
+        const tempCtx2 = tempCanvas2.getContext('2d');
+        tempCtx2.putImageData(rightImgData, 0, 0);
+        ctx2.drawImage(tempCanvas2, 0, 0, ctx2.canvas.width, ctx2.canvas.height);
+    }
+    
+    // Use frozen data if canvases are frozen (unchanged from original)
+    if (canvas1Frozen && frozenImageData1) {
+        ctx1.putImageData(frozenImageData1, 0, 0);
+    }
+    if (canvas2Frozen && frozenImageData2) {
+        ctx2.putImageData(frozenImageData2, 0, 0);
+    }
+}
+
+// Helper function to get average edge color for background filling
+function getAverageEdgeColor(imgData, width, height) {
+    const edgePixels = [];
+    
+    // Sample pixels from all four edges
+    for (let x = 0; x < width; x++) {
+        // Top edge
+        edgePixels.push({
+            r: imgData.data[(x * 4)],
+            g: imgData.data[(x * 4) + 1],
+            b: imgData.data[(x * 4) + 2]
+        });
+        
+        // Bottom edge
+        const bottomIdx = ((height-1) * width + x) * 4;
+        edgePixels.push({
+            r: imgData.data[bottomIdx],
+            g: imgData.data[bottomIdx + 1],
+            b: imgData.data[bottomIdx + 2]
+        });
+    }
+    
+    for (let y = 0; y < height; y++) {
+        // Left edge
+        const leftIdx = (y * width) * 4;
+        edgePixels.push({
+            r: imgData.data[leftIdx],
+            g: imgData.data[leftIdx + 1],
+            b: imgData.data[leftIdx + 2]
+        });
+        
+        // Right edge
+        const rightIdx = (y * width + width - 1) * 4;
+        edgePixels.push({
+            r: imgData.data[rightIdx],
+            g: imgData.data[rightIdx + 1],
+            b: imgData.data[rightIdx + 2]
+        });
+    }
+    
+    // Calculate average
+    let sumR = 0, sumG = 0, sumB = 0;
+    edgePixels.forEach(pixel => {
+        sumR += pixel.r;
+        sumG += pixel.g;
+        sumB += pixel.b;
+    });
+    
+    return {
+        r: Math.round(sumR / edgePixels.length),
+        g: Math.round(sumG / edgePixels.length),
+        b: Math.round(sumB / edgePixels.length)
+    };
+}
+
+// Helper function to fill image data with a background color
+function fillImageData(imgData, color) {
+    for (let i = 0; i < imgData.data.length; i += 4) {
+        imgData.data[i] = color.r;
+        imgData.data[i + 1] = color.g;
+        imgData.data[i + 2] = color.b;
+        imgData.data[i + 3] = 255;
+    }
+}
+        // Updated color adjustments function to handle frozen frames
+        function applyColorAdjustments(ctx, canvas, redId, greenId, blueId) {
+            // Don't apply color adjustments to frozen frames if they already have them
+            if ((canvas.id === 'canvas1' && canvas1Frozen) || 
+                (canvas.id === 'canvas2' && canvas2Frozen)) {
+                return;
+            }
+            
+            const redValue = document.getElementById(redId).value;
+            const greenValue = document.getElementById(greenId).value;
+            const blueValue = document.getElementById(blueId).value;
+            
+            // Skip if all colors are at max value (no adjustment needed)
+            if (redValue === '255' && greenValue === '255' && blueValue === '255') {
+                return;
+            }
+
+            const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Create lookup tables for faster processing
+            const redLUT = new Uint8Array(256);
+            const greenLUT = new Uint8Array(256);
+            const blueLUT = new Uint8Array(256);
+            
+            for (let i = 0; i < 256; i++) {
+                redLUT[i] = (i * redValue) / 255;
+                greenLUT[i] = (i * greenValue) / 255;
+                blueLUT[i] = (i * blueValue) / 255;
+            }
+            
+            // Apply color adjustments using lookup tables
+            for (let i = 0; i < frame.data.length; i += 4) {
+                frame.data[i] = redLUT[frame.data[i]];
+                frame.data[i + 1] = greenLUT[frame.data[i + 1]];
+                frame.data[i + 2] = blueLUT[frame.data[i + 2]];
+            }
+            
+            ctx.putImageData(frame, 0, 0);
+            
+            // Update the frozen image data if we just applied adjustments to it
+            if (canvas.id === 'canvas1' && canvas1Frozen) {
+                frozenImageData1 = frame;
+            } else if (canvas.id === 'canvas2' && canvas2Frozen) {
+                frozenImageData2 = frame;
+            }
+        }
+
+        function applyTilt(tiltValue) {
+            const canvas1 = document.getElementById('canvas1');
+            const canvas2 = document.getElementById('canvas2');
+
+            // If in flicker mode, don't apply tilt
+            if (flickerMode) return;
+
+            // Use hardware-accelerated 3D transforms
+            canvas1.style.transform = `perspective(1000px) rotateY(${tiltValue}rad)`;
+            canvas2.style.transform = `perspective(1000px) rotateY(${-tiltValue}rad)`;
+        }
+
+        // Function to update the position of frozen indicators
+        function updateFrozenIndicatorPositions() {
+            if (canvas1Frozen) {
+                const canvas1 = document.getElementById('canvas1');
+                frozenIndicator1.style.top = canvas1.offsetTop + 10 + 'px';
+                frozenIndicator1.style.left = canvas1.offsetLeft + (canvas1.offsetWidth / 2) + 'px';
+            }
+            
+            if (canvas2Frozen) {
+                const canvas2 = document.getElementById('canvas2');
+                frozenIndicator2.style.top = canvas2.offsetTop + 10 + 'px';
+                frozenIndicator2.style.left = canvas2.offsetLeft + (canvas2.offsetWidth / 2) + 'px';
+            }
+        }
+
+        // Modified toggle controls function that works properly every time
+        function toggleControls() {
+            const toggleButton = document.getElementById('toggleControls');
+            const controlPanel = document.getElementById('controlPanel');
+            
+            controlsHidden = !controlsHidden;
+            
+            if (controlsHidden) {
+                // Hide controls
+                controlPanel.style.display = 'none';
+                toggleButton.textContent = 'Show Controls';
+                debugLog("Controls hidden");
+            } else {
+                // Show controls
+                controlPanel.style.display = 'flex';
+                toggleButton.textContent = 'Hide Controls';
+                debugLog("Controls shown");
+            }
+            
+            // Trigger resize to adjust canvas size
+            window.dispatchEvent(new Event('resize'));
+        }
+        
+        function setQuality(value) {
+            qualityFactor = parseFloat(value);
+            
+            // Show quality indicator
+            const indicator = document.getElementById('qualityIndicator');
+            const depthMode = document.getElementById('depthMode').value;
+            indicator.textContent = `Processing at ${Math.round(qualityFactor * 100)}% resolution with ${depthMode.charAt(0).toUpperCase() + depthMode.slice(1)} Depth (R:${currentNuitRadius}, S:±${currentSBounds})`;
+            
+            // Add rendering method info
+            if (renderMethod === 'css3d') {
+                indicator.textContent += ' (GPU accelerated)';
+            }
+            
+            indicator.style.opacity = 1;
+            
+            // Hide indicator after 3 seconds
+            setTimeout(() => {
+                indicator.style.opacity = 0;
+            }, 3000);
+            
+            // Trigger resize to adjust canvas size
+            if (video && !video.paused) {
+                window.dispatchEvent(new Event('resize'));
+            }
+        }
+        
+        // Update canvas size based on slider
+        function updateCanvasSize(value) {
+            canvasSizeFactor = parseFloat(value);
+            debugLog(`Canvas size factor set to ${canvasSizeFactor}`);
+            
+            // Trigger resize to adjust canvas dimensions
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        // Variables for freeze delay feature
+        let freezeDelayActive = false;
+        let freezeDelayFrame = 0; // 1 for left, 2 for right
+        let freezeDelayCountdown = 15;
+        let freezeDelayInterval = null;
+
+        // Function to start freeze delay process
+        function startFreezeDelay() {
+            if (freezeDelayInterval) {
+                clearInterval(freezeDelayInterval);
+            }
+
+            // Select random frame (1 or 2)
+            freezeDelayFrame = Math.random() < 0.5 ? 1 : 2;
+            freezeDelayCountdown = 15;
+
+            const countdownElement = document.getElementById('freezeCountdown');
+            const targetCanvas = document.getElementById(freezeDelayFrame === 1 ? 'canvas1' : 'canvas2');
+
+            // Position countdown on the selected frame
+            updateCountdownPosition(targetCanvas, countdownElement);
+
+            // Show countdown
+            countdownElement.style.display = 'block';
+            countdownElement.textContent = `Freezing in ${freezeDelayCountdown}s`;
+
+            // Start countdown
+            freezeDelayInterval = setInterval(() => {
+                freezeDelayCountdown--;
+        
+                // Update countdown display
+                countdownElement.textContent = `Freezing in ${freezeDelayCountdown}s`;
+        
+                // Update position in case of layout changes
+                updateCountdownPosition(targetCanvas, countdownElement);
+        
+                // When countdown reaches 0
+                if (freezeDelayCountdown <= 0) {
+                    // Stop interval
+                    clearInterval(freezeDelayInterval);
+                    freezeDelayInterval = null;
+            
+                    // Hide countdown
+                    countdownElement.style.display = 'none';
+            
+                    // Freeze the selected frame
+                    toggleFrozenState(freezeDelayFrame);
+            
+                    // Auto-uncheck the freeze delay toggle
+                    document.getElementById('freezeDelayToggle').checked = false;
+                    freezeDelayActive = false;
+            
+                    debugLog("Freeze completed and auto-disabled");
                 }
             }, 1000);
         }
         
-        // Freeze frame logic
-        function freezeFrame() {
-            isFrozen = !isFrozen;
-            document.getElementById('freezeButton').textContent = isFrozen ? "Unfreeze" : "Freeze Frame";
-            document.getElementById('canvas1').classList.toggle('frozen-canvas', isFrozen);
-            document.getElementById('canvas2').classList.toggle('frozen-canvas', isFrozen);
-            if (depthMapVisible && isFrozen) generateDepthMapFromCurrentFrame(); // Update depth map on freeze
+        // Function to update countdown position on the canvas
+        function updateCountdownPosition(canvas, countdownElement) {
+            const rect = canvas.getBoundingClientRect();
+            countdownElement.style.left = `${rect.left + rect.width/2 - countdownElement.offsetWidth/2}px`;
+            countdownElement.style.top = `${rect.top + rect.height/2 - countdownElement.offsetHeight/2}px`;
         }
-        
-        // Initialize depth map display functionality
-        function initializeDepthMap() {
-            // Set Hadit UI elements to default values from haditConfig
-            document.getElementById('haditTheta').value = haditConfig.haditTheta;
-            document.getElementById('haditPhi').value = haditConfig.haditPhi;
-            document.getElementById('haditInfluence').value = haditConfig.haditInfluence;
-            document.getElementById('focusFactor').value = haditConfig.focusFactor;
-            document.getElementById('bandSizeMultiplier').value = haditConfig.bandSizeMultiplier;
-            document.getElementById('bandMode').value = haditConfig.bandMode;
-            document.getElementById('luminosityWeight').value = haditConfig.luminosityWeight;
-            document.getElementById('saturationWeight').value = haditConfig.saturationWeight;
-            document.getElementById('depthContrast').value = haditConfig.depthContrast;
-            document.getElementById('sBounds').value = haditConfig.sBounds;
 
-            initSliderDisplays(); // Update all span values after setting defaults
-
-            document.getElementById('haditIndicator').textContent = `Hadit: φ=${haditConfig.haditPhi.toFixed(1)}° θ=${haditConfig.haditTheta.toFixed(1)}° Focus=${haditConfig.focusFactor.toFixed(1)}x`;
-            
-            document.getElementById('toggleDepthMap').addEventListener('click', function() {
-                depthMapVisible = !depthMapVisible;
-                document.getElementById('depthMapDisplay').style.display = depthMapVisible ? 'block' : 'none';
-                this.classList.toggle('active', depthMapVisible);
-                if (depthMapVisible && video && video.readyState >=2) generateDepthMapFromCurrentFrame();
-                document.getElementById('depthMapLabel').textContent = depthMapVisible ? "Hadit Depth Map (Active)" : "Hadit Depth Map";
-            });
-        }
-        
-        // Recording functionality (simplified)
+        // Recording feature variables
         let mediaRecorder = null;
         let recordedChunks = [];
+        let isRecording = false;
         let recordingStartTime = 0;
-        let recordingTimerInterval = null;
+        let recordingTimer = null;
+        let combinedRecordingCanvas = document.createElement('canvas');
+        let combinedRecordingCtx = combinedRecordingCanvas.getContext('2d');
 
+        // Check for MediaRecorder support and determine the best MIME type
+        function getSupportedMimeType() {
+            const types = [
+                'video/webm;codecs=vp9',
+                'video/webm;codecs=vp8',
+                'video/webm',
+                'video/mp4'
+            ];
+            
+            for (const type of types) {
+                if (MediaRecorder.isTypeSupported(type)) {
+                    debugLog(`Using MIME type: ${type} for recording`);
+                    return type;
+                }
+            }
+            
+            return ''; // No supported types found
+        }
+
+        // Start recording function
         function startRecording() {
-            if (!currentStream || !document.getElementById('canvas1').captureStream) {
-                alert("Recording requires an active camera and browser support for canvas.captureStream().");
+            if (isRecording || !video || video.paused) {
+                alert("Please start the camera before recording.");
                 return;
             }
+            
             const canvas1 = document.getElementById('canvas1');
-            const stream = canvas1.captureStream(30); // 30 FPS
-            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
-            recordedChunks = [];
-            mediaRecorder.ondataavailable = event => { if (event.data.size > 0) recordedChunks.push(event.data); };
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const canvas2 = document.getElementById('canvas2');
+            
+            try {
+                // Set up combined canvas for recording (side by side)
+                combinedRecordingCanvas.width = canvas1.width + canvas2.width;
+                combinedRecordingCanvas.height = Math.max(canvas1.height, canvas2.height);
+                
+                // Try to get the stream from the combined canvas
+                let stream;
+                try {
+                    stream = combinedRecordingCanvas.captureStream(30); // 30 FPS
+                } catch (e) {
+                    debugLog("Error capturing stream: " + e.message);
+                    alert("Recording is not supported in this browser.");
+                    return;
+                }
+                
+                // Get supported MIME type
+                const mimeType = getSupportedMimeType();
+                
+                if (!mimeType) {
+                    alert("No supported recording format found in this browser.");
+                    return;
+                }
+                
+                // Create MediaRecorder with options
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: mimeType,
+                    videoBitsPerSecond: 2500000 // 2.5 Mbps
+                });
+                
+                // Handle data available event
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data && e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+                
+                // Handle recording stop
+                mediaRecorder.onstop = function() {
+                    saveRecording();
+                };
+                
+                // Start recording
+                recordedChunks = [];
+                mediaRecorder.start(1000); // Request data every second
+                isRecording = true;
+                recordingStartTime = Date.now();
+                
+                // Update UI
+                updateRecordingUI();
+                
+                // Start the recording timer
+                startRecordingTimer();
+                
+                // Start the frame capture process
+                captureFrames();
+                
+                debugLog("Recording started with Enhanced Nuit Distance depth processing");
+            } catch (error) {
+                debugLog("Recording error: " + error.message);
+                alert("Could not start recording: " + error.message);
+            }
+        }
+
+        // Stop recording function
+        function stopRecording() {
+            if (!isRecording || !mediaRecorder) return;
+            
+            try {
+                mediaRecorder.stop();
+                isRecording = false;
+                
+                // Stop the recording timer
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
+                
+                updateRecordingUI();
+                debugLog("Recording stopped");
+            } catch (error) {
+                debugLog("Error stopping recording: " + error.message);
+                alert("Error stopping recording: " + error.message);
+            }
+        }
+
+        // Save the recorded video
+        function saveRecording() {
+            if (recordedChunks.length === 0) {
+                debugLog("No recorded data to save");
+                return;
+            }
+            
+            try {
+                // Get current date and time for filename
+                const now = new Date();
+                const dateString = now.toISOString().replace(/[:.]/g, '-').split('T')[0];
+                const timeString = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+                const depthMode = document.getElementById('depthMode').value;
+                
+                // Create blob from recorded chunks
+                const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+                recordedChunks = [];
+                
+                // Create download link
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.style.display = 'none'; a.href = url; a.download = `androidvr-${new Date().toISOString()}.webm`;
-                document.body.appendChild(a); a.click();
-                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
-                stopRecordingUI();
-            };
-            mediaRecorder.start(1000);
-            recordingStartTime = Date.now();
-            document.getElementById('recordButton').style.display = 'none';
-            document.getElementById('stopRecordButton').style.display = 'flex';
-            document.getElementById('recordingIndicator').style.display = 'flex';
-            recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
+                document.body.appendChild(a);
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `enhanced_nuit_${depthMode}_R${currentNuitRadius}_S${currentSBounds}_${dateString}_${timeString}.webm`;
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                }, 100);
+                
+                debugLog("Recording saved: " + a.download);
+            } catch (error) {
+                debugLog("Error saving recording: " + error.message);
+                alert("Error saving recording: " + error.message);
+            }
         }
 
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-        }
-
-        function updateRecordingTimer() {
-            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
-            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
-            const seconds = (elapsed % 60).toString().padStart(2, '0');
-            document.getElementById('recordingTimer').textContent = `${minutes}:${seconds}`;
-        }
-
-        function stopRecordingUI() {
-            if (recordingTimerInterval) clearInterval(recordingTimerInterval);
-            recordingTimerInterval = null;
-            document.getElementById('recordButton').style.display = 'flex';
-            document.getElementById('stopRecordButton').style.display = 'none';
-            document.getElementById('recordingIndicator').style.display = 'none';
-        }
-        
-        // DOMContentLoaded setup
-        document.addEventListener('DOMContentLoaded', () => {
-            debugLog("DOM Loaded. Initializing AndroidVR...");
-            debugLog(`Initial Hadit Config: θ=${haditConfig.haditTheta}, φ=${haditConfig.haditPhi}, Focus=${haditConfig.focusFactor}x, BandSizeX=${haditConfig.bandSizeMultiplier}, Contrast=${haditConfig.depthContrast}`);
-
-            initializeDepthMap(); // This will set UI from haditConfig and then initSliderDisplays
-
-            document.getElementById('startButton').addEventListener('click', startCamera);
-            document.getElementById('switchButton').addEventListener('click', switchCamera);
-            document.getElementById('toggleControls').addEventListener('click', toggleControls);
-            document.getElementById('toggleFlickerMode').addEventListener('click', toggleFlickerMode);
-            document.getElementById('flickerSpeedSlider').addEventListener('input', () => {
-                if (flickerMode) startFlicker(); // Restart flicker with new speed
-            });
-            document.getElementById('qualitySelect').addEventListener('change', handleQualityChange);
-            document.getElementById('freezeButton').addEventListener('click', freezeFrameWithDelay);
-            document.getElementById('recordButton').addEventListener('click', startRecording);
-            document.getElementById('stopRecordButton').addEventListener('click', stopRecording);
-
-            // Add event listeners for all Hadit and S-Coord sliders to update global haditConfig and indicator
-            const haditControlIds = ['haditTheta', 'haditPhi', 'haditInfluence', 'focusFactor', 'bandSizeMultiplier', 'luminosityWeight', 'saturationWeight', 'depthContrast', 'sBounds', 'bandMode'];
-            haditControlIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.addEventListener('input', () => {
-                        haditConfig = getHaditConfigFromUI(); // Update global config from UI
-                        document.getElementById('haditIndicator').textContent = `Hadit: φ=${haditConfig.haditPhi.toFixed(1)}° θ=${haditConfig.haditTheta.toFixed(1)}° Focus=${haditConfig.focusFactor.toFixed(1)}x`;
-                        // No automatic re-render on slider input unless realTimeUpdate is checked (handled in renderFrame)
-                    });
-                }
-            });
+        // Capture frames for recording
+        function captureFrames() {
+            if (!isRecording) return;
             
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                if (currentStream) { // Only resize if camera is active
-                    setupRendering();
+            try {
+                const canvas1 = document.getElementById('canvas1');
+                const canvas2 = document.getElementById('canvas2');
+                
+                // Draw both canvases side by side on the combined canvas
+                combinedRecordingCtx.clearRect(0, 0, combinedRecordingCanvas.width, combinedRecordingCanvas.height);
+                combinedRecordingCtx.drawImage(canvas1, 0, 0);
+                combinedRecordingCtx.drawImage(canvas2, canvas1.width, 0);
+                
+                // Request next frame
+                requestAnimationFrame(captureFrames);
+            } catch (error) {
+                debugLog("Frame capture error: " + error.message);
+            }
+        }
+
+        // Start the recording timer
+        function startRecordingTimer() {
+            const timerDisplay = document.getElementById('recordingTimer');
+            
+            recordingTimer = setInterval(() => {
+                const elapsed = Date.now() - recordingStartTime;
+                const seconds = Math.floor(elapsed / 1000) % 60;
+                const minutes = Math.floor(elapsed / 60000);
+                
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Update the recording UI
+        function updateRecordingUI() {
+            const recordButton = document.getElementById('recordButton');
+            const stopRecordButton = document.getElementById('stopRecordButton');
+            const recordingIndicator = document.getElementById('recordingIndicator');
+            
+            if (isRecording) {
+                recordButton.style.display = 'none';
+                stopRecordButton.style.display = 'flex';
+                recordingIndicator.style.display = 'flex';
+            } else {
+                recordButton.style.display = 'flex';
+                stopRecordButton.style.display = 'none';
+                recordingIndicator.style.display = 'none';
+            }
+        }
+
+        // Set up event listeners
+        document.getElementById('startButton').addEventListener('click', startCamera);
+        document.getElementById('switchButton').addEventListener('click', switchCamera);
+        document.getElementById('tiltSlider').addEventListener('input', (event) => {
+            const tiltValue = parseFloat(event.target.value);
+            applyTilt(tiltValue);
+        });
+        document.getElementById('toggleControls').addEventListener('click', toggleControls);
+        document.getElementById('qualitySelect').addEventListener('change', (event) => {
+            setQuality(event.target.value);
+        });
+        
+        // Add size slider listener
+        document.getElementById('sizeSlider').addEventListener('input', (event) => {
+            updateCanvasSize(event.target.value);
+        });
+        
+        // Add flicker mode controls
+        document.getElementById('toggleFlickerMode').addEventListener('click', toggleFlickerMode);
+        document.getElementById('flickerSpeedSlider').addEventListener('input', updateFlickerSpeed);
+        
+        // Add depth mode event listener
+        document.getElementById('depthMode').addEventListener('change', (e) => {
+            if (video && !video.paused) {
+                const mode = e.target.value;
+                const indicator = document.getElementById('qualityIndicator');
+                indicator.textContent = `Depth Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+                indicator.style.opacity = 1;
+                setTimeout(() => indicator.style.opacity = 0, 1500);
+                debugLog("Depth mode changed to: " + mode);
+            }
+        });
+        
+        // Add Nuit radius and S bounds event listeners with value display updates
+        document.getElementById('nuitRadius').addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            document.getElementById('nuitRadiusValue').textContent = value.toFixed(1);
+            
+            if (video && !video.paused) {
+                const indicator = document.getElementById('qualityIndicator');
+                indicator.textContent = `Nuit Radius: ${value.toFixed(1)}`;
+                indicator.style.opacity = 1;
+                setTimeout(() => indicator.style.opacity = 0, 1500);
+                debugLog("Nuit radius updated to: " + value);
+            }
+        });
+
+        document.getElementById('sBounds').addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            document.getElementById('sBoundsValue').textContent = `±${value.toFixed(1)}`;
+            
+            if (video && !video.paused) {
+                const indicator = document.getElementById('qualityIndicator');
+                indicator.textContent = `S Bounds: ±${value.toFixed(1)}`;
+                indicator.style.opacity = 1;
+                setTimeout(() => indicator.style.opacity = 0, 1500);
+                debugLog("S bounds updated to: ±" + value);
+            }
+        });
+
+        // Add baseline separation event listener
+        document.getElementById('baselineSeparation').addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            document.getElementById('baselineSeparationValue').textContent = `${value.toFixed(1)}%`;
+            
+            if (video && !video.paused) {
+                const indicator = document.getElementById('qualityIndicator');
+                indicator.textContent = `Eye Separation: ${value.toFixed(1)}% of image width`;
+                indicator.style.opacity = 1;
+                setTimeout(() => indicator.style.opacity = 0, 1500);
+                debugLog("Baseline separation updated to: " + value + "%");
+            }
+        });
+        
+        // Add freeze delay toggle listener
+        document.getElementById('freezeDelayToggle').addEventListener('change', (event) => {
+            freezeDelayActive = event.target.checked;
+            
+            if (freezeDelayActive) {
+                debugLog("Freeze delay activated");
+                startFreezeDelay();
+            } else {
+                debugLog("Freeze delay deactivated");
+                // Clear existing countdown
+                if (freezeDelayInterval) {
+                    clearInterval(freezeDelayInterval);
+                    freezeDelayInterval = null;
+                    document.getElementById('freezeCountdown').style.display = 'none';
+                }
+            }
+        });
+        
+        // Add depth quantization event listeners
+        document.getElementById('depthQuantizeToggle').addEventListener('change', () => {
+            // Force a redraw when toggling quantization
+            if (video && !video.paused) {
+                // Update the indicator to show quantization is active
+                const indicator = document.getElementById('qualityIndicator');
+                if (document.getElementById('depthQuantizeToggle').checked) {
+                    const levels = document.getElementById('depthLevels').value;
+                    const depthMode = document.getElementById('depthMode').value;
+                    indicator.textContent = `${depthMode.charAt(0).toUpperCase() + depthMode.slice(1)} depth quantized to ${levels} levels`;
+                    indicator.style.opacity = 1;
+                    
+                    setTimeout(() => {
+                        indicator.style.opacity = 0;
+                    }, 3000);
+                }
+            }
+        });
+
+        document.getElementById('depthLevels').addEventListener('input', () => {
+            if (document.getElementById('depthQuantizeToggle').checked && video && !video.paused) {
+                const levels = document.getElementById('depthLevels').value;
+                const depthMode = document.getElementById('depthMode').value;
+                const indicator = document.getElementById('qualityIndicator');
+                indicator.textContent = `${depthMode.charAt(0).toUpperCase() + depthMode.slice(1)} depth quantized to ${levels} levels`;
+                indicator.style.opacity = 1;
+                
+                setTimeout(() => {
+                    indicator.style.opacity = 0;
+                }, 1500);
+            }
+        });
+
+        // Add Nuit falloff factor event listener
+        document.getElementById('nuitFalloffFactor').addEventListener('input', () => {
+            if (video && !video.paused) {
+                const falloff = document.getElementById('nuitFalloffFactor').value;
+                const indicator = document.getElementById('qualityIndicator');
+                indicator.textContent = `Nuit falloff factor: ${falloff}`;
+                indicator.style.opacity = 1;
+                
+                setTimeout(() => {
+                    indicator.style.opacity = 0;
+                }, 1500);
+            }
+        });
+
+        // Add recording button event listeners
+        document.getElementById('recordButton').addEventListener('click', startRecording);
+        document.getElementById('stopRecordButton').addEventListener('click', stopRecording);
+
+        // Call updateFrozenIndicatorPositions when window resizes
+        window.addEventListener('resize', updateFrozenIndicatorPositions);
+        
+        // Update countdown position when window is resized
+        window.addEventListener('resize', () => {
+            if (freezeDelayActive && freezeDelayInterval) {
+                const countdownElement = document.getElementById('freezeCountdown');
+                const targetCanvas = document.getElementById(freezeDelayFrame === 1 ? 'canvas1' : 'canvas2');
+                updateCountdownPosition(targetCanvas, countdownElement);
+            }
+        });
+
+        // Initialize quality setting from select dropdown
+        setQuality(document.getElementById('qualitySelect').value);
+
+        // Explicitly set default depth mode to Nuit
+        document.getElementById('depthMode').value = 'sum_xy';
+
+        // Recalculate canvas sizes whenever control values change that might affect layout
+        const controlInputs = document.querySelectorAll('input[type="range"]');
+        controlInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                if (video && !video.paused) {
+                    window.dispatchEvent(new Event('resize'));
                 }
             });
-
-            console.log("AndroidVR initialized with Hadit depth settings:");
-            console.log(`- Phi: ${haditConfig.haditPhi.toFixed(1)}°, Theta: ${haditConfig.haditTheta.toFixed(1)}°`);
-            console.log(`- Focus: ${haditConfig.focusFactor.toFixed(1)}x, Band Multiplier: ${haditConfig.bandSizeMultiplier.toFixed(1)}x`);
-            console.log(`- Luminosity: ${haditConfig.luminosityWeight}, Saturation: ${haditConfig.saturationWeight}`);
-            console.log(`- S Bounds: ${haditConfig.sBounds}, Depth Contrast: ${haditConfig.depthContrast}`);
-            console.log(`- Band Mode: ${haditConfig.bandMode}`);
-            console.log("Current Date and Time (UTC): 2025-06-07 04:53:34");
-            console.log("Current User Login: Angledcrystals");
         });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (video && !video.paused) {
+                const canvas1 = document.getElementById('canvas1');
+                const canvas2 = document.getElementById('canvas2');
+                if (canvas1 && canvas2) {
+                    const controlPanel = document.getElementById('controlPanel');
+                    const controlPanelHeight = controlsHidden ? 0 : (controlPanel.offsetHeight || 0);
+                    const videoAspect = video.videoWidth / video.videoHeight;
+                    
+                    const padding = 20;
+                    const availableHeight = window.innerHeight - controlPanelHeight - padding;
+                    const maxCanvasWidth = Math.floor(window.innerWidth * 0.47 * canvasSizeFactor);
+                    
+                    let canvasWidth = maxCanvasWidth;
+                    let canvasHeight = canvasWidth / videoAspect;
+                    
+                    if (canvasHeight > availableHeight) {
+                        canvasHeight = availableHeight;
+                        canvasWidth = canvasHeight * videoAspect;
+                    }
+                    
+                    canvas1.width = canvas2.width = Math.floor(canvasWidth);
+                    canvas1.height = canvas2.height = Math.floor(canvasHeight);
+                    
+                    processingCanvas.width = Math.max(32, Math.floor(canvasWidth * qualityFactor));
+                    processingCanvas.height = Math.max(32, Math.floor(canvasHeight * qualityFactor));
+                    
+                    depthMapCanvas.width = processingCanvas.width;
+                    depthMapCanvas.height = processingCanvas.height;
+                    
+                    // Update positions if in flicker mode
+                    if (flickerMode) {
+                        positionCanvasesForFlicker(flickerFrame);
+                    }
+
+                    // Update frozen indicator positions
+                    updateFrozenIndicatorPositions();
+                }
+            }
+        });
+
+        // Apply hardware acceleration immediately
+        applyHardwareAcceleration();
+
+        // Enable debug mode with double tap on quality indicator
+        document.getElementById('qualityIndicator').addEventListener('dblclick', function() {
+            const debugOutput = document.getElementById('debugOutput');
+            if (debugOutput.style.display === 'none') {
+                debugOutput.style.display = 'block';
+                debugOutput.innerHTML = ''; // Clear previous debug messages
+                debugLog("DEBUG MODE ENABLED - Enhanced Depth Processing");
+                debugLog("User Agent: " + navigator.userAgent);
+                debugLog("Render method: " + renderMethod);
+                debugLog("Quality factor: " + qualityFactor);
+                debugLog("Current Nuit radius: " + currentNuitRadius);
+                debugLog("Current S bounds: ±" + currentSBounds);
+                debugLog("Current depth mode: " + document.getElementById('depthMode').value);
+                debugLog("Vector field time: " + vectorFieldTime);
+                debugLog("Firefox: " + isFirefox);
+                debugLog("Android: " + isAndroid);
+                debugLog("Mobile: " + isMobile);
+                debugLog("Session: Angledcrystals - 2025-06-05 22:25:45 UTC");
+                debugLog("=== DEPTH MAP DEBUGGING ENABLED ===");
+            } else {
+                debugOutput.style.display = 'none';
+                // Remove debug depth map canvas
+                const debugCanvas = document.getElementById('depthMapDebug');
+                if (debugCanvas) {
+                    debugCanvas.remove();
+                }
+            }
+        });
+
+        // Firefox-specific orientation change handler
+        if (isFirefox) {
+            window.addEventListener('orientationchange', function() {
+                debugLog("Orientation change detected in Firefox");
+                // Force redraw after orientation change
+                setTimeout(() => {
+                    if (video && !video.paused) {
+                        correctVideoOrientation(video, currentStream);
+                        window.dispatchEvent(new Event('resize'));
+                    }
+                }, 300);
+            });
+        }
+
+        // Automatically start camera if we're in landscape mode
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.innerWidth > window.innerHeight) {
+                setTimeout(() => {
+                    document.getElementById('startButton').click();
+                }, 500);
+            }
+        });
+
+        // Show instructions for Enhanced Nuit Distance method when page loads
+        window.addEventListener('load', () => {
+            const indicator = document.getElementById('qualityIndicator');
+            indicator.textContent = "Enhanced Nuit Distance method - Multiple depth modes - Tap views to freeze - Double-tap here for debug";
+            indicator.style.opacity = 1;
+            setTimeout(() => {
+                indicator.style.opacity = 0;
+                // Show default quality message after instructions fade
+                setQuality(document.getElementById('qualitySelect').value);
+            }, 5000);
+            
+            debugLog("Enhanced Nuit Distance method initialized with Vector Field support:");
+            debugLog("- Sum XY S-Coords: Depth from sum of absolute S-coordinate values (DEFAULT)");
+            debugLog("- Nuit Only: Max depth at Nuit boundary");
+            debugLog("- Radial Zones: Center=closest, edges=farthest");
+            debugLog("- Hybrid: Radial + Nuit boundary enhancement");
+            debugLog("- Vector Field: Animated depth patterns in S-coordinate space");
+            debugLog("- Initial Nuit Radius: " + currentNuitRadius);
+            debugLog("- Initial S Bounds: ±" + currentSBounds);
+            debugLog("- Eye Separation: 3.0% of image width");
+            debugLog("- Use sliders to adjust in real-time");
+            debugLog("- Double-tap quality indicator to enable debug mode");
+            debugLog("- Session: Angledcrystals - 2025-06-05 22:25:45 UTC");
+        });
+
+        // Check for MediaRecorder support
+        if (typeof MediaRecorder === 'undefined') {
+            debugLog("MediaRecorder API not supported in this browser");
+        }
     </script>
 </body>
 </html>
