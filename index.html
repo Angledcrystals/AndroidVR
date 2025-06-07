@@ -599,7 +599,7 @@
         debugLog("- iOS: " + isIOS);
         debugLog("- Mobile: " + isMobile);
         debugLog("- User Agent: " + navigator.userAgent);
-        debugLog("- Session: Angledcrystals - 2025-06-07 05:52:55 UTC");
+        debugLog("- Session: Angledcrystals - 2025-06-07 06:05:14 UTC");
         
         // Add a GPU acceleration hint specific for Android WebView
         if (isAndroid) {
@@ -1090,7 +1090,7 @@
             }
         }
         
-        // Improved camera enumeration
+        // Improved camera enumeration - FIXED VERSION
         async function enumerateCameras() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -1158,78 +1158,7 @@
             }
         }
         
-        // Modified createDepthMapFromSCoordinates function to support Hadit mode
-        function createDepthMapFromSCoordinates(imageData, width, height) {
-            const depthData = new Uint8ClampedArray(width * height * 4);
-            const data = imageData.data;
-            
-            // Get current control values
-            const nuitRadius = currentNuitRadius;
-            const falloffFactor = parseFloat(document.getElementById('nuitFalloffFactor').value);
-            const luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
-            const saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
-            const depthMode = document.getElementById('depthMode').value;
-            
-            // Initialize Hadit mode if selected
-            if (depthMode === 'hadit') {
-                initializeHaditMode();
-            }
-            
-            // Update vector field time if using vector field mode
-            if (depthMode === 'vectorfield') {
-                const currentTime = performance.now() / 1000;
-                const deltaTime = currentTime - lastUpdateTime;
-                if (deltaTime > 0.016) { // ~60fps
-                    vectorFieldTime += deltaTime * 0.5; // Animation speed
-                    lastUpdateTime = currentTime;
-                }
-            }
-            
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const idx = (y * width + x) * 4;
-                    
-                    // Extract RGB values and calculate luminance and saturation
-                    const r = data[idx] / 255;
-                    const g = data[idx + 1] / 255;
-                    const b = data[idx + 2] / 255;
-                    
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    const maxCol = Math.max(r, g, b);
-                    const minCol = Math.min(r, g, b);
-                    const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
-                    
-                    let depth;
-                    
-                    if (depthMode === 'hadit') {
-                        // Use Hadit-specific depth calculation
-                        depth = calculateHaditDepth(null, x, y, width, height, lum, sat);
-                    } else {
-                        // Use standard S-coordinate calculation
-                        const sCoord = pixelToSCoordinate(x, y, width, height, lum, sat, luminosityWeight, saturationWeight);
-                        depth = calculateNuitDistanceDepth(sCoord, nuitRadius, falloffFactor);
-                    }
-                    
-                    // Apply quantization if enabled
-                    if (document.getElementById('depthQuantizeToggle').checked) {
-                        const levels = parseInt(document.getElementById('depthLevels').value);
-                        depth = Math.floor(depth * levels) / levels;
-                    }
-                    
-                    // Convert depth to grayscale (inverted: darker = closer for proper depth maps)
-                    const depthValue = Math.floor((1.0 - depth) * 255);
-                    
-                    depthData[idx] = depthValue;     // R
-                    depthData[idx + 1] = depthValue; // G
-                    depthData[idx + 2] = depthValue; // B
-                    depthData[idx + 3] = 255;        // A
-                }
-            }
-            
-            return new ImageData(depthData, width, height);
-        }
-
-        // Get the user's camera based on the desired facing mode
+        // FIXED: Get the user's camera based on the desired facing mode
         async function getUserMedia(useFront = false) {
             // First, enumerate cameras to understand what's available
             await enumerateCameras();
@@ -1295,7 +1224,7 @@
             }
         }
 
-        // Start the camera and set up video
+        // FIXED: Start the camera and set up video
         async function startCamera() {
             try {
                 debugLog("Starting camera...");
@@ -1446,11 +1375,83 @@
             return new ImageData(output, width, height);
         }
 
+        // Modified createDepthMapFromSCoordinates function to support Hadit mode
+        function createDepthMapFromSCoordinates(imageData, width, height) {
+            const depthData = new Uint8ClampedArray(width * height * 4);
+            const data = imageData.data;
+            
+            // Get current control values
+            const nuitRadius = currentNuitRadius;
+            const falloffFactor = parseFloat(document.getElementById('nuitFalloffFactor').value);
+            const luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
+            const saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
+            const depthMode = document.getElementById('depthMode').value;
+            
+            // Initialize Hadit mode if selected
+            if (depthMode === 'hadit') {
+                initializeHaditMode();
+            }
+            
+            // Update vector field time if using vector field mode
+            if (depthMode === 'vectorfield') {
+                const currentTime = performance.now() / 1000;
+                const deltaTime = currentTime - lastUpdateTime;
+                if (deltaTime > 0.016) { // ~60fps
+                    vectorFieldTime += deltaTime * 0.5; // Animation speed
+                    lastUpdateTime = currentTime;
+                }
+            }
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    
+                    // Extract RGB values and calculate luminance and saturation
+                    const r = data[idx] / 255;
+                    const g = data[idx + 1] / 255;
+                    const b = data[idx + 2] / 255;
+                    
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    const maxCol = Math.max(r, g, b);
+                    const minCol = Math.min(r, g, b);
+                    const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
+                    
+                    let depth;
+                    
+                    if (depthMode === 'hadit') {
+                        // Use Hadit-specific depth calculation
+                        depth = calculateHaditDepth(null, x, y, width, height, lum, sat);
+                    } else {
+                        // Use standard S-coordinate calculation
+                        const sCoord = pixelToSCoordinate(x, y, width, height, lum, sat, luminosityWeight, saturationWeight);
+                        depth = calculateNuitDistanceDepth(sCoord, nuitRadius, falloffFactor);
+                    }
+                    
+                    // Apply quantization if enabled
+                    if (document.getElementById('depthQuantizeToggle').checked) {
+                        const levels = parseInt(document.getElementById('depthLevels').value);
+                        depth = Math.floor(depth * levels) / levels;
+                    }
+                    
+                    // Convert depth to grayscale (inverted: darker = closer for proper depth maps)
+                    const depthValue = Math.floor((1.0 - depth) * 255);
+                    
+                    depthData[idx] = depthValue;     // R
+                    depthData[idx + 1] = depthValue; // G
+                    depthData[idx + 2] = depthValue; // B
+                    depthData[idx + 3] = 255;        // A
+                }
+            }
+            
+            return new ImageData(depthData, width, height);
+        }
+
         // Create stereoscopic effect from depth map
         function createStereoscopicEffect(originalImageData, depthImageData, canvas1, canvas2) {
             const width = originalImageData.width;
             const height = originalImageData.height;
             
+            const ctx1 = canvas1.getContext('2d');
             const ctx1 = canvas1.getContext('2d');
             const ctx2 = canvas2.getContext('2d');
             
