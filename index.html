@@ -655,7 +655,7 @@
         debugLog("- iOS: " + isIOS);
         debugLog("- Mobile: " + isMobile);
         debugLog("- User Agent: " + navigator.userAgent);
-        debugLog("- Session: Angledcrystals - 2025-06-07 06:46:56 UTC");
+        debugLog("- Session: Angledcrystals - 2025-06-07 07:00:50 UTC");
         
         // Add a GPU acceleration hint specific for Android WebView
         if (isAndroid) {
@@ -665,7 +665,7 @@
             document.getElementsByTagName('head')[0].appendChild(meta);
         }
 
-        // App state variables
+        // App state variables - KEEP ALL ORIGINAL CAMERA CODE
         let currentStream = null;
         let video = null;
         let useFrontCamera = false;
@@ -683,14 +683,13 @@
         let vectorFieldTime = 0;
         let lastUpdateTime = 0;
         
-        // NEW: Hadit mode globals
-        let haditMode = false;
+        // NEW: Hadit mode variables
         let currentHaditTheta = 45.0;
         let currentHaditPhi = 60.0;
         let currentHaditInfluence = 1.0;
         let currentHaditFocusFactor = 2.0;
         
-        // Improved camera tracking
+        // Improved camera tracking - KEEP ORIGINAL
         let detectedCameras = {
             front: null,
             back: null,
@@ -793,41 +792,10 @@
                 y: S_hadit.y * contentModulation * currentHaditInfluence
             };
             
-            const sMagnitude = Math.sqrt(S_modulated.x * S_modulated.x + S_modulated.y * S_modulated.y);
-            
-            return {
-                sCoord: S_modulated,
-                sMagnitude: sMagnitude,
-                originalG: G_3d,
-                reflectedG: G_reflected,
-                haditVector: hadit_3d,
-                contentModulation: contentModulation,
-                luminance: lum,
-                saturation: sat
-            };
-        }
-
-        function calculateHaditDepth(sCoord, px, py, width, height, lum, sat, lumMapWeight, satMapWeight) {
-            // Calculate Hadit-modulated S-coordinate
-            const haditResult = calculateHaditModulatedSCoordinate(px, py, width, height, lum, sat, lumMapWeight, satMapWeight);
-            const { sMagnitude } = haditResult;
-            
-            // Create depth based on S-magnitude with focus factor
-            const normalizedDepth = Math.min(sMagnitude / (currentSBounds * 2), 1.0);
-            
-            // Apply focus factor to enhance depth variations
-            let depth = 0.2 + (normalizedDepth * 0.8);
-            depth = 0.5 + (depth - 0.5) * currentHaditFocusFactor;
-            
-            // Apply content modulation
-            const contentWeight = lum * 0.5 + sat * 0.3;
-            depth *= (1 + contentWeight * 0.3);
-            
-            // Ensure reasonable bounds
-            return Math.min(1.0, Math.max(0.05, depth));
+            return S_modulated;
         }
         
-        // S-coordinate mapping functions from Python script (with dynamic parameters)
+        // ORIGINAL S-coordinate mapping functions - KEEP UNCHANGED
         function pixelToSCoordinate(px, py, width, height, lum, sat, lumMapWeight, satMapWeight) {
             // Normalize pixel coordinates to -1 to 1 range, centered
             const normX = (px / (width - 1)) * 2 - 1;
@@ -856,7 +824,7 @@
             };
         }
         
-        // Enhanced Nuit distance depth calculation with multiple modes and better depth distribution
+        // Enhanced Nuit distance depth calculation with multiple modes - ADD HADIT CASE
         function calculateNuitDistanceDepth(sCoord, nuitRadius, falloffFactor) {
             const distanceFromOrigin = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
             const distanceFromNuit = Math.abs(distanceFromOrigin - nuitRadius);
@@ -868,9 +836,15 @@
             
             switch (depthMode) {
                 case 'hadit':
-                    // NEW: Hadit mode - delegate to Hadit depth calculation
-                    // This will be handled in the main depth calculation function
-                    finalDepth = 0.5; // Placeholder, actual calculation done elsewhere
+                    // NEW: Hadit mode depth calculation based on S-magnitude
+                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                    const normalizedDepth = Math.min(sMagnitude / (currentSBounds * 2), 1.0);
+                    
+                    // Apply focus factor to enhance depth variations
+                    let depth = 0.2 + (normalizedDepth * 0.8);
+                    depth = 0.5 + (depth - 0.5) * currentHaditFocusFactor;
+                    
+                    finalDepth = Math.min(1.0, Math.max(0.05, depth));
                     break;
                     
                 case 'nuit':
@@ -1051,6 +1025,8 @@
             debugLog(`Depth map stats: min=${minDepth}, max=${maxDepth}, avg=${avgDepth.toFixed(1)}, range=${maxDepth-minDepth}`);
         }
         
+        // KEEP ALL ORIGINAL FUNCTIONS UNCHANGED - No camera code changes!
+        
         // Try to set up WebGL for GPU acceleration
         function setupWebGL() {
             try {
@@ -1101,7 +1077,7 @@
             }
         }
         
-        // Improved camera enumeration
+        // Improved camera enumeration - KEEP ORIGINAL
         async function enumerateCameras() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -1167,7 +1143,7 @@
             }
         }
         
-        // Improved camera stream management
+        // Improved camera stream management - KEEP ORIGINAL
         async function getCameraStream() {
             try {
                 // Stop any existing stream
@@ -1227,7 +1203,7 @@
             }
         }
         
-        // Setup video element
+        // Setup video element - KEEP ORIGINAL
         function setupVideo() {
             if (!video) {
                 video = document.createElement('video');
@@ -1239,7 +1215,7 @@
             return video;
         }
         
-        // Initialize camera and start processing
+        // Initialize camera and start processing - KEEP ORIGINAL
         async function initializeCamera() {
             try {
                 debugLog("Initializing camera system...");
@@ -1274,7 +1250,7 @@
             }
         }
         
-        // Stop camera
+        // Stop camera - KEEP ORIGINAL
         function stopCamera() {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
@@ -1287,7 +1263,7 @@
             debugLog("Camera stopped");
         }
         
-        // Switch between front and back cameras
+        // Switch between front and back cameras - KEEP ORIGINAL
         async function switchCamera() {
             if (currentStream) {
                 useFrontCamera = !useFrontCamera;
@@ -1296,7 +1272,7 @@
             }
         }
         
-        // Apply gaussian blur to image data
+        // Apply gaussian blur to image data - KEEP ORIGINAL
         function applyGaussianBlur(imageData, radius) {
             if (radius <= 0) return imageData;
             
@@ -1354,13 +1330,13 @@
             return imageData;
         }
         
-        // Quantize depth values
+        // Quantize depth values - KEEP ORIGINAL
         function quantizeDepth(depth, levels) {
             const step = 1.0 / (levels - 1);
             return Math.round(depth / step) * step;
         }
         
-        // Generate stereoscopic images with S-coordinate depth mapping
+        // MODIFIED: Generate stereoscopic images with S-coordinate depth mapping - ADD HADIT MODE
         function generateStereoscopicImages(sourceImageData) {
             const width = sourceImageData.width;
             const height = sourceImageData.height;
@@ -1375,6 +1351,7 @@
             const saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
             const quantizeToggle = document.getElementById('depthQuantizeToggle').checked;
             const depthLevels = parseInt(document.getElementById('depthLevels').value);
+            const depthMode = document.getElementById('depthMode').value;
             
             // Create depth map
             const depthData = new Uint8ClampedArray(width * height * 4);
@@ -1400,18 +1377,19 @@
                     const minCol = Math.min(r, g, b);
                     const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
                     
-                    let depth;
+                    let sCoord;
                     
-                    // Check if we're in Hadit mode
-                    if (haditMode) {
-                        // Use Hadit depth calculation
-                        const sCoord = pixelToSCoordinate(x, y, width, height, lum, sat, luminosityWeight, saturationWeight);
-                        depth = calculateHaditDepth(sCoord, x, y, width, height, lum, sat, luminosityWeight, saturationWeight);
+                    // Choose S-coordinate calculation based on mode
+                    if (depthMode === 'hadit') {
+                        // Use Hadit-modulated S-coordinates
+                        sCoord = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, luminosityWeight, saturationWeight);
                     } else {
-                        // Use original depth calculation methods
-                        const sCoord = pixelToSCoordinate(x, y, width, height, lum, sat, luminosityWeight, saturationWeight);
-                        depth = calculateNuitDistanceDepth(sCoord, currentNuitRadius, nuitFalloffFactor);
+                        // Use original S-coordinate calculation
+                        sCoord = pixelToSCoordinate(x, y, width, height, lum, sat, luminosityWeight, saturationWeight);
                     }
+                    
+                    // Calculate depth using the original function (which now handles Hadit mode)
+                    let depth = calculateNuitDistanceDepth(sCoord, currentNuitRadius, nuitFalloffFactor);
                     
                     // Apply quantization if enabled
                     if (quantizeToggle) {
@@ -1485,7 +1463,7 @@
             return { left: leftImageData, right: rightImageData };
         }
         
-        // Main render loop
+        // KEEP ALL ORIGINAL FUNCTIONS - Main render loop
         function renderLoop(currentTime) {
             // Skip frame if we haven't reached the target interval
             if (currentTime - lastFrameTime < frameInterval) {
@@ -1532,7 +1510,7 @@
             requestAnimationFrame(renderLoop);
         }
         
-        // Update display canvases with stereoscopic images
+        // KEEP ORIGINAL - Update display canvases with stereoscopic images
         function updateDisplayCanvases(leftImageData, rightImageData) {
             const canvas1 = document.getElementById('canvas1');
             const canvas2 = document.getElementById('canvas2');
@@ -1592,7 +1570,7 @@
             ctx2.putImageData(rightImageData, 0, 0);
         }
         
-        // Toggle flicker mode
+        // KEEP ORIGINAL - Toggle flicker mode
         function toggleFlickerMode() {
             flickerMode = !flickerMode;
             
@@ -1627,7 +1605,7 @@
             }
         }
         
-        // Update flicker speed
+        // KEEP ORIGINAL - Update flicker speed
         function updateFlickerSpeed() {
             flickerSpeed = parseInt(document.getElementById('flickerSpeedSlider').value);
             
@@ -1640,7 +1618,7 @@
             }
         }
         
-        // Toggle controls visibility
+        // KEEP ORIGINAL - Toggle controls visibility
         function toggleControls() {
             controlsHidden = !controlsHidden;
             const controlPanel = document.getElementById('controlPanel');
@@ -1655,7 +1633,7 @@
             }
         }
         
-        // Update quality factor
+        // KEEP ORIGINAL - Update quality factor
         function updateQuality() {
             qualityFactor = parseFloat(document.getElementById('qualitySelect').value);
             const qualityIndicator = document.getElementById('qualityIndicator');
@@ -1670,7 +1648,7 @@
             debugLog(`Quality changed to ${percentage}%`);
         }
         
-        // Update slider value displays
+        // KEEP ORIGINAL - Update slider value displays
         function updateSliderValue(sliderId, valueId, suffix = '', prefix = '') {
             const slider = document.getElementById(sliderId);
             const valueDisplay = document.getElementById(valueId);
@@ -1682,12 +1660,12 @@
         // NEW: Toggle Hadit mode
         function toggleHaditMode() {
             const depthMode = document.getElementById('depthMode').value;
-            haditMode = (depthMode === 'hadit');
+            const isHaditMode = (depthMode === 'hadit');
             
             const haditControlsSection = document.getElementById('haditControlsSection');
             const haditIndicator = document.getElementById('haditIndicator');
             
-            if (haditMode) {
+            if (isHaditMode) {
                 haditControlsSection.style.display = 'flex';
                 haditIndicator.style.opacity = '1';
                 haditIndicator.textContent = `Hadit Mode: θ=${currentHaditTheta.toFixed(1)}° φ=${currentHaditPhi.toFixed(1)}°`;
@@ -1713,13 +1691,14 @@
             updateSliderValue('haditFocusFactor', 'haditFocusFactorValue', 'x');
             
             // Update indicator if in Hadit mode
-            if (haditMode) {
+            const depthMode = document.getElementById('depthMode').value;
+            if (depthMode === 'hadit') {
                 const haditIndicator = document.getElementById('haditIndicator');
                 haditIndicator.textContent = `Hadit Mode: θ=${currentHaditTheta.toFixed(1)}° φ=${currentHaditPhi.toFixed(1)}°`;
             }
         }
         
-        // Recording functionality (preserved from original)
+        // KEEP ALL ORIGINAL RECORDING FUNCTIONS
         let mediaRecorder = null;
         let recordedChunks = [];
         let recordingStartTime = 0;
@@ -1747,7 +1726,8 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `androidvr_${haditMode ? 'hadit' : 'nuit'}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.webm`;
+                    const depthMode = document.getElementById('depthMode').value;
+                    a.download = `androidvr_${depthMode}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.webm`;
                     a.click();
                     URL.revokeObjectURL(url);
                 };
@@ -1797,7 +1777,7 @@
                 `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
         
-        // Freeze functionality (preserved from original)
+        // KEEP ALL ORIGINAL FREEZE FUNCTIONS
         let freezeTimeout = null;
         
         function triggerFreeze() {
@@ -1846,7 +1826,7 @@
         
         // Event listeners setup
         function setupEventListeners() {
-            // Camera controls
+            // KEEP ALL ORIGINAL CAMERA CONTROLS
             document.getElementById('startButton').addEventListener('click', () => {
                 if (currentStream) {
                     stopCamera();
@@ -1857,13 +1837,13 @@
             
             document.getElementById('switchButton').addEventListener('click', switchCamera);
             
-            // View controls
+            // KEEP ALL ORIGINAL VIEW CONTROLS
             document.getElementById('toggleFlickerMode').addEventListener('click', toggleFlickerMode);
             document.getElementById('flickerSpeedSlider').addEventListener('input', updateFlickerSpeed);
             document.getElementById('toggleControls').addEventListener('click', toggleControls);
             document.getElementById('qualitySelect').addEventListener('change', updateQuality);
             
-            // Depth mode change
+            // NEW: Depth mode change to handle Hadit
             document.getElementById('depthMode').addEventListener('change', toggleHaditMode);
             
             // NEW: Hadit controls
@@ -1872,7 +1852,7 @@
             document.getElementById('haditInfluence').addEventListener('input', updateHaditParameters);
             document.getElementById('haditFocusFactor').addEventListener('input', updateHaditParameters);
             
-            // Slider value updates
+            // KEEP ALL ORIGINAL SLIDER EVENTS
             document.getElementById('nuitRadius').addEventListener('input', () => {
                 currentNuitRadius = parseFloat(document.getElementById('nuitRadius').value);
                 updateSliderValue('nuitRadius', 'nuitRadiusValue');
@@ -1887,11 +1867,11 @@
                 updateSliderValue('baselineSeparation', 'baselineSeparationValue', '%');
             });
             
-            // Recording controls
+            // KEEP ALL ORIGINAL RECORDING CONTROLS
             document.getElementById('recordButton').addEventListener('click', startRecording);
             document.getElementById('stopRecordButton').addEventListener('click', stopRecording);
             
-            // Freeze controls
+            // KEEP ALL ORIGINAL FREEZE CONTROLS
             document.addEventListener('keydown', (e) => {
                 if (e.code === 'Space') {
                     e.preventDefault();
@@ -1903,7 +1883,7 @@
         // Initialize the application
         function initializeApp() {
             debugLog("⚡ AndroidVR with Hadit Mode initializing...");
-            debugLog("Current Date and Time (UTC): 2025-06-07 06:53:47");
+            debugLog("Current Date and Time (UTC): 2025-06-07 07:05:08");
             debugLog("Current User's Login: Angledcrystals");
             
             // Setup event listeners
