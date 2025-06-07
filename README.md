@@ -6,6 +6,12 @@ Rewritten by AI for readability.
 
 **Invisible Mirror** is a real-time camera web app that transforms live video into dynamic depth and stereo visualizations using advanced Mirror geometry. It combines mathematics, band detection, and interactive controls to create immersive, information-rich visual effects ideal for stereo viewing, VR, and computational photography.
 
+Invisible Mirror is computationally expensive, only the very best hardware for phones can run it in this era; this is a case of the HW not being able to run the code efficiently...
+
+Invisible Mirror does not have as many fun features as VRWizard, and it is not suitable for training perception; it is just theory put into practice.
+
+Also I use esoteric terminology for the functions because I think it is funny.
+
 ## ✨ Features
 
 - **Live Mirror Geometry**  
