@@ -237,6 +237,16 @@
         .status-active { color: #00ff88; }
         .status-error { color: #ff4444; }
 
+        .error-message {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid #ff4444;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 11px;
+            color: #ff4444;
+        }
+
         /* Mobile optimizations */
         @media (max-width: 768px) {
             .stereo-view {
@@ -261,7 +271,7 @@
 <body>
     <div class="container">
         <h1>AndroidVR - Live Hadit Camera</h1>
-        <div class="subtitle">Real-time Fine Hadit Control: 0.1° Precision | Current Date and Time (UTC): 2025-06-07 07:09:50 | User: Angledcrystals</div>
+        <div class="subtitle">Real-time Fine Hadit Control: 0.1° Precision | 2025-06-07 07:15:17 UTC | User: Angledcrystals</div>
 
         <div class="hadit-info">
             <div style="color: #ff00ff; font-weight: bold;">⚡ Live Hadit Processing:</div>
@@ -269,11 +279,22 @@
             <div>• θ (Theta): 0° to 360° in 0.1° increments for live adjustment</div>
             <div>• φ (Phi): 0.1° to 179.9° in 0.1° increments for extreme precision</div>
             <div>• Parallel stereo view with pixel-perfect offset based on Hadit depth</div>
-            <div>• Optimized for mobile VR viewing</div>
+            <div>• Enhanced camera permissions and error handling</div>
         </div>
 
         <div class="camera-status" id="cameraStatus">
-            <span class="status-connecting">📹 Initializing camera...</span>
+            <span class="status-connecting">📹 Camera system ready - click Start Camera</span>
+        </div>
+
+        <div id="errorPanel" class="error-message" style="display: none;">
+            <div style="font-weight: bold;">❌ Camera Error:</div>
+            <div id="errorMessage">Unknown error occurred</div>
+            <div style="margin-top: 5px; font-size: 10px;">
+                • Make sure you allow camera permissions<br>
+                • Try switching between front/back camera<br>
+                • Check if another app is using the camera<br>
+                • Refresh the page and try again
+            </div>
         </div>
 
         <div class="camera-container">
@@ -300,17 +321,22 @@
             <div class="control-group">
                 <label>📹 Camera Control</label>
                 <button id="startCamera" class="camera-control">▶️ Start Camera</button>
-                <button id="switchCamera" class="camera-control">🔄 Switch Camera</button>
-                <button id="stopCamera" class="camera-control">⏹️ Stop Camera</button>
+                <button id="switchCamera" class="camera-control" style="display: none;">🔄 Switch Camera</button>
+                <button id="stopCamera" class="camera-control" style="display: none;">⏹️ Stop Camera</button>
+                <button id="requestPermissions" class="camera-control">🔑 Request Permissions</button>
             </div>
             
             <div class="control-group">
-                <label>📐 Camera Resolution</label>
+                <label>📐 Camera Settings</label>
                 <select id="resolutionSelect" class="camera-control">
+                    <option value="320x240">320x240 (Low)</option>
                     <option value="640x480" selected>640x480 (VGA)</option>
                     <option value="1280x720">1280x720 (HD)</option>
                     <option value="1920x1080">1920x1080 (FHD)</option>
-                    <option value="320x240">320x240 (Low)</option>
+                </select>
+                <select id="facingMode" class="camera-control">
+                    <option value="environment" selected>Back Camera</option>
+                    <option value="user">Front Camera</option>
                 </select>
             </div>
             
@@ -374,20 +400,10 @@
                     <option value="0.25">Low Quality</option>
                 </select>
             </div>
-            
-            <div class="control-group">
-                <label>🔄 Update Rate</label>
-                <select id="updateRate" class="depth-control">
-                    <option value="60">60 FPS</option>
-                    <option value="30" selected>30 FPS</option>
-                    <option value="15">15 FPS</option>
-                    <option value="10">10 FPS</option>
-                </select>
-            </div>
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Live Hadit camera system ready... Angledcrystals | 2025-06-07 07:09:50 UTC</div>
+            <div>Status: Live Hadit camera system ready... Angledcrystals | 2025-06-07 07:15:17 UTC</div>
         </div>
 
         <div class="analysis-grid">
@@ -419,6 +435,7 @@
             <div class="analysis-panel" id="analysisPanel">
                 <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Analysis</div>
                 <div>Ready for live camera processing...</div>
+                <div>Camera permissions status: checking...</div>
             </div>
         </div>
     </div>
@@ -481,16 +498,17 @@
             };
         }
 
-        // ==================== LIVE CAMERA PROCESSING ====================
+        // ==================== ENHANCED CAMERA SYSTEM ====================
         
         class LiveHaditCamera {
             constructor() {
                 this.video = null;
                 this.stream = null;
                 this.isRunning = false;
-                this.useFrontCamera = false;
                 this.animationFrameId = null;
                 this.animationId = null;
+                this.availableCameras = [];
+                this.currentCameraIndex = 0;
                 
                 // Performance tracking
                 this.frameCount = 0;
@@ -503,11 +521,52 @@
                 
                 this.initializeControls();
                 this.setupCanvases();
-                this.updateInfoPanel('Live Hadit camera system ready! | Angledcrystals | 2025-06-07 07:09:50 UTC');
+                this.checkCameraPermissions();
+                this.updateInfoPanel('Live Hadit camera system ready! | Angledcrystals | 2025-06-07 07:15:17 UTC');
                 
                 console.log('✅ Live Hadit Camera System initialized!');
                 console.log('θ (Theta) range: 0° to 360° in 0.1° increments');
                 console.log('φ (Phi) range: 0.1° to 179.9° in 0.1° increments');
+            }
+
+            async checkCameraPermissions() {
+                try {
+                    const permissionStatus = await navigator.permissions.query({ name: 'camera' });
+                    this.updateAnalysisInfo(`Camera permission: ${permissionStatus.state}`);
+                    
+                    if (permissionStatus.state === 'granted') {
+                        await this.enumerateCameras();
+                    } else if (permissionStatus.state === 'prompt') {
+                        this.updateAnalysisInfo('Camera permission: will prompt when starting');
+                    } else {
+                        this.showError('Camera permission denied. Please enable camera access.');
+                    }
+                    
+                    permissionStatus.addEventListener('change', () => {
+                        this.updateAnalysisInfo(`Camera permission changed: ${permissionStatus.state}`);
+                    });
+                    
+                } catch (error) {
+                    console.log('Permission query not supported, will try direct access');
+                    this.updateAnalysisInfo('Camera permission: checking on start');
+                }
+            }
+
+            async enumerateCameras() {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    this.availableCameras = devices.filter(device => device.kind === 'videoinput');
+                    
+                    this.updateAnalysisInfo(`Found ${this.availableCameras.length} camera(s)`);
+                    
+                    this.availableCameras.forEach((camera, index) => {
+                        console.log(`Camera ${index}: ${camera.label || 'Unknown'}`);
+                    });
+                    
+                } catch (error) {
+                    console.error('Camera enumeration error:', error);
+                    this.updateAnalysisInfo('Camera enumeration failed');
+                }
             }
 
             setupCanvases() {
@@ -532,7 +591,6 @@
                     luminosityWeight: parseFloat(document.getElementById('luminosityWeight')?.value || 0.7),
                     saturationWeight: parseFloat(document.getElementById('saturationWeight')?.value || 0.3),
                     quality: parseFloat(document.getElementById('qualitySelect')?.value || 0.75),
-                    updateRate: parseInt(document.getElementById('updateRate')?.value || 30),
                     enableStereo: document.getElementById('enableStereo')?.checked ?? true,
                     showDepthMap: document.getElementById('showDepthMap')?.checked ?? true,
                     mirrorCamera: document.getElementById('mirrorCamera')?.checked ?? false,
@@ -541,23 +599,59 @@
                 };
             }
 
+            async requestPermissions() {
+                try {
+                    this.updateCameraStatus('📹 Requesting camera permissions...', 'connecting');
+                    
+                    // Request basic camera access to trigger permission prompt
+                    const testStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { width: 320, height: 240 } 
+                    });
+                    
+                    // Stop the test stream immediately
+                    testStream.getTracks().forEach(track => track.stop());
+                    
+                    this.updateCameraStatus('✅ Camera permissions granted', 'active');
+                    await this.enumerateCameras();
+                    
+                } catch (error) {
+                    this.showError('Failed to get camera permissions: ' + error.message);
+                    this.updateCameraStatus('❌ Camera permissions denied', 'error');
+                }
+            }
+
             async startCamera() {
                 try {
-                    this.updateCameraStatus('📹 Connecting to camera...', 'connecting');
+                    this.hideError();
+                    this.updateCameraStatus('📹 Starting camera...', 'connecting');
                     
                     const resolution = document.getElementById('resolutionSelect').value.split('x');
                     const width = parseInt(resolution[0]);
                     const height = parseInt(resolution[1]);
+                    const facingMode = document.getElementById('facingMode').value;
                     
+                    // More flexible constraints with fallbacks
                     const constraints = {
                         video: {
-                            width: { ideal: width },
-                            height: { ideal: height },
-                            frameRate: { ideal: 30 },
-                            facingMode: this.useFrontCamera ? 'user' : 'environment'
+                            width: { ideal: width, min: 320 },
+                            height: { ideal: height, min: 240 },
+                            frameRate: { ideal: 30, min: 15 },
+                            facingMode: { ideal: facingMode }
                         }
                     };
 
+                    // If we have specific camera devices, try to use one
+                    if (this.availableCameras.length > 0) {
+                        const camera = this.availableCameras[this.currentCameraIndex];
+                        if (camera && camera.deviceId) {
+                            constraints.video.deviceId = { exact: camera.deviceId };
+                            delete constraints.video.facingMode; // Remove facingMode when using deviceId
+                        }
+                    }
+
+                    console.log('Camera constraints:', constraints);
+
+                    // Stop any existing stream
                     if (this.stream) {
                         this.stream.getTracks().forEach(track => track.stop());
                     }
@@ -569,12 +663,26 @@
                         this.video.autoplay = true;
                         this.video.playsInline = true;
                         this.video.muted = true;
+                        this.video.style.display = 'none';
                     }
                     
                     this.video.srcObject = this.stream;
                     
-                    await new Promise((resolve) => {
-                        this.video.addEventListener('loadedmetadata', resolve, { once: true });
+                    // Wait for video to be ready
+                    await new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error('Video load timeout'));
+                        }, 10000);
+                        
+                        this.video.addEventListener('loadedmetadata', () => {
+                            clearTimeout(timeout);
+                            resolve();
+                        }, { once: true });
+                        
+                        this.video.addEventListener('error', () => {
+                            clearTimeout(timeout);
+                            reject(new Error('Video load error'));
+                        }, { once: true });
                     });
                     
                     this.isRunning = true;
@@ -584,12 +692,24 @@
                     this.startProcessingLoop();
                     
                     document.getElementById('startCamera').style.display = 'none';
+                    document.getElementById('switchCamera').style.display = 'inline-block';
                     document.getElementById('stopCamera').style.display = 'inline-block';
                     
                 } catch (error) {
                     console.error('Camera start error:', error);
-                    this.updateCameraStatus('❌ Camera access failed', 'error');
-                    this.updateInfoPanel('Camera access failed: ' + error.message);
+                    this.showError('Camera start failed: ' + error.message);
+                    this.updateCameraStatus('❌ Camera start failed', 'error');
+                    
+                    // Show suggestions based on error type
+                    if (error.name === 'NotAllowedError') {
+                        this.showError('Camera permission denied. Please allow camera access and try again.');
+                    } else if (error.name === 'NotFoundError') {
+                        this.showError('No camera found. Please connect a camera and try again.');
+                    } else if (error.name === 'NotReadableError') {
+                        this.showError('Camera is busy. Close other apps using the camera and try again.');
+                    } else {
+                        this.showError('Camera error: ' + error.message);
+                    }
                 }
             }
 
@@ -614,6 +734,7 @@
                 this.updateInfoPanel('Camera stopped. Click Start Camera to resume live Hadit processing.');
                 
                 document.getElementById('startCamera').style.display = 'inline-block';
+                document.getElementById('switchCamera').style.display = 'none';
                 document.getElementById('stopCamera').style.display = 'none';
                 
                 // Clear canvases
@@ -623,16 +744,22 @@
             }
 
             async switchCamera() {
-                if (this.isRunning) {
-                    this.useFrontCamera = !this.useFrontCamera;
-                    this.updateInfoPanel(`Switching to ${this.useFrontCamera ? 'front' : 'back'} camera...`);
+                if (this.availableCameras.length > 1) {
+                    this.currentCameraIndex = (this.currentCameraIndex + 1) % this.availableCameras.length;
+                    this.updateInfoPanel(`Switching to camera ${this.currentCameraIndex + 1}/${this.availableCameras.length}...`);
+                    await this.startCamera();
+                } else {
+                    // Fallback: toggle facing mode
+                    const facingModeSelect = document.getElementById('facingMode');
+                    facingModeSelect.value = facingModeSelect.value === 'user' ? 'environment' : 'user';
+                    this.updateInfoPanel(`Switching to ${facingModeSelect.value} camera...`);
                     await this.startCamera();
                 }
             }
 
             startProcessingLoop() {
-                const config = this.getConfiguration();
-                const targetInterval = 1000 / config.updateRate;
+                const targetFPS = 30;
+                const targetInterval = 1000 / targetFPS;
                 let lastTime = 0;
                 
                 const processFrame = (currentTime) => {
@@ -831,6 +958,22 @@
                 };
             }
 
+            showError(message) {
+                const errorPanel = document.getElementById('errorPanel');
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorPanel && errorMessage) {
+                    errorMessage.textContent = message;
+                    errorPanel.style.display = 'block';
+                }
+            }
+
+            hideError() {
+                const errorPanel = document.getElementById('errorPanel');
+                if (errorPanel) {
+                    errorPanel.style.display = 'none';
+                }
+            }
+
             updateCameraStatus(message, status) {
                 const statusElement = document.getElementById('cameraStatus');
                 if (statusElement) {
@@ -844,31 +987,41 @@
                     document.getElementById('leftFps').textContent = `${this.currentFps} FPS`;
                     document.getElementById('rightFps').textContent = `${this.currentFps} FPS`;
                     document.getElementById('depthFps').textContent = `${this.currentFps} FPS`;
+                } else {
+                    document.getElementById('leftFps').textContent = '';
+                    document.getElementById('rightFps').textContent = '';
+                    document.getElementById('depthFps').textContent = '';
                 }
             }
 
             updateAnalysisPanel(processingTime, config) {
                 if (this.lastProcessingStats) {
                     const stats = this.lastProcessingStats;
-                    const analysisPanel = document.getElementById('analysisPanel');
-                    
-                    if (analysisPanel) {
-                        analysisPanel.innerHTML = `
-                            <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Analysis</div>
-                            <div>FPS: ${this.currentFps} | Process: ${processingTime.toFixed(1)}ms</div>
-                            <div>θ (Theta): ${config.haditTheta.toFixed(1)}°</div>
-                            <div>φ (Phi): ${config.haditPhi.toFixed(1)}°</div>
-                            <div>Influence: ${config.haditInfluence.toFixed(2)}</div>
-                            <div>Focus Factor: ${config.focusFactor.toFixed(1)}x</div>
-                            <div>Separation: ${config.separation}px</div>
-                            <div>Depth Intensity: ${config.depthIntensity.toFixed(1)}x</div>
-                            <div>S Bounds: ±${config.sBounds.toFixed(1)}</div>
-                            <div>Quality: ${(config.quality * 100).toFixed(0)}%</div>
-                            <div>Avg Depth: ${stats.avgDepth.toFixed(3)}</div>
-                            <div>Depth Range: ${stats.depthRange.toFixed(3)}</div>
-                            <div>Resolution: ${this.video ? this.video.videoWidth + 'x' + this.video.videoHeight : 'N/A'}</div>
-                        `;
-                    }
+                    this.updateAnalysisInfo(`
+FPS: ${this.currentFps} | Process: ${processingTime.toFixed(1)}ms
+θ (Theta): ${config.haditTheta.toFixed(1)}°
+φ (Phi): ${config.haditPhi.toFixed(1)}°
+Influence: ${config.haditInfluence.toFixed(2)}
+Focus Factor: ${config.focusFactor.toFixed(1)}x
+Separation: ${config.separation}px
+Depth Intensity: ${config.depthIntensity.toFixed(1)}x
+S Bounds: ±${config.sBounds.toFixed(1)}
+Quality: ${(config.quality * 100).toFixed(0)}%
+Avg Depth: ${stats.avgDepth.toFixed(3)}
+Depth Range: ${stats.depthRange.toFixed(3)}
+Resolution: ${this.video ? this.video.videoWidth + 'x' + this.video.videoHeight : 'N/A'}
+Cameras: ${this.availableCameras.length}
+                    `.trim());
+                }
+            }
+
+            updateAnalysisInfo(text) {
+                const analysisPanel = document.getElementById('analysisPanel');
+                if (analysisPanel) {
+                    analysisPanel.innerHTML = `
+                        <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Analysis</div>
+                        <div style="white-space: pre-line; font-family: monospace;">${text}</div>
+                    `;
                 }
             }
 
@@ -892,6 +1045,10 @@
                 
                 document.getElementById('switchCamera')?.addEventListener('click', () => {
                     this.switchCamera();
+                });
+
+                document.getElementById('requestPermissions')?.addEventListener('click', () => {
+                    this.requestPermissions();
                 });
 
                 // Synchronized dual inputs for theta
@@ -1054,7 +1211,7 @@
         
         document.addEventListener('DOMContentLoaded', () => {
             console.log('⚡ Initializing Live Hadit Camera System...');
-            console.log('Current Date and Time (UTC): 2025-06-07 07:09:50');
+            console.log('Current Date and Time (UTC): 2025-06-07 07:15:17');
             console.log('Current User Login: Angledcrystals');
             console.log('Live camera processing with 0.1° Hadit precision');
             
