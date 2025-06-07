@@ -1092,176 +1092,137 @@
         // ==================== STEREO EFFECT IMPLEMENTATION - COMPLETELY FIXED ====================
         
         // Apply stereo effect to frames - FIXED EDGE HANDLING & PROPER DEPTH MAPPING
+        // Apply stereo effect to frames - REVISED NORMALIZATION AND HADIT HANDLING
         function applyStereoEffect(processingCtx, leftCtx, rightCtx, leftColor, rightColor, separation, intensity, depthMode) {
             const width = processingCanvas.width;
             const height = processingCanvas.height;
             
-            // Get original image data
             const imageData = processingCtx.getImageData(0, 0, width, height);
-            
-            // Create output image data
             const leftImageData = leftCtx.createImageData(leftCtx.canvas.width, leftCtx.canvas.height);
             const rightImageData = rightCtx.createImageData(rightCtx.canvas.width, rightCtx.canvas.height);
             
-            // Scale factor between processing and display canvases
             const scaleX = leftCtx.canvas.width / width;
             const scaleY = leftCtx.canvas.height / height;
             
-            // Get Hadit configuration for depth mapping - ENSURE PRESET VALUES
             const haditConfig = {
-                haditTheta: 0.0,
-                haditPhi: 0.1,
+                haditTheta: 0.0, haditPhi: 0.1,
                 haditInfluence: parseFloat(document.getElementById('haditInfluence').value),
                 focusFactor: parseFloat(document.getElementById('focusFactor').value),
-                bandMode: 'full_image',
-                bandSizeMultiplier: 10.0,
-                luminosityWeight: 0.0,
-                saturationWeight: 0.0,
-                depthContrast: 0.2,
-                sBounds: 20.0
+                bandMode: 'full_image', bandSizeMultiplier: 10.0,
+                luminosityWeight: 0.0, saturationWeight: 0.0,
+                depthContrast: 0.2, sBounds: 20.0
             };
             
-            // Detect the band if not already detected
-            if (!detectedBand) {
+            if (!detectedBand && depthMode === 'hadit_scoord') { // Only detect band if needed for Hadit
                 detectedBand = detectHaditInformationBand(imageData, haditConfig);
             }
             
-            // Generate depth map for current frame
             const depthMap = new Float32Array(width * height);
-            
-            // Generate depth values
             let minDepth = 1.0;
             let maxDepth = 0.0;
             
-            // Process each pixel in the original image for depth
+            // 1. Calculate raw depthMap values and find min/max for the current frame
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     const pixelIdx = (y * width + x) * 4;
-                    
-                    // Extract RGB values
                     const r = imageData.data[pixelIdx] / 255;
                     const g = imageData.data[pixelIdx + 1] / 255;
                     const b = imageData.data[pixelIdx + 2] / 255;
-                    
-                    // Calculate luminance and saturation
                     const lum = 0.299 * r + 0.587 * g + 0.114 * b;
                     const maxCol = Math.max(r, g, b);
                     const minCol = Math.min(r, g, b);
                     const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
                     
-                    // Calculate depth based on mode
-                    let depth = 0.5;
-                    
+                    let currentPixelDepth = 0.5; // Default
                     if (depthMode === 'hadit_scoord') {
-                        // Use Hadit S-coordinate for depth mapping with better distribution
                         const result = calculateHaditSCoordinate(
                             x, y, width, height, lum, sat,
                             haditConfig.haditTheta, haditConfig.haditPhi,
                             haditConfig.haditInfluence,
-                            haditConfig.luminosityWeight,
-                            haditConfig.saturationWeight
+                            haditConfig.luminosityWeight, haditConfig.saturationWeight
                         );
-                        
+                        // Ensure detectedBand is not null for calculateHaditDepth
+                        const bandForCalc = detectedBand || detectHaditInformationBand(imageData, haditConfig);
                         const depthResult = calculateHaditDepth(
-                            result, detectedBand, haditConfig.focusFactor, haditConfig.depthContrast
+                            result, bandForCalc, haditConfig.focusFactor, haditConfig.depthContrast
                         );
-                        
-                        depth = depthResult.depth;
-                    } else {
-                        // Fallback to basic luminance-based depth
-                        depth = 0.2 + lum * 0.8; // Ensure good range
+                        currentPixelDepth = depthResult.depth;
+                    } else { // Fallback/other depth modes
+                        currentPixelDepth = 0.2 + lum * 0.8; // Basic luminance depth, scaled 0.2-1.0
                     }
                     
-                    depthMap[y * width + x] = depth;
-                    
-                    // Track min and max for normalization
-                    minDepth = Math.min(minDepth, depth);
-                    maxDepth = Math.max(maxDepth, depth);
+                    depthMap[y * width + x] = currentPixelDepth;
+                    minDepth = Math.min(minDepth, currentPixelDepth);
+                    maxDepth = Math.max(maxDepth, currentPixelDepth);
                 }
             }
             
-            // Normalize depth values to ensure good range
-            const depthRange = maxDepth - minDepth;
-            if (depthRange < 0.5) {
-                // Force normalization for better stereo effect
-                for (let i = 0; i < depthMap.length; i++) {
-                    depthMap[i] = (depthMap[i] - minDepth) / Math.max(0.001, depthRange);
+            // 2. Normalize all depthMap values based on frame's min/max, then special handling for Hadit
+            const frameDepthRange = maxDepth - minDepth;
+            for (let i = 0; i < depthMap.length; i++) {
+                if (frameDepthRange > 0.001) { // Avoid division by zero
+                    depthMap[i] = (depthMap[i] - minDepth) / frameDepthRange; // Normalize to 0-1
+                } else {
+                    depthMap[i] = 0.5; // If no range, set to mid-depth
+                }
+                
+                // For Hadit mode, further map its 0-1 values to a more visually effective range (e.g., 0.1 to 0.9)
+                // This ensures Hadit isn't too subtle if its initial normalized range (0-1) is used directly.
+                if (depthMode === 'hadit_scoord') {
+                    depthMap[i] = 0.1 + depthMap[i] * 0.8; // Maps 0-1 to 0.1-0.9
                 }
             }
             
-            // Apply the depth map to create stereo offset - COMPLETELY FIXED
-            const separationAmount = separation * width / 100; // Convert percentage to pixels
-            let maxOffset = Math.round(separationAmount * (intensity / 100)); // Changed to let
-            
-            // FORCE a good depth range specifically for Hadit mode
+            // 3. Calculate actualMaxOffset, with optional boost for Hadit
+            let actualMaxOffset = Math.round((separation * width / 100) * (intensity / 100));
             if (depthMode === 'hadit_scoord') {
-                let haditMinDepth = 0.2;  // Force minimum depth 
-                let haditMaxDepth = 0.9;  // Force maximum depth
-                
-                // Normalize ALL depth values to ensure visible offsets
-                for (let i = 0; i < depthMap.length; i++) {
-                    // Spread the values across a wider range
-                    depthMap[i] = haditMinDepth + (depthMap[i] * (haditMaxDepth - haditMinDepth));
-                }
-                
-                // Increase maxOffset for Hadit mode for more visible effect
-                maxOffset = Math.round(maxOffset * 1.5);
+                actualMaxOffset = Math.round(actualMaxOffset * 1.2); // Slight 20% boost for Hadit offset
             }
-            
+            if (actualMaxOffset === 0 && intensity > 0) actualMaxOffset = 1; // Ensure at least 1px offset if intensity is on
+
             // Function to safely sample pixel with proper edge handling
-            function getPixelSafe(x, y) {
-                // Use proper edge clamping
-                x = Math.max(0, Math.min(width - 1, x));
-                y = Math.max(0, Math.min(height - 1, y));
-                
-                const idx = (y * width + x) * 4;
+            function getPixelSafe(xPos, yPos) {
+                xPos = Math.max(0, Math.min(width - 1, Math.round(xPos))); // Round before clamping
+                yPos = Math.max(0, Math.min(height - 1, Math.round(yPos))); // Round before clamping
+                const idx = (yPos * width + xPos) * 4;
                 return [
-                    imageData.data[idx],
-                    imageData.data[idx + 1],
-                    imageData.data[idx + 2],
-                    imageData.data[idx + 3]
+                    imageData.data[idx], imageData.data[idx + 1],
+                    imageData.data[idx + 2], imageData.data[idx + 3]
                 ];
             }
             
-            // Process each output pixel
+            // 4. Final pixel-shifting loop
             for (let y = 0; y < leftCtx.canvas.height; y++) {
                 for (let x = 0; x < leftCtx.canvas.width; x++) {
-                    // Map to source image coordinates
-                    const srcX = Math.floor(x / scaleX);
-                    const srcY = Math.floor(y / scaleY);
+                    const srcX = x / scaleX; // Use floating point for more precision before rounding in getPixelSafe
+                    const srcY = y / scaleY;
                     
-                    if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
-                        // Get the depth value and calculate offset
-                        const depth = depthMap[srcY * width + srcX];
-                        // Scale offset by depth - more offset for closer objects (higher depth)
-                        const offset = Math.round(depth * maxOffset);
-                        
-                        // Output pixel index
-                        const outIdx = (y * leftCtx.canvas.width + x) * 4;
-                        
-                        // Sample LEFT eye - shift to the RIGHT for near pixels
-                        // This is critical - the direction was reversed in previous code
-                        const leftX = srcX + offset;
-                        const leftPixel = getPixelSafe(leftX, srcY);
-                        
-                        leftImageData.data[outIdx] = leftPixel[0] * leftColor.r;
-                        leftImageData.data[outIdx + 1] = leftPixel[1] * leftColor.g;
-                        leftImageData.data[outIdx + 2] = leftPixel[2] * leftColor.b;
-                        leftImageData.data[outIdx + 3] = 255;
-                        
-                        // Sample RIGHT eye - shift to the LEFT for near pixels
-                        const rightX = srcX - offset;
-                        const rightPixel = getPixelSafe(rightX, srcY);
-                        
-                        rightImageData.data[outIdx] = rightPixel[0] * rightColor.r;
-                        rightImageData.data[outIdx + 1] = rightPixel[1] * rightColor.g;
-                        rightImageData.data[outIdx + 2] = rightPixel[2] * rightColor.b;
-                        rightImageData.data[outIdx + 3] = 255;
-                    }
+                    // No need to check srcX/srcY bounds here, getPixelSafe will handle it
+                    
+                    const depth = depthMap[Math.round(srcY) * width + Math.round(srcX)] || 0.5; // Use rounded src coords for depthMap lookup, fallback to 0.5
+                    const offset = Math.round(depth * actualMaxOffset);
+                    
+                    const outIdx = (y * leftCtx.canvas.width + x) * 4;
+                    
+                    const leftPixel = getPixelSafe(srcX + offset, srcY);
+                    leftImageData.data[outIdx] = leftPixel[0] * leftColor.r;
+                    leftImageData.data[outIdx + 1] = leftPixel[1] * leftColor.g;
+                    leftImageData.data[outIdx + 2] = leftPixel[2] * leftColor.b;
+                    leftImageData.data[outIdx + 3] = 255;
+                    
+                    const rightPixel = getPixelSafe(srcX - offset, srcY);
+                    rightImageData.data[outIdx] = rightPixel[0] * rightColor.r;
+                    rightImageData.data[outIdx + 1] = rightPixel[1] * rightColor.g;
+                    rightImageData.data[outIdx + 2] = rightPixel[2] * rightColor.b;
+                    rightImageData.data[outIdx + 3] = 255;
+
+                    // Optional: Log for debugging Hadit mode offsets
+                    // if (depthMode === 'hadit_scoord' && x === Math.floor(leftCtx.canvas.width / 2) && y % 50 === 0) {
+                    //     console.log(`Hadit Stereo Debug: y=${y}, depth=${depth.toFixed(3)}, actualMaxOffset=${actualMaxOffset}, offset=${offset}`);
+                    // }
                 }
             }
             
-            // Put the processed images to the canvases
             leftCtx.putImageData(leftImageData, 0, 0);
             rightCtx.putImageData(rightImageData, 0, 0);
         }
