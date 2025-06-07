@@ -44,7 +44,7 @@
             margin-bottom: 20px;
         }
 
-        /* Stereo view - optimized for VR headsets */
+        /* Stereo view - optimized for VR headsets with responsive scaling */
         .stereo-view {
             display: flex;
             gap: 15px;
@@ -55,7 +55,8 @@
             border-radius: 10px;
             backdrop-filter: blur(10px);
             width: 100%;
-            max-width: 1400px;
+            max-width: 95vw;
+            box-sizing: border-box;
         }
 
         /* Depth view - positioned below stereo frames */
@@ -72,34 +73,46 @@
 
         .camera-feed {
             position: relative;
+            overflow: hidden;
         }
 
-        /* Enhanced stereo frame sizing for VR */
+        /* Enhanced stereo frame sizing for VR with dynamic scaling */
         .stereo-frame {
             flex: 1;
-            max-width: 650px;
-            min-width: 400px;
+            max-width: calc(50% - 10px);
+            min-width: 300px;
+            width: 100%;
         }
 
         .stereo-frame canvas {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 4/3;
+            width: 100% !important;
+            height: auto !important;
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            display: block;
         }
 
-        /* Depth frame sizing */
-        .depth-frame canvas {
+        /* Depth frame sizing with responsive scaling */
+        .depth-frame {
             width: 100%;
-            height: auto;
             max-width: 400px;
-            aspect-ratio: 4/3;
+        }
+
+        .depth-frame canvas {
+            width: 100% !important;
+            height: auto !important;
+            max-width: 100%;
+            max-height: 40vh;
+            object-fit: contain;
+            display: block;
         }
 
         canvas, video {
             border: 2px solid #00ff88;
             border-radius: 10px;
             background: #000;
-            display: block;
+            box-sizing: border-box;
         }
 
         .left-eye { border-color: #ff4444 !important; }
@@ -298,16 +311,21 @@
             border: 1px solid #ffff00;
         }
 
-        /* Landscape optimizations for VR */
+        /* Landscape optimizations for VR - Enhanced for better scaling */
         @media (orientation: landscape) and (min-width: 768px) {
             .stereo-view {
                 padding: 25px;
                 gap: 20px;
+                max-width: 98vw;
             }
             
             .stereo-frame {
-                min-width: 500px;
-                max-width: 700px;
+                max-width: calc(50% - 15px);
+                min-width: 350px;
+            }
+            
+            .stereo-frame canvas {
+                max-height: 75vh;
             }
             
             .depth-view {
@@ -326,11 +344,17 @@
                 flex-direction: column;
                 align-items: center;
                 gap: 15px;
+                max-width: 95vw;
             }
             
             .stereo-frame {
-                min-width: 300px;
+                min-width: 280px;
                 max-width: 90vw;
+                width: 100%;
+            }
+            
+            .stereo-frame canvas {
+                max-height: 50vh;
             }
             
             .depth-view {
@@ -346,22 +370,73 @@
             }
         }
 
-        /* Extra large landscape screens (VR friendly) */
+        /* Extra large landscape screens (VR friendly) - Enhanced */
         @media (orientation: landscape) and (min-width: 1200px) {
             .stereo-view {
-                max-width: 1600px;
+                max-width: 98vw;
                 padding: 30px;
                 gap: 25px;
             }
             
             .stereo-frame {
-                min-width: 600px;
-                max-width: 750px;
+                min-width: 450px;
+                max-width: calc(50% - 20px);
+            }
+            
+            .stereo-frame canvas {
+                max-height: 80vh;
             }
             
             .camera-label {
                 font-size: 16px;
             }
+        }
+
+        /* Ultra-wide displays (VR optimized) */
+        @media (orientation: landscape) and (min-width: 1600px) {
+            .stereo-view {
+                max-width: 95vw;
+                padding: 35px;
+                gap: 30px;
+            }
+            
+            .stereo-frame {
+                min-width: 600px;
+                max-width: calc(50% - 25px);
+            }
+            
+            .stereo-frame canvas {
+                max-height: 85vh;
+            }
+        }
+
+        /* Small screens - ensure no cutoff */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            
+            .stereo-view {
+                padding: 10px;
+                gap: 10px;
+                max-width: 98vw;
+            }
+            
+            .stereo-frame {
+                min-width: 250px;
+                max-width: 95vw;
+            }
+            
+            .stereo-frame canvas {
+                max-height: 40vh;
+            }
+        }
+
+        /* Force canvas to respect container bounds */
+        canvas {
+            max-width: 100% !important;
+            height: auto !important;
+            object-fit: contain;
         }
     </style>
 </head>
@@ -1981,4 +2056,3 @@
     </script>
 </body>
 </html>
-                
