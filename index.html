@@ -57,7 +57,7 @@
             position: relative;
         }
 
-        canvas {
+        canvas, video {
             border: 2px solid #00ff88;
             border-radius: 10px;
             background: #000;
@@ -68,6 +68,7 @@
         .left-eye { border-color: #ff4444 !important; }
         .right-eye { border-color: #4444ff !important; }
         .depth-map { border-color: #ff8800 !important; }
+        .raw-video { border-color: #00ff88 !important; }
 
         .camera-label {
             text-align: center;
@@ -80,6 +81,7 @@
         .left-label { color: #ff4444; }
         .right-label { color: #4444ff; }
         .depth-label { color: #ff8800; }
+        .raw-label { color: #00ff88; }
 
         .controls {
             display: grid;
@@ -247,6 +249,12 @@
             color: #ff4444;
         }
 
+        /* Debug video (visible) */
+        #debugVideo {
+            max-width: 200px;
+            border: 1px solid #ffff00;
+        }
+
         /* Mobile optimizations */
         @media (max-width: 768px) {
             .stereo-view {
@@ -271,7 +279,7 @@
 <body>
     <div class="container">
         <h1>AndroidVR - Live Hadit Camera</h1>
-        <div class="subtitle">Real-time Fine Hadit Control: 0.1° Precision | 2025-06-07 07:15:17 UTC | User: Angledcrystals</div>
+        <div class="subtitle">Real-time Fine Hadit Control: 0.1° Precision | 2025-06-07 07:21:07 UTC | User: Angledcrystals</div>
 
         <div class="hadit-info">
             <div style="color: #ff00ff; font-weight: bold;">⚡ Live Hadit Processing:</div>
@@ -279,7 +287,7 @@
             <div>• θ (Theta): 0° to 360° in 0.1° increments for live adjustment</div>
             <div>• φ (Phi): 0.1° to 179.9° in 0.1° increments for extreme precision</div>
             <div>• Parallel stereo view with pixel-perfect offset based on Hadit depth</div>
-            <div>• Enhanced camera permissions and error handling</div>
+            <div>• Enhanced debugging for camera feed issues</div>
         </div>
 
         <div class="camera-status" id="cameraStatus">
@@ -295,6 +303,12 @@
                 • Check if another app is using the camera<br>
                 • Refresh the page and try again
             </div>
+        </div>
+
+        <!-- Debug video element (visible for troubleshooting) -->
+        <div style="text-align: center; margin-bottom: 15px;">
+            <div style="font-size: 11px; color: #ffff00; margin-bottom: 5px;">🔍 DEBUG: Raw Camera Feed</div>
+            <video id="debugVideo" autoplay playsinline muted class="raw-video" style="display: none;"></video>
         </div>
 
         <div class="camera-container">
@@ -324,6 +338,7 @@
                 <button id="switchCamera" class="camera-control" style="display: none;">🔄 Switch Camera</button>
                 <button id="stopCamera" class="camera-control" style="display: none;">⏹️ Stop Camera</button>
                 <button id="requestPermissions" class="camera-control">🔑 Request Permissions</button>
+                <button id="toggleDebugVideo" class="camera-control">👁️ Toggle Debug Video</button>
             </div>
             
             <div class="control-group">
@@ -403,7 +418,7 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Live Hadit camera system ready... Angledcrystals | 2025-06-07 07:15:17 UTC</div>
+            <div>Status: Live Hadit camera system ready... Angledcrystals | 2025-06-07 07:21:07 UTC</div>
         </div>
 
         <div class="analysis-grid">
@@ -421,13 +436,14 @@
                 </div>
                 
                 <div class="control-group">
-                    <label>Options</label>
+                    <label>Options & Debug</label>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <label><input type="checkbox" id="enableStereo" checked> Enable Stereo</label>
                         <label><input type="checkbox" id="showDepthMap" checked> Show Depth</label>
                         <label><input type="checkbox" id="mirrorCamera"> Mirror Camera</label>
                         <label><input type="checkbox" id="showFPS" checked> Show FPS</label>
-                        <label><input type="checkbox" id="debugMode"> Debug Mode</label>
+                        <label><input type="checkbox" id="debugMode" checked> Debug Mode</label>
+                        <label><input type="checkbox" id="showRawFeed"> Show Raw Feed</label>
                     </div>
                 </div>
             </div>
@@ -498,11 +514,12 @@
             };
         }
 
-        // ==================== ENHANCED CAMERA SYSTEM ====================
+        // ==================== ENHANCED CAMERA SYSTEM WITH DEBUGGING ====================
         
         class LiveHaditCamera {
             constructor() {
                 this.video = null;
+                this.debugVideo = null;
                 this.stream = null;
                 this.isRunning = false;
                 this.animationFrameId = null;
@@ -521,12 +538,23 @@
                 
                 this.initializeControls();
                 this.setupCanvases();
+                this.setupDebugVideo();
                 this.checkCameraPermissions();
-                this.updateInfoPanel('Live Hadit camera system ready! | Angledcrystals | 2025-06-07 07:15:17 UTC');
+                this.updateInfoPanel('Live Hadit camera system ready! | Angledcrystals | 2025-06-07 07:21:07 UTC');
                 
                 console.log('✅ Live Hadit Camera System initialized!');
+                console.log('🐛 Debug mode enabled - raw video feed available');
                 console.log('θ (Theta) range: 0° to 360° in 0.1° increments');
                 console.log('φ (Phi) range: 0.1° to 179.9° in 0.1° increments');
+            }
+
+            setupDebugVideo() {
+                this.debugVideo = document.getElementById('debugVideo');
+                if (this.debugVideo) {
+                    this.debugVideo.autoplay = true;
+                    this.debugVideo.playsInline = true;
+                    this.debugVideo.muted = true;
+                }
             }
 
             async checkCameraPermissions() {
@@ -595,7 +623,8 @@
                     showDepthMap: document.getElementById('showDepthMap')?.checked ?? true,
                     mirrorCamera: document.getElementById('mirrorCamera')?.checked ?? false,
                     showFPS: document.getElementById('showFPS')?.checked ?? true,
-                    debugMode: document.getElementById('debugMode')?.checked ?? false
+                    debugMode: document.getElementById('debugMode')?.checked ?? false,
+                    showRawFeed: document.getElementById('showRawFeed')?.checked ?? false
                 };
             }
 
@@ -630,26 +659,26 @@
                     const height = parseInt(resolution[1]);
                     const facingMode = document.getElementById('facingMode').value;
                     
-                    // More flexible constraints with fallbacks
+                    // Simplified constraints for better compatibility
                     const constraints = {
                         video: {
                             width: { ideal: width, min: 320 },
                             height: { ideal: height, min: 240 },
-                            frameRate: { ideal: 30, min: 15 },
-                            facingMode: { ideal: facingMode }
+                            frameRate: { ideal: 30, min: 15 }
                         }
                     };
 
-                    // If we have specific camera devices, try to use one
+                    // Add facing mode or device ID
                     if (this.availableCameras.length > 0) {
                         const camera = this.availableCameras[this.currentCameraIndex];
                         if (camera && camera.deviceId) {
                             constraints.video.deviceId = { exact: camera.deviceId };
-                            delete constraints.video.facingMode; // Remove facingMode when using deviceId
                         }
+                    } else {
+                        constraints.video.facingMode = { ideal: facingMode };
                     }
 
-                    console.log('Camera constraints:', constraints);
+                    console.log('🎥 Camera constraints:', constraints);
 
                     // Stop any existing stream
                     if (this.stream) {
@@ -657,7 +686,9 @@
                     }
 
                     this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    console.log('✅ Camera stream obtained');
                     
+                    // Setup both video elements
                     if (!this.video) {
                         this.video = document.createElement('video');
                         this.video.autoplay = true;
@@ -667,6 +698,7 @@
                     }
                     
                     this.video.srcObject = this.stream;
+                    this.debugVideo.srcObject = this.stream;
                     
                     // Wait for video to be ready
                     await new Promise((resolve, reject) => {
@@ -674,14 +706,16 @@
                             reject(new Error('Video load timeout'));
                         }, 10000);
                         
-                        this.video.addEventListener('loadedmetadata', () => {
+                        const handleLoad = () => {
                             clearTimeout(timeout);
+                            console.log(`📺 Video ready: ${this.video.videoWidth}x${this.video.videoHeight}`);
                             resolve();
-                        }, { once: true });
+                        };
                         
-                        this.video.addEventListener('error', () => {
+                        this.video.addEventListener('loadedmetadata', handleLoad, { once: true });
+                        this.video.addEventListener('error', (e) => {
                             clearTimeout(timeout);
-                            reject(new Error('Video load error'));
+                            reject(new Error('Video load error: ' + e.message));
                         }, { once: true });
                     });
                     
@@ -696,7 +730,7 @@
                     document.getElementById('stopCamera').style.display = 'inline-block';
                     
                 } catch (error) {
-                    console.error('Camera start error:', error);
+                    console.error('🚫 Camera start error:', error);
                     this.showError('Camera start failed: ' + error.message);
                     this.updateCameraStatus('❌ Camera start failed', 'error');
                     
@@ -730,6 +764,10 @@
                     this.video.srcObject = null;
                 }
                 
+                if (this.debugVideo) {
+                    this.debugVideo.srcObject = null;
+                }
+                
                 this.updateCameraStatus('📹 Camera stopped', 'connecting');
                 this.updateInfoPanel('Camera stopped. Click Start Camera to resume live Hadit processing.');
                 
@@ -757,13 +795,33 @@
                 }
             }
 
+            toggleDebugVideo() {
+                const debugVideo = document.getElementById('debugVideo');
+                const showRawFeed = document.getElementById('showRawFeed');
+                
+                if (debugVideo.style.display === 'none') {
+                    debugVideo.style.display = 'block';
+                    showRawFeed.checked = true;
+                    this.updateInfoPanel('Debug video enabled - you should see the raw camera feed above.');
+                } else {
+                    debugVideo.style.display = 'none';
+                    showRawFeed.checked = false;
+                    this.updateInfoPanel('Debug video hidden.');
+                }
+            }
+
             startProcessingLoop() {
                 const targetFPS = 30;
                 const targetInterval = 1000 / targetFPS;
                 let lastTime = 0;
                 
+                console.log('🔄 Starting processing loop...');
+                
                 const processFrame = (currentTime) => {
-                    if (!this.isRunning) return;
+                    if (!this.isRunning) {
+                        console.log('⏹️ Processing loop stopped');
+                        return;
+                    }
                     
                     if (currentTime - lastTime >= targetInterval) {
                         this.processVideoFrame();
@@ -786,44 +844,68 @@
             }
 
             processVideoFrame() {
-                if (!this.video || this.video.readyState < this.video.HAVE_CURRENT_DATA) return;
+                if (!this.video || this.video.readyState < this.video.HAVE_CURRENT_DATA) {
+                    console.log('⚠️ Video not ready yet...');
+                    return;
+                }
                 
                 const config = this.getConfiguration();
                 const startTime = performance.now();
                 
-                // Setup processing canvas with quality scaling
-                const sourceWidth = this.video.videoWidth;
-                const sourceHeight = this.video.videoHeight;
-                const processWidth = Math.floor(sourceWidth * config.quality);
-                const processHeight = Math.floor(sourceHeight * config.quality);
-                
-                this.processingCanvas.width = processWidth;
-                this.processingCanvas.height = processHeight;
-                
-                // Draw video frame to processing canvas
-                this.processingCtx.save();
-                if (config.mirrorCamera) {
-                    this.processingCtx.scale(-1, 1);
-                    this.processingCtx.translate(-processWidth, 0);
-                }
-                this.processingCtx.drawImage(this.video, 0, 0, processWidth, processHeight);
-                this.processingCtx.restore();
-                
-                // Get image data for processing
-                const imageData = this.processingCtx.getImageData(0, 0, processWidth, processHeight);
-                
-                // Generate Hadit depth map and stereo views
-                this.generateHaditStereoViews(imageData, config);
-                
-                const processingTime = performance.now() - startTime;
-                
-                if (config.debugMode) {
-                    this.updateAnalysisPanel(processingTime, config);
+                try {
+                    // Setup processing canvas with quality scaling
+                    const sourceWidth = this.video.videoWidth;
+                    const sourceHeight = this.video.videoHeight;
+                    const processWidth = Math.floor(sourceWidth * config.quality);
+                    const processHeight = Math.floor(sourceHeight * config.quality);
+                    
+                    this.processingCanvas.width = processWidth;
+                    this.processingCanvas.height = processHeight;
+                    
+                    // Draw video frame to processing canvas
+                    this.processingCtx.save();
+                    if (config.mirrorCamera) {
+                        this.processingCtx.scale(-1, 1);
+                        this.processingCtx.translate(-processWidth, 0);
+                    }
+                    
+                    // 🔧 KEY FIX: Ensure we're drawing the video properly
+                    this.processingCtx.clearRect(0, 0, processWidth, processHeight);
+                    this.processingCtx.drawImage(this.video, 0, 0, processWidth, processHeight);
+                    this.processingCtx.restore();
+                    
+                    // Get image data for processing
+                    const imageData = this.processingCtx.getImageData(0, 0, processWidth, processHeight);
+                    
+                    // Check if we actually got data
+                    if (imageData.data.length === 0) {
+                        console.warn('⚠️ No image data received');
+                        return;
+                    }
+                    
+                    // Generate Hadit depth map and stereo views
+                    this.generateHaditStereoViews(imageData, config);
+                    
+                    const processingTime = performance.now() - startTime;
+                    
+                    if (config.debugMode) {
+                        this.updateAnalysisPanel(processingTime, config);
+                    }
+                    
+                } catch (error) {
+                    console.error('🚫 Frame processing error:', error);
+                    this.updateInfoPanel('Frame processing error: ' + error.message);
                 }
             }
 
             generateHaditStereoViews(imageData, config) {
                 const { width, height, data } = imageData;
+                
+                // Check if we have valid data
+                if (width === 0 || height === 0 || data.length === 0) {
+                    console.warn('⚠️ Invalid image data for processing');
+                    return;
+                }
                 
                 // Setup output canvases
                 this.leftCanvas.width = width;
@@ -999,6 +1081,8 @@
                     const stats = this.lastProcessingStats;
                     this.updateAnalysisInfo(`
 FPS: ${this.currentFps} | Process: ${processingTime.toFixed(1)}ms
+Video: ${this.video ? this.video.videoWidth + 'x' + this.video.videoHeight : 'N/A'}
+Ready State: ${this.video ? this.video.readyState : 'N/A'}
 θ (Theta): ${config.haditTheta.toFixed(1)}°
 φ (Phi): ${config.haditPhi.toFixed(1)}°
 Influence: ${config.haditInfluence.toFixed(2)}
@@ -1009,8 +1093,8 @@ S Bounds: ±${config.sBounds.toFixed(1)}
 Quality: ${(config.quality * 100).toFixed(0)}%
 Avg Depth: ${stats.avgDepth.toFixed(3)}
 Depth Range: ${stats.depthRange.toFixed(3)}
-Resolution: ${this.video ? this.video.videoWidth + 'x' + this.video.videoHeight : 'N/A'}
 Cameras: ${this.availableCameras.length}
+Stream Active: ${this.stream ? 'Yes' : 'No'}
                     `.trim());
                 }
             }
@@ -1020,7 +1104,7 @@ Cameras: ${this.availableCameras.length}
                 if (analysisPanel) {
                     analysisPanel.innerHTML = `
                         <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Analysis</div>
-                        <div style="white-space: pre-line; font-family: monospace;">${text}</div>
+                        <div style="white-space: pre-line; font-family: monospace; font-size: 9px;">${text}</div>
                     `;
                 }
             }
@@ -1049,6 +1133,16 @@ Cameras: ${this.availableCameras.length}
 
                 document.getElementById('requestPermissions')?.addEventListener('click', () => {
                     this.requestPermissions();
+                });
+
+                document.getElementById('toggleDebugVideo')?.addEventListener('click', () => {
+                    this.toggleDebugVideo();
+                });
+
+                // Show raw feed checkbox
+                document.getElementById('showRawFeed')?.addEventListener('change', (e) => {
+                    const debugVideo = document.getElementById('debugVideo');
+                    debugVideo.style.display = e.target.checked ? 'block' : 'none';
                 });
 
                 // Synchronized dual inputs for theta
@@ -1211,14 +1305,15 @@ Cameras: ${this.availableCameras.length}
         
         document.addEventListener('DOMContentLoaded', () => {
             console.log('⚡ Initializing Live Hadit Camera System...');
-            console.log('Current Date and Time (UTC): 2025-06-07 07:15:17');
+            console.log('Current Date and Time (UTC): 2025-06-07 07:21:07');
             console.log('Current User Login: Angledcrystals');
-            console.log('Live camera processing with 0.1° Hadit precision');
+            console.log('🐛 Enhanced debugging enabled');
             
             try {
                 window.haditCamera = new LiveHaditCamera();
                 console.log('✅ Live Hadit Camera system ready!');
                 console.log('📹 Click "Start Camera" to begin live processing');
+                console.log('👁️ Click "Toggle Debug Video" to see raw camera feed');
             } catch (error) {
                 console.error('❌ Initialization failed:', error);
             }
