@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AndroidVR - S-Coordinate Stereograms</title>
+    <title>AndroidVR - Global S-Coordinates (No H-Band Restrictions)</title>
     <style>
         body {
             margin: 0;
@@ -202,6 +202,11 @@
             border-color: #ff8800 !important;
         }
 
+        .color-control {
+            background: rgba(136, 255, 0, 0.2) !important;
+            border-color: #88ff00 !important;
+        }
+
         .dual-input {
             display: flex;
             align-items: center;
@@ -284,6 +289,16 @@
             color: #ff4444;
         }
 
+        .separation-notice {
+            background: rgba(255, 255, 0, 0.1);
+            border: 1px solid #ffff00;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 11px;
+            text-align: center;
+        }
+
         #debugVideo {
             max-width: 200px;
             border: 1px solid #ffff00;
@@ -311,18 +326,24 @@
 </head>
 <body>
     <div class="container">
-        <h1>AndroidVR - S-Coordinate Stereograms</h1>
-        <div class="subtitle">Real-time S-Coordinate Disparity Stereograms | 2025-06-08 10:32:31 UTC | User: Angledcrystals</div>
+        <h1>AndroidVR - Global S-Coordinates (No H-Band Restrictions)</h1>
+        <div class="subtitle">Pure S-Coordinate Disparity | 2025-06-08 10:49:25 UTC | User: Angledcrystals</div>
+
+        <div class="separation-notice">
+            <div style="color: #ffff00; font-weight: bold;">⚡ COMPLETE SEPARATION OF CONCERNS</div>
+            <div>H-Band: ONLY used for brightness-based color leveling (when enabled)</div>
+            <div>S-Coordinates: Applied to EVERY pixel globally - NO band restrictions</div>
+        </div>
 
         <div class="hadit-info">
-            <div style="color: #ff00ff; font-weight: bold;">📐 S-Coordinate Disparity Stereograms:</div>
-            <div>• S-coordinates determine horizontal pixel disparity for depth perception</div>
-            <div>• Left/Right eyes sample pixels at S-coordinate-shifted positions</div>
-            <div>• NO spherical warping - maintains original image geometry</div>
-            <div>• Disparity creates true stereoscopic depth when cross-viewed</div>
-            <div>• θ (Theta): Changes disparity direction and pattern</div>
-            <div>• φ (Phi): Affects disparity magnitude and distribution</div>
-            <div>• Pure horizontal offset stereogram generation</div>
+            <div style="color: #ff00ff; font-weight: bold;">🌍 Pure Global S-Coordinate System:</div>
+            <div>• S-coordinates calculated for EVERY PIXEL across entire image</div>
+            <div>• NO H-band logic interfering with S-coordinate calculations</div>
+            <div>• H-band only affects color leveling (if brightness-based depth is used)</div>
+            <div>• Pure stereographic projection disparity for parallel viewing</div>
+            <div>• θ (Theta): Changes global S-coordinate pattern direction</div>
+            <div>• φ (Phi): Affects global S-coordinate magnitude and distribution</div>
+            <div>• Complete mathematical independence from any band restrictions</div>
         </div>
 
         <div class="camera-status" id="cameraStatus">
@@ -341,24 +362,24 @@
         </div>
 
         <div class="camera-container">
-            <!-- Stereo frames optimized for VR headsets -->
+            <!-- Stereo frames -->
             <div class="stereo-view">
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label left-label">Left Eye - S-Disparity</div>
+                    <div class="camera-label left-label">Left Eye - Pure S-Disparity</div>
                     <canvas id="leftCanvas" width="640" height="480" class="left-eye"></canvas>
                     <div class="fps-counter" id="leftFps">0 FPS</div>
                 </div>
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label right-label">Right Eye - S-Disparity</div>
+                    <div class="camera-label right-label">Right Eye - Pure S-Disparity</div>
                     <canvas id="rightCanvas" width="640" height="480" class="right-eye"></canvas>
                     <div class="fps-counter" id="rightFps">0 FPS</div>
                 </div>
             </div>
             
-            <!-- Depth map positioned below stereo frames -->
+            <!-- Pure S-coordinate map -->
             <div class="depth-view">
                 <div class="camera-feed depth-frame">
-                    <div class="camera-label depth-label">S-Coordinate Disparity Map</div>
+                    <div class="camera-label depth-label">Pure S-Coordinate Map</div>
                     <canvas id="depthCanvas" width="320" height="240" class="depth-map"></canvas>
                     <div class="fps-counter" id="depthFps">0 FPS</div>
                 </div>
@@ -376,30 +397,35 @@
             </div>
 
             <div class="control-group">
-                <label>📐 Disparity Intensity: <span id="disparityIntensityValue">10.0px</span></label>
-                <input type="range" id="disparityIntensity" min="0" max="50" step="0.5" value="10.0" class="stereo-control">
-            </div>
-
-            <div class="control-group">
-                <label>🎯 S-Coordinate Scale: <span id="sCoordScaleValue">1.0x</span></label>
-                <input type="range" id="sCoordScale" min="0.1" max="5.0" step="0.1" value="1.0" class="stereo-control">
-            </div>
-
-            <div class="control-group">
-                <label>🔧 Disparity Mode</label>
-                <select id="disparityMode" class="stereo-control">
-                    <option value="s_magnitude" selected>📏 S-Magnitude Disparity</option>
-                    <option value="s_x_only">↔️ S-X Component Only</option>
-                    <option value="s_combined">🎭 Combined S-Components</option>
-                    <option value="linear_depth">📈 Linear Depth Map</option>
+                <label>🔧 Depth Source (for color leveling only)</label>
+                <select id="depthSource" class="depth-control">
+                    <option value="pure_s_coords" selected>📐 Pure S-Coordinates</option>
+                    <option value="brightness_leveled">💡 Brightness + S-Coords</option>
+                    <option value="radial_distance">📍 Radial Distance</option>
+                    <option value="linear_gradient">📏 Linear Gradient</option>
                 </select>
+            </div>
+
+            <div class="control-group">
+                <label>📏 S-Coordinate Disparity: <span id="sDisparityValue">20.0px</span></label>
+                <input type="range" id="sDisparity" min="0" max="100" step="1" value="20" class="stereo-control">
+            </div>
+
+            <div class="control-group">
+                <label>🎯 S-Coordinate Scale: <span id="sScaleValue">1.5x</span></label>
+                <input type="range" id="sScale" min="0.1" max="10.0" step="0.1" value="1.5" class="stereo-control">
+            </div>
+
+            <div class="control-group">
+                <label>🌈 Color Leveling Strength: <span id="colorLevelingValue">0.3x</span></label>
+                <input type="range" id="colorLeveling" min="0" max="1" step="0.05" value="0.3" class="color-control">
             </div>
             
             <div class="control-group">
-                <label>⚡ Hadit θ (Theta): <span id="haditThetaValue">0.0°</span></label>
+                <label>⚡ Hadit θ (Theta): <span id="haditThetaValue">45.0°</span></label>
                 <div class="dual-input">
-                    <input type="range" id="haditTheta" min="0" max="360" value="0" step="0.1" class="hadit-control">
-                    <input type="number" id="haditThetaNumber" min="0" max="360" step="0.1" value="0" class="hadit-control">
+                    <input type="range" id="haditTheta" min="0" max="360" value="45.0" step="0.1" class="hadit-control">
+                    <input type="number" id="haditThetaNumber" min="0" max="360" step="0.1" value="45.0" class="hadit-control">
                 </div>
             </div>
             
@@ -413,12 +439,12 @@
             
             <div class="control-group">
                 <label>🌊 Hadit Influence: <span id="haditInfluenceValue">1.0</span></label>
-                <input type="range" id="haditInfluence" min="0" max="3" value="1.0" step="0.1" class="hadit-control">
+                <input type="range" id="haditInfluence" min="0" max="5" value="1.0" step="0.1" class="hadit-control">
             </div>
             
             <div class="control-group">
-                <label>👁️ Base Stereo Separation: <span id="separationValue">5px</span></label>
-                <input type="range" id="separation" min="0" max="20" value="5" step="1" class="stereo-control">
+                <label>👁️ Base Separation: <span id="separationValue">0px</span></label>
+                <input type="range" id="separation" min="0" max="20" value="0" step="1" class="stereo-control">
             </div>
             
             <div class="control-group">
@@ -447,7 +473,7 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: S-Coordinate disparity stereogram system ready... Angledcrystals | 2025-06-08 10:32:31 UTC</div>
+            <div>Status: Pure S-Coordinate system ready (H-Band only for color leveling)... Angledcrystals | 2025-06-08 10:49:25 UTC</div>
         </div>
 
         <div class="analysis-grid">
@@ -465,12 +491,12 @@
                 </div>
 
                 <div class="control-group">
-                    <label>Disparity Presets</label>
+                    <label>S-Coordinate Presets</label>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button id="setExtremeDisparity" class="stereo-control">💥 Extreme Disparity</button>
-                        <button id="setSubtleDisparity" class="stereo-control">🌫️ Subtle Disparity</button>
+                        <button id="setDeepS" class="stereo-control">🏔️ Deep S-Disparity</button>
+                        <button id="setSubtleS" class="stereo-control">🌫️ Subtle S-Disparity</button>
                         <button id="setPureS" class="stereo-control">📐 Pure S-Coords</button>
-                        <button id="setNoDisparity" class="stereo-control">⭕ No Disparity</button>
+                        <button id="setNoS" class="stereo-control">⭕ No S-Disparity</button>
                     </div>
                 </div>
                 
@@ -478,25 +504,26 @@
                     <label>Options & Debug</label>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <label><input type="checkbox" id="enableStereo" checked> Enable Stereo</label>
-                        <label><input type="checkbox" id="showDisparityMap" checked> Show Disparity Map</label>
+                        <label><input type="checkbox" id="showSCoordMap" checked> Show S-Coord Map</label>
                         <label><input type="checkbox" id="mirrorCamera"> Mirror Camera</label>
                         <label><input type="checkbox" id="showFPS" checked> Show FPS</label>
                         <label><input type="checkbox" id="debugMode" checked> Debug Mode</label>
                         <label><input type="checkbox" id="showRawFeed"> Show Raw Feed</label>
+                        <label><input type="checkbox" id="invertParallax"> Invert Parallax</label>
                     </div>
                 </div>
             </div>
             
             <div class="analysis-panel" id="analysisPanel">
-                <div style="color: #88ff00; font-weight: bold;">📐 S-Coordinate Disparity Analysis</div>
-                <div>Ready for stereogram generation...</div>
+                <div style="color: #88ff00; font-weight: bold;">📐 Pure S-Coordinate Analysis</div>
+                <div>Ready for global S-coordinate generation...</div>
                 <div>Camera permissions status: checking...</div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== MATHEMATICAL OPERATIONS ====================
+        // ==================== PURE S-COORDINATE MATHEMATICS (COMPLETELY INDEPENDENT) ====================
         
         const vectorOps = {
             dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
@@ -536,26 +563,72 @@
             };
         }
 
-        function calculateSCoordinateDisparity(px, py, width, height, config) {
-            // Map pixel coordinates to spherical coordinates (0-360° theta, 0-180° phi)
+        // PURE S-COORDINATE CALCULATION - COMPLETELY INDEPENDENT OF H-BAND
+        function calculatePureSCoordinate(px, py, width, height, config) {
+            // Map pixel coordinates to spherical coordinates - NO restrictions
             const gTheta = (px / width) * 360;
             const gPhi = (py / height) * 180;
             const G_3d = sphericalToCartesian(gTheta, gPhi);
             
-            // Apply Hadit reflection
+            // Apply Hadit reflection - pure mathematical transformation
             const hadit_3d = sphericalToCartesian(config.haditTheta, config.haditPhi);
             const G_reflected = householderReflection(G_3d, hadit_3d);
             
-            // Get stereographic projection (S-coordinates)
+            // Get stereographic projection (S-coordinates) - pure math
             const S_hadit = stereographicProjection(G_reflected);
             
-            // Apply scaling and influence
-            const scaledS = {
-                x: S_hadit.x * config.haditInfluence * config.sCoordScale,
-                y: S_hadit.y * config.haditInfluence * config.sCoordScale
+            // Apply scaling - NO band influence
+            return {
+                x: S_hadit.x * config.haditInfluence * config.sScale,
+                y: S_hadit.y * config.haditInfluence * config.sScale
             };
+        }
+
+        // SEPARATE COLOR LEVELING FUNCTION (uses H-band only for brightness leveling)
+        function calculateColorLeveling(px, py, width, height, imageData, config) {
+            const depthSource = document.getElementById('depthSource').value;
+            const colorLeveling = parseFloat(document.getElementById('colorLeveling').value);
             
-            return scaledS;
+            // Get pixel color
+            const pixelIndex = (py * width + px) * 4;
+            const r = imageData.data[pixelIndex] / 255;
+            const g = imageData.data[pixelIndex + 1] / 255;
+            const b = imageData.data[pixelIndex + 2] / 255;
+            
+            // Calculate base luminosity
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            const maxCol = Math.max(r, g, b);
+            const minCol = Math.min(r, g, b);
+            const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
+            
+            let levelingFactor = 1.0;
+            
+            switch (depthSource) {
+                case 'pure_s_coords':
+                    // No color leveling - pure S-coordinates
+                    levelingFactor = 1.0;
+                    break;
+                case 'brightness_leveled':
+                    // Use brightness for color leveling (this is where H-band could be used)
+                    levelingFactor = 1.0 + (lum - 0.5) * colorLeveling;
+                    break;
+                case 'radial_distance':
+                    const centerX = width / 2;
+                    const centerY = height / 2;
+                    const distX = (px - centerX) / centerX;
+                    const distY = (py - centerY) / centerY;
+                    const radialDistance = Math.sqrt(distX * distX + distY * distY);
+                    levelingFactor = 1.0 + radialDistance * colorLeveling;
+                    break;
+                case 'linear_gradient':
+                    const gradientFactor = py / height;
+                    levelingFactor = 1.0 + gradientFactor * colorLeveling;
+                    break;
+                default:
+                    levelingFactor = 1.0;
+            }
+            
+            return levelingFactor;
         }
 
         // ==================== BILINEAR SAMPLING ====================
@@ -598,9 +671,9 @@
             return { r: Math.round(r), g: Math.round(g), b: Math.round(b), a: Math.round(a) };
         }
 
-        // ==================== S-COORDINATE DISPARITY STEREOGRAMS ====================
+        // ==================== PURE S-COORDINATE STEREOGRAM GENERATION ====================
 
-        function renderSCoordinateStereogram(imageData, config) {
+        function renderPureSCoordinateStereogram(imageData, config) {
             const { width, height } = imageData;
             
             // Get canvas contexts
@@ -613,52 +686,37 @@
             
             // Get control values
             const baseSeparation = parseInt(document.getElementById('separation').value);
-            const disparityIntensity = parseFloat(document.getElementById('disparityIntensity').value);
-            const disparityMode = document.getElementById('disparityMode').value;
+            const sDisparity = parseFloat(document.getElementById('sDisparity').value);
+            const invertParallax = document.getElementById('invertParallax').checked;
             
-            // REVERSE MAPPING with S-COORDINATE DISPARITY
+            // REVERSE MAPPING with PURE S-COORDINATE DISPARITY
             for (let destY = 0; destY < height; destY++) {
                 for (let destX = 0; destX < width; destX++) {
                     const destIndex = (destY * width + destX) * 4;
                     
-                    // Calculate S-coordinates for this destination pixel
-                    const sCoord = calculateSCoordinateDisparity(destX, destY, width, height, config);
+                    // Calculate PURE S-coordinates (completely independent of H-band)
+                    const sCoord = calculatePureSCoordinate(destX, destY, width, height, config);
                     
-                    // Calculate disparity based on mode
-                    let disparity;
-                    switch (disparityMode) {
-                        case 's_magnitude':
-                            // Use S-coordinate magnitude as disparity
-                            const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
-                            disparity = sMagnitude * disparityIntensity;
-                            break;
-                        case 's_x_only':
-                            // Use only S-X component
-                            disparity = sCoord.x * disparityIntensity;
-                            break;
-                        case 's_combined':
-                            // Combine both S components
-                            disparity = (sCoord.x + sCoord.y * 0.5) * disparityIntensity;
-                            break;
-                        case 'linear_depth':
-                            // Linear depth based on distance from center
-                            const centerX = width / 2;
-                            const centerY = height / 2;
-                            const distX = (destX - centerX) / centerX;
-                            const distY = (destY - centerY) / centerY;
-                            const radialDistance = Math.sqrt(distX * distX + distY * distY);
-                            disparity = radialDistance * disparityIntensity;
-                            break;
-                        default:
-                            disparity = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y) * disparityIntensity;
+                    // Calculate color leveling factor (only place H-band might be used)
+                    const colorFactor = calculateColorLeveling(destX, destY, width, height, imageData, config);
+                    
+                    // Calculate S-coordinate magnitude for disparity
+                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                    
+                    // Apply color leveling to S-coordinate disparity
+                    let disparity = sMagnitude * sDisparity * colorFactor;
+                    
+                    // Invert parallax if requested
+                    if (invertParallax) {
+                        disparity = -disparity;
                     }
                     
-                    // Calculate horizontal offsets for left and right eyes
+                    // Calculate horizontal offsets for stereogram
                     // LEFT EYE: Sample from left-shifted position
                     const leftSourceX = destX - (baseSeparation + disparity);
                     const leftSourceY = destY;
                     
-                    // RIGHT EYE: Sample from right-shifted position  
+                    // RIGHT EYE: Sample from right-shifted position
                     const rightSourceX = destX + (baseSeparation + disparity);
                     const rightSourceY = destY;
                     
@@ -685,48 +743,23 @@
             rightCtx.putImageData(rightImageData, 0, 0);
         }
 
-        function createDisparityMap(imageData, config) {
+        function createPureSCoordinateMap(imageData, config) {
             const { width, height } = imageData;
-            const disparityData = new Uint8Array(width * height);
+            const sMapData = new Uint8Array(width * height);
             
-            const disparityIntensity = parseFloat(document.getElementById('disparityIntensity').value);
-            const disparityMode = document.getElementById('disparityMode').value;
-            
-            // Calculate disparity for each pixel
+            // Calculate PURE S-coordinates for every pixel
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    const sCoord = calculateSCoordinateDisparity(x, y, width, height, config);
-                    
-                    let disparity;
-                    switch (disparityMode) {
-                        case 's_magnitude':
-                            const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
-                            disparity = sMagnitude;
-                            break;
-                        case 's_x_only':
-                            disparity = Math.abs(sCoord.x);
-                            break;
-                        case 's_combined':
-                            disparity = Math.abs(sCoord.x + sCoord.y * 0.5);
-                            break;
-                        case 'linear_depth':
-                            const centerX = width / 2;
-                            const centerY = height / 2;
-                            const distX = (x - centerX) / centerX;
-                            const distY = (y - centerY) / centerY;
-                            disparity = Math.sqrt(distX * distX + distY * distY);
-                            break;
-                        default:
-                            disparity = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
-                    }
+                    const sCoord = calculatePureSCoordinate(x, y, width, height, config);
+                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
                     
                     // Normalize and convert to 0-255 range
-                    const normalizedDisparity = Math.min(disparity / 5.0, 1.0); // Adjust scale as needed
-                    disparityData[y * width + x] = Math.round(normalizedDisparity * 255);
+                    const normalizedS = Math.min(sMagnitude / 3.0, 1.0);
+                    sMapData[y * width + x] = Math.round(normalizedS * 255);
                 }
             }
             
-            return disparityData;
+            return sMapData;
         }
 
         // ==================== APPLICATION STATE ====================
@@ -745,17 +778,17 @@
             phi: false,
             thetaDirection: 1,
             phiDirection: 1,
-            thetaSpeed: 1.0,
-            phiSpeed: 0.2
+            thetaSpeed: 2.0,
+            phiSpeed: 0.5
         };
 
         const processingConfig = {
-            haditTheta: 0.0,
+            haditTheta: 45.0,
             haditPhi: 90.0,
             haditInfluence: 1.0,
-            disparityIntensity: 10.0,
-            sCoordScale: 1.0,
-            separation: 5
+            sDisparity: 20.0,
+            sScale: 1.5,
+            separation: 0
         };
 
         // ==================== CONTROL SYNCHRONIZATION ====================
@@ -797,8 +830,9 @@
             const controls = [
                 { id: 'haditInfluence', config: 'haditInfluence', format: (v) => v.toFixed(1) },
                 { id: 'separation', config: 'separation', format: (v) => v + 'px' },
-                { id: 'disparityIntensity', config: 'disparityIntensity', format: (v) => v.toFixed(1) + 'px' },
-                { id: 'sCoordScale', config: 'sCoordScale', format: (v) => v.toFixed(1) + 'x' }
+                { id: 'sDisparity', config: 'sDisparity', format: (v) => v.toFixed(1) + 'px' },
+                { id: 'sScale', config: 'sScale', format: (v) => v.toFixed(1) + 'x' },
+                { id: 'colorLeveling', config: 'colorLeveling', format: (v) => v.toFixed(2) + 'x' }
             ];
             
             controls.forEach(control => {
@@ -853,7 +887,7 @@
                 });
                 
                 document.getElementById('cameraStatus').innerHTML = 
-                    '<span class="status-active">📹 Camera active - generating S-coordinate stereograms</span>';
+                    '<span class="status-active">📹 Camera active - generating pure S-coordinate stereograms</span>';
                 document.getElementById('startCamera').style.display = 'none';
                 document.getElementById('switchCamera').style.display = 'inline-block';
                 document.getElementById('stopCamera').style.display = 'inline-block';
@@ -978,12 +1012,12 @@
             config.haditTheta = parseFloat(document.getElementById('haditTheta').value);
             config.haditPhi = parseFloat(document.getElementById('haditPhi').value);
             config.haditInfluence = parseFloat(document.getElementById('haditInfluence').value);
-            config.disparityIntensity = parseFloat(document.getElementById('disparityIntensity').value);
-            config.sCoordScale = parseFloat(document.getElementById('sCoordScale').value);
+            config.sDisparity = parseFloat(document.getElementById('sDisparity').value);
+            config.sScale = parseFloat(document.getElementById('sScale').value);
             
-            // Generate S-coordinate stereogram
+            // Generate pure S-coordinate stereogram
             if (document.getElementById('enableStereo').checked) {
-                renderSCoordinateStereogram(imageData, config);
+                renderPureSCoordinateStereogram(imageData, config);
             } else {
                 // Just show the original image in both eyes
                 const leftCtx = leftCanvas.getContext('2d');
@@ -992,23 +1026,23 @@
                 rightCtx.putImageData(imageData, 0, 0);
             }
             
-            // Show disparity map
-            if (document.getElementById('showDisparityMap').checked) {
-                const disparityData = createDisparityMap(imageData, config);
-                const disparityImageData = new ImageData(width, height);
+            // Show pure S-coordinate map
+            if (document.getElementById('showSCoordMap').checked) {
+                const sMapData = createPureSCoordinateMap(imageData, config);
+                const sMapImageData = new ImageData(width, height);
                 
-                // Convert disparity data to visible image
+                // Convert S-map data to visible image
                 for (let i = 0; i < width * height; i++) {
-                    const value = disparityData[i];
+                    const value = sMapData[i];
                     const index = i * 4;
-                    disparityImageData.data[index] = value;
-                    disparityImageData.data[index + 1] = value;
-                    disparityImageData.data[index + 2] = value;
-                    disparityImageData.data[index + 3] = 255;
+                    sMapImageData.data[index] = value;
+                    sMapImageData.data[index + 1] = value;
+                    sMapImageData.data[index + 2] = value;
+                    sMapImageData.data[index + 3] = 255;
                 }
                 
                 const depthCtx = depthCanvas.getContext('2d');
-                depthCtx.putImageData(disparityImageData, 0, 0);
+                depthCtx.putImageData(sMapImageData, 0, 0);
             }
         }
 
@@ -1078,26 +1112,30 @@
             const config = processingConfig;
             
             const analysisInfo = `
-                <div style="color: #88ff00; font-weight: bold;">📐 S-Coordinate Disparity Analysis</div>
+                <div style="color: #88ff00; font-weight: bold;">📐 Pure S-Coordinate Analysis</div>
                 <div>🎯 Current Hadit Position:</div>
                 <div>&nbsp;&nbsp;θ (Theta): ${config.haditTheta.toFixed(1)}°</div>
                 <div>&nbsp;&nbsp;φ (Phi): ${config.haditPhi.toFixed(1)}°</div>
                 <div>&nbsp;&nbsp;Influence: ${config.haditInfluence.toFixed(1)}x</div>
-                <div>📏 Disparity Configuration:</div>
-                <div>&nbsp;&nbsp;Mode: ${document.getElementById('disparityMode').value}</div>
-                <div>&nbsp;&nbsp;Intensity: ${config.disparityIntensity.toFixed(1)}px</div>
-                <div>&nbsp;&nbsp;S-Scale: ${config.sCoordScale.toFixed(1)}x</div>
-                <div>👁️ Stereo Configuration:</div>
+                <div>📏 S-Coordinate Configuration:</div>
+                <div>&nbsp;&nbsp;Disparity: ${config.sDisparity.toFixed(1)}px</div>
+                <div>&nbsp;&nbsp;Scale: ${config.sScale.toFixed(1)}x</div>
+                <div>&nbsp;&nbsp;Parallax: ${document.getElementById('invertParallax').checked ? 'Inverted' : 'Normal'}</div>
+                <div>🌈 Color Leveling:</div>
+                <div>&nbsp;&nbsp;Source: ${document.getElementById('depthSource').value}</div>
+                <div>&nbsp;&nbsp;Strength: ${config.colorLeveling.toFixed(2)}x</div>
+                <div>👁️ Stereogram Setup:</div>
                 <div>&nbsp;&nbsp;Base Separation: ${config.separation}px</div>
+                <div>&nbsp;&nbsp;Coverage: ENTIRE IMAGE (No restrictions)</div>
                 <div>⚙️ Performance:</div>
                 <div>&nbsp;&nbsp;Left: ${fpsCounters.left.fps} FPS</div>
                 <div>&nbsp;&nbsp;Right: ${fpsCounters.right.fps} FPS</div>
-                <div>&nbsp;&nbsp;Disparity: ${fpsCounters.depth.fps} FPS</div>
+                <div>&nbsp;&nbsp;S-Map: ${fpsCounters.depth.fps} FPS</div>
                 <div>📡 Animation Status:</div>
                 <div>&nbsp;&nbsp;θ Animation: ${animationStates.theta ? '🌀 Active' : '⏹️ Stopped'}</div>
                 <div>&nbsp;&nbsp;φ Animation: ${animationStates.phi ? '🌊 Active' : '⏹️ Stopped'}</div>
                 <div style="margin-top: 10px; color: #888; font-size: 9px;">
-                    Stereogram disparity mapping active
+                    S-coordinates: Completely independent of H-band
                 </div>
             `;
             
@@ -1158,30 +1196,39 @@
             document.getElementById('animatePhi').textContent = '🌊 Animate φ';
         });
 
-        // Disparity presets
-        document.getElementById('setExtremeDisparity').addEventListener('click', () => {
-            document.getElementById('disparityIntensity').value = 50.0;
-            document.getElementById('disparityIntensityValue').textContent = '50.0px';
-            processingConfig.disparityIntensity = 50.0;
+        // S-Coordinate presets
+        document.getElementById('setDeepS').addEventListener('click', () => {
+            document.getElementById('sDisparity').value = 60.0;
+            document.getElementById('sDisparityValue').textContent = '60.0px';
+            document.getElementById('sScale').value = 3.0;
+            document.getElementById('sScaleValue').textContent = '3.0x';
+            processingConfig.sDisparity = 60.0;
+            processingConfig.sScale = 3.0;
         });
 
-        document.getElementById('setSubtleDisparity').addEventListener('click', () => {
-            document.getElementById('disparityIntensity').value = 2.0;
-            document.getElementById('disparityIntensityValue').textContent = '2.0px';
-            processingConfig.disparityIntensity = 2.0;
+        document.getElementById('setSubtleS').addEventListener('click', () => {
+            document.getElementById('sDisparity').value = 5.0;
+            document.getElementById('sDisparityValue').textContent = '5.0px';
+            document.getElementById('sScale').value = 0.8;
+            document.getElementById('sScaleValue').textContent = '0.8x';
+            processingConfig.sDisparity = 5.0;
+            processingConfig.sScale = 0.8;
         });
 
         document.getElementById('setPureS').addEventListener('click', () => {
-            document.getElementById('disparityMode').value = 's_magnitude';
-            document.getElementById('disparityIntensity').value = 15.0;
-            document.getElementById('disparityIntensityValue').textContent = '15.0px';
-            processingConfig.disparityIntensity = 15.0;
+            document.getElementById('depthSource').value = 'pure_s_coords';
+            document.getElementById('sDisparity').value = 25.0;
+            document.getElementById('sDisparityValue').textContent = '25.0px';
+            document.getElementById('sScale').value = 2.0;
+            document.getElementById('sScaleValue').textContent = '2.0x';
+            processingConfig.sDisparity = 25.0;
+            processingConfig.sScale = 2.0;
         });
 
-        document.getElementById('setNoDisparity').addEventListener('click', () => {
-            document.getElementById('disparityIntensity').value = 0.0;
-            document.getElementById('disparityIntensityValue').textContent = '0.0px';
-            processingConfig.disparityIntensity = 0.0;
+        document.getElementById('setNoS').addEventListener('click', () => {
+            document.getElementById('sDisparity').value = 0.0;
+            document.getElementById('sDisparityValue').textContent = '0.0px';
+            processingConfig.sDisparity = 0.0;
         });
 
         // Show/hide debug video based on checkbox
@@ -1198,16 +1245,17 @@
             
             // Update info panel with current status
             document.getElementById('infoPanel').innerHTML = 
-                '<div>Status: S-Coordinate disparity stereogram system ready... Angledcrystals | 2025-06-08 10:32:31 UTC</div>';
+                '<div>Status: Pure S-Coordinate system ready (H-Band only for color leveling)... Angledcrystals | 2025-06-08 10:49:25 UTC</div>';
                 
             // Set initial analysis panel content
             document.getElementById('analysisPanel').innerHTML = `
-                <div style="color: #88ff00; font-weight: bold;">📐 S-Coordinate Disparity Analysis</div>
-                <div>Ready for stereogram generation...</div>
+                <div style="color: #88ff00; font-weight: bold;">📐 Pure S-Coordinate Analysis</div>
+                <div>Ready for pure S-coordinate generation...</div>
                 <div>Camera permissions status: checking...</div>
-                <div>Disparity mode: S-magnitude based horizontal offsets</div>
-                <div>No spherical warping: Pure stereogram generation</div>
-                <div>Depth perception: Horizontal pixel disparity only</div>
+                <div>SEPARATION OF CONCERNS:</div>
+                <div>&nbsp;&nbsp;• S-coordinates: Applied to ALL pixels globally</div>
+                <div>&nbsp;&nbsp;• H-band: Only for brightness-based color leveling</div>
+                <div>&nbsp;&nbsp;• Complete mathematical independence</div>
                 <div style="margin-top: 10px; color: #888; font-size: 9px;">
                     System initialized: ${new Date().toLocaleTimeString()}
                 </div>
@@ -1231,6 +1279,10 @@
                         if (currentStream) {
                             switchCamera();
                         }
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        document.getElementById('invertParallax').click();
                         break;
                 }
             }
