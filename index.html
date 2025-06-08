@@ -704,6 +704,11 @@
         </div>
     </div>
 
+<!-- Add this after the GPU controls section around line 696 -->
+<label>🎯 S-Coordinate Stereo</label>
+<label><input type="checkbox" id="useSCoordDisplacement"> Use S-Coordinate Displacement</label>
+<small style="color: #888; font-size: 9px;">Uses full 2D S-coordinates instead of just magnitude</small>
+
     <script>
         // ==================== GPU ACCELERATION SYSTEM (NEW - OPTIONAL) ====================
         
@@ -1538,6 +1543,175 @@ function calculateAngularDepth(px, py, width, height, config) {
     return 0.1 + (normalizedAngle * 0.8);
 }
 
+// Add these functions after line ~1540, after calculateAngularDepth function
+
+function applyHaditStereoWithSCoords(sourceCanvas, depthBuffer, config, isRightEye = false) {
+    const sourceCtx = sourceCanvas.getContext('2d');
+    const sourceImageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    
+    const outputImageData = new ImageData(sourceCanvas.width, sourceCanvas.height);
+    const { width, height } = sourceImageData;
+    
+    // S-coordinate scaling factors
+    const sCoordScale = config.separation || 8;
+    const sCoordIntensity = config.depthIntensity || 2.0;
+    const maxSCoordOffset = config.sBounds || 20.0;
+    
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = y * width + x;
+            const pixelIdx = idx * 4;
+            
+            if (idx < depthBuffer.length && depthBuffer[idx]) {
+                const depthInfo = depthBuffer[idx];
+                const sCoord = depthInfo.sCoord;
+                
+                // Calculate S-coordinate based offsets
+                let offsetX = sCoord.x * sCoordScale * sCoordIntensity;
+                let offsetY = sCoord.y * sCoordScale * sCoordIntensity;
+                
+                // Clamp offsets to prevent extreme displacement
+                offsetX = Math.max(-maxSCoordOffset, Math.min(maxSCoordOffset, offsetX));
+                offsetY = Math.max(-maxSCoordOffset, Math.min(maxSCoordOffset, offsetY));
+                
+                // Apply eye-specific transformations
+                if (isRightEye) {
+                    offsetX = -offsetX;
+                }
+                
+                // Calculate source pixel position
+                const sourceX = Math.round(x - offsetX);
+                const sourceY = Math.round(y - offsetY);
+                
+                // Check bounds and copy pixel
+                if (sourceX >= 0 && sourceX < width && sourceY >= 0 && sourceY < height) {
+                    const sourceIdx = sourceY * width + sourceX;
+                    const sourcePixelIdx = sourceIdx * 4;
+                    
+                    outputImageData.data[pixelIdx] = sourceImageData.data[sourcePixelIdx];
+                    outputImageData.data[pixelIdx + 1] = sourceImageData.data[sourcePixelIdx + 1];
+                    outputImageData.data[pixelIdx + 2] = sourceImageData.data[sourcePixelIdx + 2];
+                    outputImageData.data[pixelIdx + 3] = sourceImageData.data[sourcePixelIdx + 3];
+                } else {
+                    // Fill holes with black
+                    outputImageData.data[pixelIdx] = 0;
+                    outputImageData.data[pixelIdx + 1] = 0;
+                    outputImageData.data[pixelIdx + 2] = 0;
+                    outputImageData.data[pixelIdx + 3] = 255;
+                }
+            } else {
+                // No depth info, copy original pixel
+                outputImageData.data[pixelIdx] = sourceImageData.data[pixelIdx];
+                outputImageData.data[pixelIdx + 1] = sourceImageData.data[pixelIdx + 1];
+                outputImageData.data[pixelIdx + 2] = sourceImageData.data[pixelIdx + 2];
+                outputImageData.data[pixelIdx + 3] = sourceImageData.data[pixelIdx + 3];
+            }
+        }
+    }
+    
+    return outputImageData;
+}
+
+function applyHaditStereoWithSCoordsAndHoleFilling(sourceCanvas, depthBuffer, config, isRightEye = false) {
+    const sourceCtx = sourceCanvas.getContext('2d');
+    const sourceImageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    
+    const outputImageData = new ImageData(sourceCanvas.width, sourceCanvas.height);
+    const { width, height } = sourceImageData;
+    
+    // S-coordinate scaling factors
+    const sCoordScale = config.separation || 8;
+    const sCoordIntensity = config.depthIntensity || 2.0;
+    const maxSCoordOffset = config.sBounds || 20.0;
+    
+    // Create a mapping array to track which pixels have been filled
+    const pixelFilled = new Array(width * height).fill(false);
+    
+    // Forward pass: apply S-coordinate displacement
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = y * width + x;
+            const pixelIdx = idx * 4;
+            
+            if (idx < depthBuffer.length && depthBuffer[idx]) {
+                const depthInfo = depthBuffer[idx];
+                const sCoord = depthInfo.sCoord;
+                
+                // Calculate S-coordinate based offsets
+                let offsetX = sCoord.x * sCoordScale * sCoordIntensity;
+                let offsetY = sCoord.y * sCoordScale * sCoordIntensity;
+                
+                // Clamp offsets
+                offsetX = Math.max(-maxSCoordOffset, Math.min(maxSCoordOffset, offsetX));
+                offsetY = Math.max(-maxSCoordOffset, Math.min(maxSCoordOffset, offsetY));
+                
+                // Apply eye-specific transformations
+                if (isRightEye) {
+                    offsetX = -offsetX;
+                }
+                
+                // Calculate target pixel position
+                const targetX = Math.round(x + offsetX);
+                const targetY = Math.round(y + offsetY);
+                
+                // Check bounds and place pixel
+                if (targetX >= 0 && targetX < width && targetY >= 0 && targetY < height) {
+                    const targetIdx = targetY * width + targetX;
+                    const targetPixelIdx = targetIdx * 4;
+                    
+                    if (!pixelFilled[targetIdx]) {
+                        outputImageData.data[targetPixelIdx] = sourceImageData.data[pixelIdx];
+                        outputImageData.data[targetPixelIdx + 1] = sourceImageData.data[pixelIdx + 1];
+                        outputImageData.data[targetPixelIdx + 2] = sourceImageData.data[pixelIdx + 2];
+                        outputImageData.data[targetPixelIdx + 3] = sourceImageData.data[pixelIdx + 3];
+                        pixelFilled[targetIdx] = true;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Hole filling pass
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = y * width + x;
+            const pixelIdx = idx * 4;
+            
+            if (!pixelFilled[idx]) {
+                let found = false;
+                for (let radius = 1; radius <= 5 && !found; radius++) {
+                    for (let dy = -radius; dy <= radius && !found; dy++) {
+                        for (let dx = -radius; dx <= radius && !found; dx++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            
+                            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                                const nIdx = ny * width + nx;
+                                if (pixelFilled[nIdx]) {
+                                    const nPixelIdx = nIdx * 4;
+                                    outputImageData.data[pixelIdx] = outputImageData.data[nPixelIdx];
+                                    outputImageData.data[pixelIdx + 1] = outputImageData.data[nPixelIdx + 1];
+                                    outputImageData.data[pixelIdx + 2] = outputImageData.data[nPixelIdx + 2];
+                                    outputImageData.data[pixelIdx + 3] = outputImageData.data[nPixelIdx + 3];
+                                    found = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (!found) {
+                    outputImageData.data[pixelIdx] = sourceImageData.data[pixelIdx];
+                    outputImageData.data[pixelIdx + 1] = sourceImageData.data[pixelIdx + 1];
+                    outputImageData.data[pixelIdx + 2] = sourceImageData.data[pixelIdx + 2];
+                    outputImageData.data[pixelIdx + 3] = sourceImageData.data[pixelIdx + 3];
+                }
+            }
+        }
+    }
+    
+    return outputImageData;
+}
 
         
 function visualizeDepthMap(depthBuffer, canvas, config, detectedBand) {
@@ -1666,7 +1840,8 @@ function visualizeDepthMap(depthBuffer, canvas, config, detectedBand) {
             debugMode: true,
             showRawFeed: false,
             useGPU: false, // Disabled by default to keep original working
-            qualityScale: 0.75
+            qualityScale: 0.75,
+            useSCoordDisplacement: false
         };
 
         const leftCanvas = document.getElementById('leftCanvas');
@@ -1747,66 +1922,80 @@ function processFrame() {
         leftCtx.putImageData(imageData, 0, 0);
         
         // Stereo processing with multiple options
-        if (currentConfig.enableStereo) {
-            let usedGPUHoleFilling = false;
-            let stereoMode = 'CPU';
+// Replace the existing stereo rendering section (around lines 1760-1800) with:
+if (enableStereo) {
+    let stereoMode = 'Unknown';
+    let usedGPUHoleFilling = false;
+    
+    // Check if S-coordinate displacement is enabled
+    if (currentConfig.useSCoordDisplacement) {
+        // NEW: S-coordinate based stereo displacement
+        if (currentConfig.useCPUHoleFilling) {
+            const leftStereoData = applyHaditStereoWithSCoordsAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, false);
+            const rightStereoData = applyHaditStereoWithSCoordsAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, true);
             
-            // Try GPU hole filling ONLY for stereo rendering (uses CPU depth data)
-            if (currentConfig.useGPU && 
-                currentConfig.gpuStereoMode !== 'cpu' &&
-                gpuProcessor.isInitialized && 
-                gpuProcessor.gpuEnabled) {
-                
-                try {
-                    // Convert YOUR CPU depth buffer to GPU format for hole filling
-                    const gpuDepthData = convertDepthBufferToGPUFormat(depthResult.depthBuffer, tempCanvas.width, tempCanvas.height);
-                    
-                    const success = gpuProcessor.renderStereoWithHoleFilling(
-                        leftCanvas, rightCanvas, imageData, gpuDepthData, currentConfig
-                    );
-                    
-                    if (success) {
-                        usedGPUHoleFilling = true;
-                        stereoMode = `GPU ${currentConfig.useBidirectional ? 'Bidirectional' : 'Forward'} Hole Fill`;
-                    }
-                } catch (error) {
-                    console.warn('GPU hole filling failed, using CPU:', error);
-                }
-            }
-            
-            // Use CPU stereo if GPU hole filling not used
-            if (!usedGPUHoleFilling) {
-                if (currentConfig.useCPUHoleFilling) {
-                    // CPU stereo with CPU hole filling
-                    const leftStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, false);
-                    const rightStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, true);
-                    
-                    leftCtx.putImageData(leftStereoData, 0, 0);
-                    
-                    const rightCtx = rightCanvas.getContext('2d');
-                    rightCtx.putImageData(rightStereoData, 0, 0);
-                    
-                    stereoMode = 'CPU + CPU Hole Fill';
-                } else {
-                    // Your original CPU stereo (no hole filling)
-                    const leftStereoData = applyHaditStereoWithDepth(leftCanvas, depthResult.depthBuffer, currentConfig, false);
-                    const rightStereoData = applyHaditStereoWithDepth(leftCanvas, depthResult.depthBuffer, currentConfig, true);
-                    
-                    leftCtx.putImageData(leftStereoData, 0, 0);
-                    
-                    const rightCtx = rightCanvas.getContext('2d');
-                    rightCtx.putImageData(rightStereoData, 0, 0);
-                    
-                    stereoMode = 'CPU Original';
-                }
-            }
-            
-            console.log(`🎮 Stereo mode: ${stereoMode}`);
-        } else {
+            leftCtx.putImageData(leftStereoData, 0, 0);
             const rightCtx = rightCanvas.getContext('2d');
-            rightCtx.putImageData(imageData, 0, 0);
+            rightCtx.putImageData(rightStereoData, 0, 0);
+            
+            stereoMode = 'S-Coord + CPU Hole Fill';
+        } else {
+            const leftStereoData = applyHaditStereoWithSCoords(leftCanvas, depthResult.depthBuffer, currentConfig, false);
+            const rightStereoData = applyHaditStereoWithSCoords(leftCanvas, depthResult.depthBuffer, currentConfig, true);
+            
+            leftCtx.putImageData(leftStereoData, 0, 0);
+            const rightCtx = rightCanvas.getContext('2d');
+            rightCtx.putImageData(rightStereoData, 0, 0);
+            
+            stereoMode = 'S-Coord Displacement';
+        }
+    } else {
+        // Your existing depth-based stereo code
+        // GPU hole filling attempt
+        if (currentConfig.useGPU && gpuProcessor.gpuEnabled && currentConfig.gpuStereoMode !== 'cpu') {
+            try {
+                const success = gpuProcessor.renderStereoWithHoleFilling(
+                    leftCanvas, rightCanvas, imageData, gpuDepthData, currentConfig
+                );
+                
+                if (success) {
+                    usedGPUHoleFilling = true;
+                    stereoMode = `GPU ${currentConfig.useBidirectional ? 'Bidirectional' : 'Forward'} Hole Fill`;
+                }
+            } catch (error) {
+                console.warn('GPU hole filling failed, using CPU:', error);
+            }
         }
         
+        // Use CPU stereo if GPU hole filling not used
+        if (!usedGPUHoleFilling) {
+            if (currentConfig.useCPUHoleFilling) {
+                const leftStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, false);
+                const rightStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, true);
+                
+                leftCtx.putImageData(leftStereoData, 0, 0);
+                const rightCtx = rightCanvas.getContext('2d');
+                rightCtx.putImageData(rightStereoData, 0, 0);
+                
+                stereoMode = 'CPU + CPU Hole Fill';
+            } else {
+                const leftStereoData = applyHaditStereoWithDepth(leftCanvas, depthResult.depthBuffer, currentConfig, false);
+                const rightStereoData = applyHaditStereoWithDepth(leftCanvas, depthResult.depthBuffer, currentConfig, true);
+                
+                leftCtx.putImageData(leftStereoData, 0, 0);
+                const rightCtx = rightCanvas.getContext('2d');
+                rightCtx.putImageData(rightStereoData, 0, 0);
+                
+                stereoMode = 'CPU Original';
+            }
+        }
+    }
+    
+    console.log(`🎮 Stereo mode: ${stereoMode}`);
+} else {
+    const rightCtx = rightCanvas.getContext('2d');
+    rightCtx.putImageData(imageData, 0, 0);
+}        
         // ALWAYS update depth map visualization using YOUR CPU Hadit depth buffer
         if (currentConfig.showDepthMap) {
             visualizeDepthMap(depthResult.depthBuffer, depthCanvas, currentConfig, detectedBand);
@@ -2134,6 +2323,11 @@ function processFrame() {
                 currentConfig.depthContrast = parseFloat(e.target.value);
                 document.getElementById('depthContrastValue').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
             });
+
+// Add this with your other event listeners:
+document.getElementById('useSCoordDisplacement').addEventListener('change', function() {
+    updateConfig();
+});
 
             document.getElementById('sBounds').addEventListener('input', (e) => {
                 currentConfig.sBounds = parseFloat(e.target.value);
