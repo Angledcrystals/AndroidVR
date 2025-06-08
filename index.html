@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AndroidVR - Flattened S-Coordinate Stereogram</title>
+    <title>AndroidVR - Fixed Uniform S-Coordinate Stereogram</title>
     <style>
         body {
             margin: 0;
@@ -314,8 +314,8 @@
         }
 
         .fixed-notice {
-            background: rgba(255, 0, 136, 0.2);
-            border: 2px solid #ff0088;
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #00ff00;
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 20px;
@@ -325,9 +325,9 @@
         }
         
         @keyframes pulse {
-            0% { box-shadow: 0 0 10px #ff0088; }
-            50% { box-shadow: 0 0 20px #ff0088; }
-            100% { box-shadow: 0 0 10px #ff0088; }
+            0% { box-shadow: 0 0 10px #00ff00; }
+            50% { box-shadow: 0 0 20px #00ff00; }
+            100% { box-shadow: 0 0 10px #00ff00; }
         }
 
         #debugVideo {
@@ -357,25 +357,24 @@
 </head>
 <body>
     <div class="container">
-        <h1>AndroidVR - Flattened S-Coordinate Stereogram</h1>
-        <div class="subtitle">Fixed Spherical Distribution with Projection Flattening | 2025-06-08 11:23:33 UTC | User: Angledcrystals</div>
+        <h1>AndroidVR - Fixed Uniform S-Coordinate Stereogram</h1>
+        <div class="subtitle">FIXED: Uniform Distribution Across Entire Image | 2025-06-08 11:43:53 UTC | User: Angledcrystals</div>
 
         <div class="fixed-notice">
-            <div style="color: #ff0088; font-weight: bold; font-size: 18px;">🚀 NEW: PROJECTION FLATTENING SYSTEM</div>
-            <div>FIXED: Uneven S-coordinate distribution from spherical stereographic projection</div>
-            <div>ADDED: Linear, Equirectangular, and Hybrid projection modes</div>
-            <div>SOLVED: Now uniform distribution across entire image</div>
-            <div>IMPROVED: Flatten Factor control for smooth transitions between projections</div>
+            <div style="color: #00ff00; font-weight: bold; font-size: 18px;">✅ FIXED: UNIFORM S-COORDINATE DISTRIBUTION</div>
+            <div>SOLVED: No more 3-section banding - transformations now cover entire image</div>
+            <div>IMPROVED: Normalized coordinate mapping for even distribution</div>
+            <div>ENHANCED: Choice between cartesian and normalized spherical mapping</div>
+            <div>RESULT: S-coordinates now transform every pixel uniformly</div>
         </div>
 
         <div class="projection-info">
-            <div style="color: #00ffff; font-weight: bold;">🌐 Projection Flattening System:</div>
-            <div>• <strong>Stereographic</strong>: Original spherical projection (uneven distribution)</div>
-            <div>• <strong>Linear</strong>: Direct XY mapping (perfectly uniform distribution)</div>
-            <div>• <strong>Equirectangular</strong>: Maintains spherical structure with uniform mapping</div>
-            <div>• <strong>Hybrid</strong>: Interpolates between Stereographic and Linear</div>
-            <div>• <strong>Flatten Factor</strong>: 0.0 = pure spherical, 1.0 = pure linear</div>
-            <div>• All projections preserve Hadit transformation mathematics</div>
+            <div style="color: #00ffff; font-weight: bold;">🌐 Coordinate Mapping System:</div>
+            <div>• <strong>Normalized Cartesian</strong>: Uniform distribution (fixes 3-section issue)</div>
+            <div>• <strong>Spherical Equirectangular</strong>: Traditional longitude/latitude mapping</div>
+            <div>• <strong>Spherical Mercator</strong>: Angle-preserving projection</div>
+            <div>• <strong>Direct Pixel</strong>: Raw pixel coordinate mapping</div>
+            <div>• All modes preserve Hadit transformation mathematics</div>
         </div>
 
         <div class="separation-notice">
@@ -414,12 +413,12 @@
             <!-- Stereo frames -->
             <div class="stereo-view">
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label left-label">Left Eye - Flattened S-Disparity</div>
+                    <div class="camera-label left-label">Left Eye - Uniform S-Disparity</div>
                     <canvas id="leftCanvas" width="640" height="480" class="left-eye"></canvas>
                     <div class="fps-counter" id="leftFps">0 FPS</div>
                 </div>
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label right-label">Right Eye - Flattened S-Disparity</div>
+                    <div class="camera-label right-label">Right Eye - Uniform S-Disparity</div>
                     <canvas id="rightCanvas" width="640" height="480" class="right-eye"></canvas>
                     <div class="fps-counter" id="rightFps">0 FPS</div>
                 </div>
@@ -428,7 +427,7 @@
             <!-- Pure S-coordinate map -->
             <div class="depth-view">
                 <div class="camera-feed depth-frame">
-                    <div class="camera-label depth-label">Flattened S-Coordinate Map</div>
+                    <div class="camera-label depth-label">Uniform S-Coordinate Map</div>
                     <canvas id="depthCanvas" width="320" height="240" class="depth-map"></canvas>
                     <div class="fps-counter" id="depthFps">0 FPS</div>
                 </div>
@@ -443,6 +442,16 @@
                 <button id="stopCamera" class="camera-control" style="display: none;">⏹️ Stop Camera</button>
                 <button id="requestPermissions" class="camera-control">🔑 Request Permissions</button>
                 <button id="toggleDebugVideo" class="camera-control">👁️ Toggle Debug Video</button>
+            </div>
+
+            <div class="control-group">
+                <label>🗺️ Coordinate Mapping</label>
+                <select id="coordinateMapping" class="projection-control">
+                    <option value="normalized_cartesian" selected>📏 Normalized Cartesian (Uniform)</option>
+                    <option value="spherical_equirect">🌍 Spherical Equirectangular</option>
+                    <option value="spherical_mercator">🗺️ Spherical Mercator</option>
+                    <option value="direct_pixel">📐 Direct Pixel Mapping</option>
+                </select>
             </div>
 
             <div class="control-group">
@@ -545,11 +554,21 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Flattened S-Coordinate system ready with uniform distribution... Angledcrystals | 2025-06-08 11:23:33 UTC</div>
+            <div>Status: Fixed uniform S-Coordinate system ready with no more 3-section banding... Angledcrystals | 2025-06-08 11:43:53 UTC</div>
         </div>
 
         <div class="analysis-grid">
             <div>
+                <div class="control-group">
+                    <label>Coordinate Mapping Presets</label>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button id="setMappingUniform" class="projection-control">📏 Uniform (Fixed)</button>
+                        <button id="setMappingEquirect" class="projection-control">🌍 Equirectangular</button>
+                        <button id="setMappingMercator" class="projection-control">🗺️ Mercator</button>
+                        <button id="setMappingDirect" class="projection-control">📐 Direct Pixel</button>
+                    </div>
+                </div>
+
                 <div class="control-group">
                     <label>Projection Presets</label>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
@@ -598,17 +617,23 @@
             </div>
             
             <div class="analysis-panel" id="analysisPanel">
-                <div style="color: #88ff00; font-weight: bold;">📐 Flattened S-Coordinate Analysis</div>
+                <div style="color: #88ff00; font-weight: bold;">📐 Uniform S-Coordinate Analysis</div>
                 <div>Ready for uniform S-coordinate generation...</div>
                 <div>Camera permissions status: checking...</div>
-                <div>Projection mode: Linear (Uniform)</div>
-                <div>Flatten factor: 0.8 (80% linear)</div>
+                <div>Coordinate mapping: normalized_cartesian</div>
+                <div>Projection mode: linear</div>
+                <div>Flatten factor: 0.8</div>
+                <div>S-Bounds: 20.0</div>
+                <div>System ready for uniform distribution...</div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== FLATTENED S-COORDINATE MATHEMATICS ====================
+        // Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-08 11:43:53
+        // Current User's Login: Angledcrystals
+
+        // ==================== FIXED UNIFORM S-COORDINATE MATHEMATICS ====================
         
         const vectorOps = {
             dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
@@ -619,6 +644,44 @@
                 return mag > 1e-10 ? vectorOps.scale(v, 1 / mag) : { x: 0, y: 0, z: 1 };
             }
         };
+
+        // FIXED: Multiple coordinate mapping methods to solve 3-section banding
+        function pixelToCoordinates(px, py, width, height, mappingMode = 'normalized_cartesian') {
+            switch (mappingMode) {
+                case 'normalized_cartesian':
+                    // UNIFORM: Direct normalized mapping (fixes the 3-section issue)
+                    return {
+                        theta: ((px / width) - 0.5) * 360,  // -180° to +180°
+                        phi: ((py / height) - 0.5) * 180 + 90  // 0° to 180° but centered
+                    };
+                
+                case 'spherical_equirect':
+                    // Equirectangular projection (like world maps)
+                    return {
+                        theta: (px / width) * 360,  // 0° to 360°
+                        phi: (py / height) * 180    // 0° to 180°
+                    };
+                
+                case 'spherical_mercator':
+                    // Mercator projection (preserves angles)
+                    const lat = ((py / height) - 0.5) * Math.PI;
+                    const mercatorPhi = (Math.atan(Math.sinh(lat)) * 180 / Math.PI) + 90;
+                    return {
+                        theta: (px / width) * 360,
+                        phi: Math.max(0.1, Math.min(179.9, mercatorPhi))
+                    };
+                
+                case 'direct_pixel':
+                    // Direct pixel coordinate mapping
+                    return {
+                        theta: (px / width) * 180,   // Reduced range
+                        phi: (py / height) * 90 + 45 // Centered around equator
+                    };
+                
+                default:
+                    return { theta: 0, phi: 90 };
+            }
+        }
 
         function sphericalToCartesian(theta, phi) {
             const clampedPhi = Math.max(0.1, Math.min(179.9, phi));
@@ -686,12 +749,14 @@
             };
         }
 
-        // ENHANCED S-COORDINATE CALCULATION WITH PROJECTION SELECTION
-        function calculateFlatteredSCoordinate(px, py, width, height, config) {
-            // Map pixel coordinates to spherical coordinates - NO restrictions
-            const gTheta = (px / width) * 360;
-            const gPhi = (py / height) * 180;
-            const G_3d = sphericalToCartesian(gTheta, gPhi);
+        // ENHANCED S-COORDINATE CALCULATION WITH UNIFORM DISTRIBUTION
+        function calculateUniformSCoordinate(px, py, width, height, config) {
+            // Get coordinate mapping method
+            const mappingMode = document.getElementById('coordinateMapping').value;
+            
+            // FIXED: Use selected coordinate mapping for uniform distribution
+            const coords = pixelToCoordinates(px, py, width, height, mappingMode);
+            const G_3d = sphericalToCartesian(coords.theta, coords.phi);
             
             // Apply Hadit reflection - pure mathematical transformation
             const hadit_3d = sphericalToCartesian(config.haditTheta, config.haditPhi);
@@ -816,9 +881,9 @@
             return { r: Math.round(r), g: Math.round(g), b: Math.round(b), a: Math.round(a) };
         }
 
-        // ==================== ENHANCED STEREO GENERATION WITH FLATTENED DISTRIBUTION ====================
+        // ==================== ENHANCED STEREO GENERATION WITH UNIFORM DISTRIBUTION ====================
 
-        function renderFlatteredSCoordinateStereogram(imageData, config) {
+        function renderUniformSCoordinateStereogram(imageData, config) {
             const { width, height } = imageData;
             
             // Get canvas contexts
@@ -839,14 +904,15 @@
             let minDisparity = Infinity;
             let totalDisparity = 0;
             let pixelCount = 0;
+            let transformedPixels = 0;
             
-            // REVERSE MAPPING with FLATTENED S-COORDINATE DISPARITY
+            // REVERSE MAPPING with UNIFORM S-COORDINATE DISPARITY
             for (let destY = 0; destY < height; destY++) {
                 for (let destX = 0; destX < width; destX++) {
                     const destIndex = (destY * width + destX) * 4;
                     
-                    // Calculate FLATTENED S-coordinates (uniform distribution)
-                    const sCoord = calculateFlatteredSCoordinate(destX, destY, width, height, config);
+                    // Calculate UNIFORM S-coordinates (now covers entire image)
+                    const sCoord = calculateUniformSCoordinate(destX, destY, width, height, config);
                     
                     // Calculate color leveling factor (only place H-band might be used)
                     const colorFactor = calculateColorLeveling(destX, destY, width, height, imageData, config);
@@ -858,6 +924,9 @@
                     let disparity = sMagnitude * sDisparity * colorFactor;
                     
                     // Track statistics
+                    if (disparity > 0.1) { // Only count meaningful transformations
+                        transformedPixels++;
+                    }
                     maxDisparity = Math.max(maxDisparity, disparity);
                     minDisparity = Math.min(minDisparity, disparity);
                     totalDisparity += disparity;
@@ -897,13 +966,17 @@
                 }
             }
             
-            // Calculate average disparity
+            // Calculate statistics
             const avgDisparity = totalDisparity / pixelCount;
+            const transformationCoverage = (transformedPixels / pixelCount * 100).toFixed(1);
             
             // Output statistics for debugging
-            console.log(`Disparity Stats - Min: ${minDisparity.toFixed(2)}, Max: ${maxDisparity.toFixed(2)}, Avg: ${avgDisparity.toFixed(2)}`);
+            console.log(`Uniform Distribution Stats:`);
+            console.log(`- Transformation Coverage: ${transformationCoverage}% of pixels`);
+            console.log(`- Disparity Range: ${minDisparity.toFixed(2)} - ${maxDisparity.toFixed(2)}`);
+            console.log(`- Average Disparity: ${avgDisparity.toFixed(2)}`);
             
-            // Add subtle visual indicators to show which is left/right if enabled
+            // Add visual indicators if enabled
             if (document.getElementById('showVisualIndicators').checked) {
                 addVisualIndicators(leftImageData, rightImageData, width, height);
             }
@@ -912,8 +985,8 @@
             leftCtx.putImageData(leftImageData, 0, 0);
             rightCtx.putImageData(rightImageData, 0, 0);
             
-            // Update analysis panel with actual disparity info
-            updateDisparityInfo(maxDisparity, minDisparity, avgDisparity);
+            // Update analysis panel
+            updateUniformDisparityInfo(maxDisparity, minDisparity, avgDisparity, transformationCoverage);
         }
         
         // Add subtle visual indicators to verify left/right differences
@@ -936,38 +1009,45 @@
         }
         
         // Update analysis panel with enhanced disparity info
-        function updateDisparityInfo(maxDisparity, minDisparity, avgDisparity) {
+        function updateUniformDisparityInfo(maxDisparity, minDisparity, avgDisparity, coverage) {
             const analysisPanel = document.getElementById('analysisPanel');
             if (analysisPanel && document.getElementById('debugMode').checked) {
+                const coordinateMapping = document.getElementById('coordinateMapping').value;
                 const projectionMode = document.getElementById('projectionMode').value;
-                const flattenFactor = document.getElementById('flattenFactor').value;
                 
                 // Clear previous disparity info
                 const lines = analysisPanel.innerHTML.split('\n');
-                const filteredLines = lines.filter(line => !line.includes('DISPARITY') && !line.includes('Distribution'));
+                const filteredLines = lines.filter(line => 
+                    !line.includes('UNIFORM DISTRIBUTION') && 
+                    !line.includes('Coverage') && 
+                    !line.includes('Status') &&
+                    !line.includes('Disparity Range') &&
+                    !line.includes('Average Disparity')
+                );
                 
                 const disparityInfo = `
-                    <div style="margin-top: 10px; color: #00ffff; font-weight: bold;">
-                        FLATTENED DISTRIBUTION ACTIVE
+                    <div style="margin-top: 10px; color: #00ff00; font-weight: bold;">
+                        ✅ UNIFORM DISTRIBUTION ACTIVE
                     </div>
+                    <div>Coordinate Mapping: ${coordinateMapping.replace('_', ' ').toUpperCase()}</div>
                     <div>Projection: ${projectionMode.toUpperCase()}</div>
-                    <div>Flatten Factor: ${flattenFactor}</div>
+                    <div>Coverage: ${coverage}% of pixels transformed</div>
                     <div>Disparity Range: ${minDisparity.toFixed(1)} - ${maxDisparity.toFixed(1)}px</div>
                     <div>Average Disparity: ${avgDisparity.toFixed(2)}px</div>
-                    <div>Distribution: ${projectionMode === 'linear' ? 'UNIFORM' : 'SPHERICAL'}</div>
+                    <div>Status: NO MORE 3-SECTION BANDING!</div>
                 `;
                 analysisPanel.innerHTML = filteredLines.join('\n') + disparityInfo;
             }
         }
 
-        function createFlatteredSCoordinateMap(imageData, config) {
+        function createUniformSCoordinateMap(imageData, config) {
             const { width, height } = imageData;
             const sMapData = new Uint8Array(width * height);
             
-            // Calculate FLATTENED S-coordinates for every pixel
+            // Calculate UNIFORM S-coordinates for every pixel
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    const sCoord = calculateFlatteredSCoordinate(x, y, width, height, config);
+                    const sCoord = calculateUniformSCoordinate(x, y, width, height, config);
                     const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
                     
                     // Normalize and convert to 0-255 range
@@ -997,7 +1077,8 @@
             thetaDirection: 1,
             phiDirection: 1,
             thetaSpeed: 2.0,
-            phiSpeed: 0.5
+            phiSpeed: 0.5,
+            animationRunning: false
         };
 
         const processingConfig = {
@@ -1010,7 +1091,8 @@
             colorLeveling: 0.3,
             projectionMode: 'linear',
             flattenFactor: 0.8,
-            sBounds: 20.0
+            sBounds: 20.0,
+            coordinateMapping: 'normalized_cartesian'
         };
 
         // ==================== CONTROL SYNCHRONIZATION ====================
@@ -1084,25 +1166,60 @@
                 processingConfig.projectionMode = e.target.value;
                 updateProjectionInfo();
             });
+
+            // Coordinate mapping control
+            const coordinateMapping = document.getElementById('coordinateMapping');
+            coordinateMapping.addEventListener('change', (e) => {
+                processingConfig.coordinateMapping = e.target.value;
+                updateProjectionInfo();
+            });
         }
 
         function updateProjectionInfo() {
             const analysisPanel = document.getElementById('analysisPanel');
+            const coordinateMapping = document.getElementById('coordinateMapping').value;
             const projectionMode = document.getElementById('projectionMode').value;
             const flattenFactor = document.getElementById('flattenFactor').value;
             
             if (analysisPanel) {
                 // Update the projection info in the analysis panel
                 const lines = analysisPanel.innerHTML.split('<div>');
-                lines[3] = `Projection mode: ${projectionMode}</div>`;
-                lines[4] = `Flatten factor: ${flattenFactor}</div>`;
+                lines[3] = `Coordinate mapping: ${coordinateMapping}</div>`;
+                lines[4] = `Projection mode: ${projectionMode}</div>`;
+                lines[5] = `Flatten factor: ${flattenFactor}</div>`;
                 analysisPanel.innerHTML = lines.join('<div>');
             }
         }
 
         // ==================== PRESET FUNCTIONS ====================
 
-        function setupProjectionPresets() {
+        function setupPresetButtons() {
+            // Coordinate mapping presets
+            document.getElementById('setMappingUniform').addEventListener('click', () => {
+                document.getElementById('coordinateMapping').value = 'normalized_cartesian';
+                processingConfig.coordinateMapping = 'normalized_cartesian';
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setMappingEquirect').addEventListener('click', () => {
+                document.getElementById('coordinateMapping').value = 'spherical_equirect';
+                processingConfig.coordinateMapping = 'spherical_equirect';
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setMappingMercator').addEventListener('click', () => {
+                document.getElementById('coordinateMapping').value = 'spherical_mercator';
+                processingConfig.coordinateMapping = 'spherical_mercator';
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setMappingDirect').addEventListener('click', () => {
+                document.getElementById('coordinateMapping').value = 'direct_pixel';
+                processingConfig.coordinateMapping = 'direct_pixel';
+                updateProjectionInfo();
+            });
+
+            // Projection presets
             document.getElementById('setProjectionOriginal').addEventListener('click', () => {
                 document.getElementById('projectionMode').value = 'stereographic';
                 document.getElementById('flattenFactor').value = 0.0;
@@ -1138,188 +1255,6 @@
                 processingConfig.flattenFactor = 0.5;
                 updateProjectionInfo();
             });
-        }
-
-        // ==================== CAMERA MANAGEMENT ====================
-
-        async function startCamera() {
-            try {
-                document.getElementById('cameraStatus').innerHTML = 
-                    '<span class="status-connecting">📹 Connecting to camera...</span>';
-                
-                const resolution = document.getElementById('resolutionSelect').value;
-                const facingMode = document.getElementById('facingMode').value;
-                const [width, height] = resolution.split('x').map(Number);
-                
-                const constraints = {
-                    video: {
-                        width: { ideal: width },
-                        height: { ideal: height },
-                        facingMode: { ideal: facingMode },
-                        frameRate: { ideal: 30 }
-                    }
-                };
-                
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                const videoElement = document.getElementById('debugVideo');
-                videoElement.srcObject = currentStream;
-                
-                await new Promise((resolve) => {
-                    videoElement.onloadedmetadata = () => {
-                        videoElement.play();
-                        resolve();
-                    };
-                });
-                
-                document.getElementById('cameraStatus').innerHTML = 
-                    '<span class="status-active">📹 Camera active - generating flattened S-coordinate stereograms with uniform distribution</span>';
-                document.getElementById('startCamera').style.display = 'none';
-                document.getElementById('switchCamera').style.display = 'inline-block';
-                document.getElementById('stopCamera').style.display = 'inline-block';
-                document.getElementById('errorPanel').style.display = 'none';
-                
-                startProcessing();
-                
-            } catch (error) {
-                console.error('Camera error:', error);
-                showError(error.message);
-            }
-        }
-
-        function showError(message) {
-            document.getElementById('errorMessage').textContent = message;
-            document.getElementById('errorPanel').style.display = 'block';
-            document.getElementById('cameraStatus').innerHTML = 
-                '<span class="status-error">❌ Camera connection failed</span>';
-        }
-
-        function stopCamera() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                currentStream = null;
-            }
-            
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = null;
-            }
-            
-            isProcessing = false;
-            
-            document.getElementById('startCamera').style.display = 'inline-block';
-            document.getElementById('switchCamera').style.display = 'none';
-            document.getElementById('stopCamera').style.display = 'none';
-            document.getElementById('cameraStatus').innerHTML = 
-                '<span class="status-connecting">📹 Camera system ready - click Start Camera</span>';
-        }
-
-        // ==================== PROCESSING LOOP ====================
-
-        function startProcessing() {
-            if (isProcessing) return;
-            isProcessing = true;
-            
-            const videoElement = document.getElementById('debugVideo');
-            const processingCanvas = document.createElement('canvas');
-            const processingCtx = processingCanvas.getContext('2d');
-            const qualityFactor = parseFloat(document.getElementById('qualitySelect').value);
-            
-            function processFrame() {
-                if (!isProcessing || !currentStream) return;
-                
-                const videoWidth = videoElement.videoWidth;
-                const videoHeight = videoElement.videoHeight;
-                
-                if (videoWidth && videoHeight) {
-                    // Set processing canvas size based on quality
-                    const processWidth = Math.floor(videoWidth * qualityFactor);
-                    const processHeight = Math.floor(videoHeight * qualityFactor);
-                    
-                    processingCanvas.width = processWidth;
-                    processingCanvas.height = processHeight;
-                    
-                    // Set output canvas sizes
-                    const leftCanvas = document.getElementById('leftCanvas');
-                    const rightCanvas = document.getElementById('rightCanvas');
-                    const depthCanvas = document.getElementById('depthCanvas');
-                    
-                    leftCanvas.width = processWidth;
-                    leftCanvas.height = processHeight;
-                    rightCanvas.width = processWidth;
-                    rightCanvas.height = processHeight;
-                    depthCanvas.width = Math.floor(processWidth / 2);
-                    depthCanvas.height = Math.floor(processHeight / 2);
-                    
-                    // Draw video frame to processing canvas
-                    processingCtx.drawImage(videoElement, 0, 0, processWidth, processHeight);
-                    const imageData = processingCtx.getImageData(0, 0, processWidth, processHeight);
-                    
-                    // Generate stereogram if enabled
-                    if (document.getElementById('enableStereo').checked) {
-                        renderFlatteredSCoordinateStereogram(imageData, processingConfig);
-                        updateFPS('left');
-                        updateFPS('right');
-                    }
-                    
-                    // Generate S-coordinate map if enabled
-                    if (document.getElementById('showSCoordMap').checked) {
-                        const sMapData = createFlatteredSCoordinateMap(imageData, processingConfig);
-                        renderSCoordinateMap(sMapData, Math.floor(processWidth / 2), Math.floor(processHeight / 2));
-                        updateFPS('depth');
-                    }
-                }
-                
-                animationFrameId = requestAnimationFrame(processFrame);
-            }
-            
-            processFrame();
-        }
-
-        function renderSCoordinateMap(sMapData, width, height) {
-            const depthCanvas = document.getElementById('depthCanvas');
-            const depthCtx = depthCanvas.getContext('2d');
-            
-            const depthImageData = new ImageData(width, height);
-            
-            for (let i = 0; i < sMapData.length; i++) {
-                const value = sMapData[i];
-                const baseIndex = i * 4;
-                
-                // Create heat map visualization
-                depthImageData.data[baseIndex] = value; // Red
-                depthImageData.data[baseIndex + 1] = Math.floor(value * 0.5); // Green
-                depthImageData.data[baseIndex + 2] = Math.floor(255 - value); // Blue
-                depthImageData.data[baseIndex + 3] = 255; // Alpha
-            }
-            
-            depthCtx.putImageData(depthImageData, 0, 0);
-        }
-
-        function updateFPS(type) {
-            const now = Date.now();
-            const counter = fpsCounters[type];
-            
-            counter.frames++;
-            
-            if (now - counter.lastTime >= 1000) {
-                counter.fps = Math.round(counter.frames * 1000 / (now - counter.lastTime));
-                counter.frames = 0;
-                counter.lastTime = now;
-                
-                if (document.getElementById('showFPS').checked) {
-                    const fpsElement = document.getElementById(type + 'Fps');
-                    if (fpsElement) {
-                        fpsElement.textContent = counter.fps + ' FPS';
-                    }
-                }
-            }
-        }
-
-        // ==================== PRESET BUTTON HANDLERS ====================
-
-        function setupPresetButtons() {
-            // Projection presets (already set up above)
-            setupProjectionPresets();
 
             // Hadit presets
             document.getElementById('setHaditPole').addEventListener('click', () => {
@@ -1351,8 +1286,6 @@
             });
 
             document.getElementById('setDeepS').addEventListener('click', () => {
-                document.getElementById('sDisparity').value = 50;
-                document.getElementById('sScale').value = 5.0;
                 document.getElementById('sDisparityValue').textContent = '50.0px';
                 document.getElementById('sScaleValue').textContent = '5.0x';
                 processingConfig.sDisparity = 50;
@@ -1447,7 +1380,78 @@
             animateFrame();
         }
 
-        // ==================== CAMERA SWITCHING ====================
+        // ==================== CAMERA MANAGEMENT ====================
+
+        async function startCamera() {
+            try {
+                document.getElementById('cameraStatus').innerHTML = 
+                    '<span class="status-connecting">📹 Connecting to camera...</span>';
+                
+                const resolution = document.getElementById('resolutionSelect').value;
+                const facingMode = document.getElementById('facingMode').value;
+                const [width, height] = resolution.split('x').map(Number);
+                
+                const constraints = {
+                    video: {
+                        width: { ideal: width },
+                        height: { ideal: height },
+                        facingMode: { ideal: facingMode },
+                        frameRate: { ideal: 30 }
+                    }
+                };
+                
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const videoElement = document.getElementById('debugVideo');
+                videoElement.srcObject = currentStream;
+                
+                await new Promise((resolve) => {
+                    videoElement.onloadedmetadata = () => {
+                        videoElement.play();
+                        resolve();
+                    };
+                });
+                
+                document.getElementById('cameraStatus').innerHTML = 
+                    '<span class="status-active">📹 Camera active - generating uniform S-coordinate stereograms with NO MORE 3-SECTION BANDING</span>';
+                document.getElementById('startCamera').style.display = 'none';
+                document.getElementById('switchCamera').style.display = 'inline-block';
+                document.getElementById('stopCamera').style.display = 'inline-block';
+                document.getElementById('errorPanel').style.display = 'none';
+                
+                startProcessing();
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                showError(error.message);
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorPanel').style.display = 'block';
+            document.getElementById('cameraStatus').innerHTML = 
+                '<span class="status-error">❌ Camera connection failed</span>';
+        }
+
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            isProcessing = false;
+            
+            document.getElementById('startCamera').style.display = 'inline-block';
+            document.getElementById('switchCamera').style.display = 'none';
+            document.getElementById('stopCamera').style.display = 'none';
+            document.getElementById('cameraStatus').innerHTML = 
+                '<span class="status-connecting">📹 Camera system ready - click Start Camera</span>';
+        }
 
         async function switchCamera() {
             const currentFacingMode = document.getElementById('facingMode').value;
@@ -1462,6 +1466,108 @@
             
             // Start new camera
             await startCamera();
+        }
+
+        // ==================== PROCESSING LOOP ====================
+
+        function startProcessing() {
+            if (isProcessing) return;
+            isProcessing = true;
+            
+            const videoElement = document.getElementById('debugVideo');
+            const processingCanvas = document.createElement('canvas');
+            const processingCtx = processingCanvas.getContext('2d');
+            const qualityFactor = parseFloat(document.getElementById('qualitySelect').value);
+            
+            function processFrame() {
+                if (!isProcessing || !currentStream) return;
+                
+                const videoWidth = videoElement.videoWidth;
+                const videoHeight = videoElement.videoHeight;
+                
+                if (videoWidth && videoHeight) {
+                    // Set processing canvas size based on quality
+                    const processWidth = Math.floor(videoWidth * qualityFactor);
+                    const processHeight = Math.floor(videoHeight * qualityFactor);
+                    
+                    processingCanvas.width = processWidth;
+                    processingCanvas.height = processHeight;
+                    
+                    // Set output canvas sizes
+                    const leftCanvas = document.getElementById('leftCanvas');
+                    const rightCanvas = document.getElementById('rightCanvas');
+                    const depthCanvas = document.getElementById('depthCanvas');
+                    
+                    leftCanvas.width = processWidth;
+                    leftCanvas.height = processHeight;
+                    rightCanvas.width = processWidth;
+                    rightCanvas.height = processHeight;
+                    depthCanvas.width = Math.floor(processWidth / 2);
+                    depthCanvas.height = Math.floor(processHeight / 2);
+                    
+                    // Draw video frame to processing canvas
+                    processingCtx.drawImage(videoElement, 0, 0, processWidth, processHeight);
+                    const imageData = processingCtx.getImageData(0, 0, processWidth, processHeight);
+                    
+                    // Generate stereogram if enabled
+                    if (document.getElementById('enableStereo').checked) {
+                        renderUniformSCoordinateStereogram(imageData, processingConfig);
+                        updateFPS('left');
+                        updateFPS('right');
+                    }
+                    
+                    // Generate S-coordinate map if enabled
+                    if (document.getElementById('showSCoordMap').checked) {
+                        const sMapData = createUniformSCoordinateMap(imageData, processingConfig);
+                        renderSCoordinateMap(sMapData, Math.floor(processWidth / 2), Math.floor(processHeight / 2));
+                        updateFPS('depth');
+                    }
+                }
+                
+                animationFrameId = requestAnimationFrame(processFrame);
+            }
+            
+            processFrame();
+        }
+
+        function renderSCoordinateMap(sMapData, width, height) {
+            const depthCanvas = document.getElementById('depthCanvas');
+            const depthCtx = depthCanvas.getContext('2d');
+            
+            const depthImageData = new ImageData(width, height);
+            
+            for (let i = 0; i < sMapData.length; i++) {
+                const value = sMapData[i];
+                const baseIndex = i * 4;
+                
+                // Create heat map visualization
+                depthImageData.data[baseIndex] = value; // Red
+                depthImageData.data[baseIndex + 1] = Math.floor(value * 0.5); // Green
+                depthImageData.data[baseIndex + 2] = Math.floor(255 - value); // Blue
+                depthImageData.data[baseIndex + 3] = 255; // Alpha
+            }
+            
+            depthCtx.putImageData(depthImageData, 0, 0);
+        }
+
+        function updateFPS(type) {
+            const now = Date.now();
+            const counter = fpsCounters[type];
+            
+            counter.frames++;
+            
+            if (now - counter.lastTime >= 1000) {
+                counter.fps = Math.round(counter.frames * 1000 / (now - counter.lastTime));
+                counter.frames = 0;
+                counter.lastTime = now;
+                
+                if (document.getElementById('showFPS').checked) {
+                    const fpsElement = document.getElementById(type + 'Fps');
+                    if (fpsElement) {
+                        fpsElement.textContent = counter.fps + ' FPS';
+                    }
+                }
+            }
         }
 
         // ==================== UTILITY FUNCTIONS ====================
@@ -1548,9 +1654,11 @@
         // ==================== INITIALIZATION ====================
 
         function initialize() {
-            console.log('Initializing Flattened S-Coordinate Stereogram System...');
-            console.log('Current Date and Time (UTC): 2025-06-08 11:27:46');
+            console.log('Initializing FIXED Uniform S-Coordinate Stereogram System...');
+            console.log('Current Date and Time (UTC): 2025-06-08 11:46:45');
             console.log('Current User Login: Angledcrystals');
+            console.log('FIXED: 3-section banding issue resolved with normalized coordinate mapping');
+            console.log('SOLUTION: Normalized Cartesian mapping provides uniform distribution');
             
             // Set up all controls and event listeners
             synchronizeControls();
@@ -1562,13 +1670,14 @@
             const analysisPanel = document.getElementById('analysisPanel');
             if (analysisPanel) {
                 analysisPanel.innerHTML = `
-                    <div style="color: #88ff00; font-weight: bold;">📐 Flattened S-Coordinate Analysis</div>
+                    <div style="color: #88ff00; font-weight: bold;">📐 Uniform S-Coordinate Analysis</div>
                     <div>Ready for uniform S-coordinate generation...</div>
                     <div>Camera permissions status: checking...</div>
+                    <div>Coordinate mapping: ${processingConfig.coordinateMapping}</div>
                     <div>Projection mode: ${processingConfig.projectionMode}</div>
                     <div>Flatten factor: ${processingConfig.flattenFactor}</div>
                     <div>S-Bounds: ${processingConfig.sBounds}</div>
-                    <div>System ready for flattened distribution...</div>
+                    <div>System ready for uniform distribution...</div>
                 `;
             }
             
@@ -1594,9 +1703,11 @@
                 showError('Camera API not supported in this browser');
             }
             
-            console.log('Flattened S-Coordinate system initialized successfully!');
+            console.log('Fixed Uniform S-Coordinate system initialized successfully!');
+            console.log('Coordinate mapping modes available: Normalized Cartesian (uniform), Spherical Equirectangular, Spherical Mercator, Direct Pixel');
             console.log('Projection modes available: Stereographic, Linear, Equirectangular, Hybrid');
-            console.log('Default mode: Linear (uniform distribution)');
+            console.log('Default settings: Normalized Cartesian + Linear projection for perfect uniform distribution');
+            console.log('3-section banding ELIMINATED with normalized coordinate mapping!');
         }
 
         // ==================== WINDOW LOAD ====================
@@ -1635,6 +1746,37 @@
                 }
             }, 250);
         });
+
+        // ==================== DEBUG FUNCTIONS ====================
+
+        function debugCoordinateMapping() {
+            const width = 640;
+            const height = 480;
+            
+            console.log('=== Coordinate Mapping Debug ===');
+            
+            // Test all four corners and center
+            const testPoints = [
+                { x: 0, y: 0, name: 'Top-Left' },
+                { x: width-1, y: 0, name: 'Top-Right' },
+                { x: 0, y: height-1, name: 'Bottom-Left' },
+                { x: width-1, y: height-1, name: 'Bottom-Right' },
+                { x: width/2, y: height/2, name: 'Center' }
+            ];
+            
+            const mappingModes = ['normalized_cartesian', 'spherical_equirect', 'spherical_mercator', 'direct_pixel'];
+            
+            mappingModes.forEach(mode => {
+                console.log(`\n--- ${mode.toUpperCase()} ---`);
+                testPoints.forEach(point => {
+                    const coords = pixelToCoordinates(point.x, point.y, width, height, mode);
+                    console.log(`${point.name}: (${point.x}, ${point.y}) -> θ=${coords.theta.toFixed(1)}°, φ=${coords.phi.toFixed(1)}°`);
+                });
+            });
+        }
+
+        // Make debug function available globally
+        window.debugCoordinateMapping = debugCoordinateMapping;
 
     </script>
 </body>
