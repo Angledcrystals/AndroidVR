@@ -305,7 +305,7 @@
             color: #ff4444;
         }
 
-        /* GPU Status Panel - NEW */
+        /* GPU Status Panel */
         .gpu-status {
             background: rgba(0, 255, 255, 0.1);
             border: 1px solid #00ffff;
@@ -322,7 +322,7 @@
             border: 1px solid #ffff00;
         }
 
-        /* Landscape optimizations for VR - Enhanced for better scaling */
+        /* Landscape optimizations for VR */
         @media (orientation: landscape) and (min-width: 768px) {
             .stereo-view {
                 padding: 25px;
@@ -381,7 +381,7 @@
             }
         }
 
-        /* Extra large landscape screens (VR friendly) - Enhanced */
+        /* Extra large landscape screens (VR friendly) */
         @media (orientation: landscape) and (min-width: 1200px) {
             .stereo-view {
                 max-width: 98vw;
@@ -453,10 +453,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>AndroidVR - Invisible Mirror </h1>
-        <div class="subtitle">Real-time Mirror angle Control with Band Detection & Depth Contrast: 0.1° Precision | 2025-06-07 11:16:24 UTC | User: Angledcrystals</div>
+        <h1>AndroidVR - Invisible Mirror</h1>
+        <div class="subtitle">Real-time Mirror angle Control with Band Detection & Depth Contrast: 0.1° Precision | 2025-06-08 09:53:16 UTC | User: Angledcrystals</div>
 
-        <!-- GPU Status Panel - NEW -->
+        <!-- GPU Status Panel -->
         <div class="gpu-status" id="gpuStatus" style="display: none;">
             <div style="color: #00ffff; font-weight: bold;">🔥 GPU Acceleration Status:</div>
             <div id="gpuStatusText">Checking WebGL support...</div>
@@ -529,14 +529,15 @@
                 <button id="toggleDebugVideo" class="camera-control">👁️ Toggle Debug Video</button>
             </div>
 
-    <div class="control-group">
-    <label>🔧 Depth Source</label>
-    <select id="depthSource" class="hadit-control">
-        <option value="brightness">Brightness/Saturation</option>
-        <option value="sMagnitude" selected>S-Magnitude</option>
-        <option value="angular">Angular Reflection</option>
-    </select>
-</div>
+            <div class="control-group">
+                <label>🔧 Depth Source</label>
+                <select id="depthSource" class="hadit-control">
+                    <option value="brightness">Brightness/Saturation</option>
+                    <option value="sMagnitude">S-Magnitude</option>
+                    <option value="radial">Radial Distance</option>
+                    <option value="angular">Angular Reflection</option>
+                </select>
+            </div>
             
             <div class="control-group">
                 <label>📐 Camera Settings</label>
@@ -637,7 +638,7 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-07 11:16:24 UTC</div>
+            <div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-08 09:53:16 UTC</div>
         </div>
 
         <div class="analysis-grid">
@@ -684,15 +685,15 @@
                         <label><input type="checkbox" id="showFPS" checked> Show FPS</label>
                         <label><input type="checkbox" id="debugMode" checked> Debug Mode</label>
                         <label><input type="checkbox" id="showRawFeed"> Show Raw Feed</label>
-                        <!-- NEW GPU CONTROL - but disabled by default -->
-    <label>🔥 GPU Processing</label>
-    <label><input type="checkbox" id="useGPU"> Enable GPU Acceleration</label>
-    <select id="gpuStereoMode" class="camera-control" disabled>
-        <option value="cpu">CPU Stereo Only</option>
-        <option value="gpu_forward">GPU Forward + Hole Fill</option>
-        <option value="gpu_bidirectional">GPU Bidirectional + Hole Fill</option>
-    </select>
-    <small style="color: #888; font-size: 9px;">GPU hole filling uses CPU depth data</small>                  
+                        <label>🔥 GPU Processing</label>
+                        <label><input type="checkbox" id="useGPU"> Enable GPU Acceleration</label>
+                        <select id="gpuStereoMode" class="camera-control" disabled>
+                            <option value="cpu">CPU Stereo Only</option>
+                            <option value="gpu_forward">GPU Forward + Hole Fill</option>
+                            <option value="gpu_bidirectional">GPU Bidirectional + Hole Fill</option>
+                        </select>
+                        <small style="color: #888; font-size: 9px;">GPU hole filling uses CPU depth data</small>                  
+                    </div>
                 </div>
             </div>
             
@@ -704,13 +705,8 @@
         </div>
     </div>
 
-<!-- Add this after the GPU controls section around line 696 -->
-<label>🎯 S-Coordinate Stereo</label>
-<label><input type="checkbox" id="useSCoordDisplacement"> Use S-Coordinate Displacement</label>
-<small style="color: #888; font-size: 9px;">Uses full 2D S-coordinates instead of just magnitude</small>
-
     <script>
-        // ==================== GPU ACCELERATION SYSTEM (NEW - OPTIONAL) ====================
+        // ==================== GPU ACCELERATION SYSTEM ====================
         
         class WebGLProcessor {
             constructor() {
@@ -721,7 +717,6 @@
             }
 
             async initialize() {
-                // Only initialize when explicitly requested
                 if (!document.getElementById('useGPU').checked) {
                     return false;
                 }
@@ -958,7 +953,7 @@
             }
         }
 
-        // ==================== ALL YOUR ORIGINAL CODE (UNCHANGED) ====================
+        // ==================== MATHEMATICAL OPERATIONS ====================
         
         const vectorOps = {
             dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
@@ -1007,1107 +1002,380 @@
             const G_reflected = householderReflection(G_3d, hadit_3d);
             const S_hadit = stereographicProjection(G_reflected);
             
-            const contentModulation = (1 + lum * config.luminosityWeight + sat * config.saturationWeight);
+            const contentModulation = 1.0 + lum * config.luminosityWeight + sat * config.saturationWeight;
             
             return {
-                sCoord: {
-                    x: S_hadit.x * contentModulation * config.haditInfluence,
-                    y: S_hadit.y * contentModulation * config.haditInfluence
-                },
-                sMagnitude: Math.sqrt(
-                    Math.pow(S_hadit.x * contentModulation * config.haditInfluence, 2) +
-                    Math.pow(S_hadit.y * contentModulation * config.haditInfluence, 2)
-                ),
-                originalG: G_3d,
-                reflectedG: G_reflected,
-                haditVector: hadit_3d,
-                contentModulation: contentModulation,
-                luminance: lum,
-                saturation: sat
+                x: S_hadit.x * contentModulation * config.haditInfluence,
+                y: S_hadit.y * contentModulation * config.haditInfluence
             };
         }
 
-        function applyDepthContrast(depth, contrast, bandCenteredness = 1.0) {
-            const centerAdjusted = 0.5;
-            let contrastAdjustedDepth = centerAdjusted + (depth - centerAdjusted) * contrast;
+        function calculateSCoordOffsets(imageData, depthData, config) {
+            const { width, height } = imageData;
+            const offsets = new Float32Array(width * height * 2);
             
-            if (bandCenteredness > 0.5) {
-                const bandBoost = 1.0 + (bandCenteredness - 0.5) * 0.5;
-                contrastAdjustedDepth = centerAdjusted + (contrastAdjustedDepth - centerAdjusted) * bandBoost;
-            }
+            const sBoundsValue = parseFloat(document.getElementById('sBounds').value);
             
-            return Math.max(0.05, Math.min(1.0, contrastAdjustedDepth));
-        }
-
-        let currentSBounds = 20.0;
-        let detectedBand = { min: 0, max: 0, center: 0, width: 0, confidence: 0 };
-
-        function detectHaditInformationBand(imageData, config) {
-            console.log(`📡 Detecting band with Hadit θ=${config.haditTheta.toFixed(1)}°, φ=${config.haditPhi.toFixed(1)}°`);
-            const startTime = performance.now();
-            
-            const { width, height, data } = imageData;
-            const sMagnitudeHistogram = new Array(200).fill(0);
-            const contentHistogram = new Array(200).fill(0);
-            
-            const maxSMagnitude = currentSBounds * 2;
-            let totalPixels = 0;
-            let totalContent = 0;
-            
-            const sampleStep = Math.max(1, Math.floor(Math.min(width, height) / 50));
-            
-            for (let y = 0; y < height; y += sampleStep) {
-                for (let x = 0; x < width; x += sampleStep) {
-                    const pixelIdx = (y * width + x) * 4;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const pixelIndex = (y * width + x) * 4;
                     
-                    const r = data[pixelIdx] / 255;
-                    const g = data[pixelIdx + 1] / 255;
-                    const b = data[pixelIdx + 2] / 255;
+                    const r = imageData.data[pixelIndex] / 255;
+                    const g = imageData.data[pixelIndex + 1] / 255;
+                    const b = imageData.data[pixelIndex + 2] / 255;
                     
                     const lum = 0.299 * r + 0.587 * g + 0.114 * b;
                     const maxCol = Math.max(r, g, b);
                     const minCol = Math.min(r, g, b);
                     const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
                     
-                    const result = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
-                    const sMagnitude = result.sMagnitude;
+                    const sCoord = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
+                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                    const normalizedSMagnitude = Math.min(sMagnitude / sBoundsValue, 1.0);
                     
-                    const contentImportance = lum * 0.5 + sat * 0.3 + 
-                                            (Math.abs(r - g) + Math.abs(g - b) + Math.abs(b - r)) * 0.2;
+                    const offsetIndex = (y * width + x) * 2;
                     
-                    const binIndex = Math.floor((sMagnitude / maxSMagnitude) * (sMagnitudeHistogram.length - 1));
-                    if (binIndex >= 0 && binIndex < sMagnitudeHistogram.length) {
-                        sMagnitudeHistogram[binIndex]++;
-                        contentHistogram[binIndex] += contentImportance;
-                        totalContent += contentImportance;
+                    let depthValue;
+                    const depthSource = document.getElementById('depthSource').value;
+                    
+                    switch (depthSource) {
+                        case 'brightness':
+                            depthValue = lum * 0.7 + sat * 0.3;
+                            break;
+                        case 'sMagnitude':
+                            depthValue = normalizedSMagnitude;
+                            break;
+                        case 'radial':
+                            const centerX = width / 2;
+                            const centerY = height / 2;
+                            const distX = (x - centerX) / centerX;
+                            const distY = (y - centerY) / centerY;
+                            const radialDistance = Math.sqrt(distX * distX + distY * distY);
+                            depthValue = Math.min(radialDistance, 1.0);
+                            break;
+                        case 'angular':
+                            depthValue = depthData ? depthData[y * width + x] / 255 : (lum * 0.7 + sat * 0.3);
+                            break;
                     }
                     
-                    totalPixels++;
-                }
-            }
-            
-            let bandDetectionResult;
-            
-            switch (config.bandDetectionMode) {
-                case 'full_image':
-                    bandDetectionResult = {
-                        min: 0,
-                        max: maxSMagnitude * 2,
-                        center: maxSMagnitude,
-                        width: maxSMagnitude * 2,
-                        confidence: 1.0
-                    };
-                    break;
+                    const centerAdjusted = 0.5;
+                    depthValue = centerAdjusted + (depthValue - centerAdjusted) * config.depthContrast;
+                    depthValue = Math.max(0.05, Math.min(depthValue, 1.0));
                     
-                case 'auto_detect':
-                    bandDetectionResult = autoDetectBand(sMagnitudeHistogram, contentHistogram, maxSMagnitude, 0.1);
-                    break;
-                    
-                case 'content_analysis':
-                    bandDetectionResult = contentBasedBandDetection(contentHistogram, maxSMagnitude, 0.1);
-                    break;
-                    
-                case 'gradient_based':
-                    bandDetectionResult = gradientBasedBandDetection(sMagnitudeHistogram, maxSMagnitude, 0.1);
-                    break;
-                    
-                case 'statistical':
-                    bandDetectionResult = statisticalBandDetection(sMagnitudeHistogram, contentHistogram, maxSMagnitude, 0.1);
-                    break;
-                    
-                case 'manual_range':
-                    bandDetectionResult = {
-                        min: config.manualBandMin || 0,
-                        max: config.manualBandMax || maxSMagnitude,
-                        center: ((config.manualBandMin || 0) + (config.manualBandMax || maxSMagnitude)) / 2,
-                        width: (config.manualBandMax || maxSMagnitude) - (config.manualBandMin || 0),
-                        confidence: 1.0
-                    };
-                    break;
-            }
-            
-            if (config.bandSizeMultiplier !== 1.0) {
-                const originalWidth = bandDetectionResult.width;
-                const newWidth = originalWidth * config.bandSizeMultiplier;
-                const expansion = (newWidth - originalWidth) / 2;
-                
-                bandDetectionResult.min = Math.max(0, bandDetectionResult.min - expansion);
-                bandDetectionResult.max = bandDetectionResult.max + expansion;
-                bandDetectionResult.width = newWidth;
-            }
-            
-            const processingTime = performance.now() - startTime;
-            
-            console.log(`✅ Band detection completed in ${processingTime.toFixed(2)}ms`);
-            console.log(`   Detected band: ${bandDetectionResult.min.toFixed(2)} to ${bandDetectionResult.max.toFixed(2)}`);
-            
-            return {
-                band: bandDetectionResult,
-                histograms: {
-                    sMagnitude: sMagnitudeHistogram,
-                    content: contentHistogram
-                },
-                stats: {
-                    processingTime,
-                    totalPixels,
-                    totalContent,
-                    maxSMagnitude,
-                    samplingStep: sampleStep
-                }
-            };
-        }
-
-        function autoDetectBand(sMagnitudeHistogram, contentHistogram, maxSMagnitude, sensitivity) {
-            const smoothedContent = smoothHistogram(contentHistogram, 3);
-            const peaks = findHistogramPeaks(smoothedContent, sensitivity);
-            
-            if (peaks.length === 0) {
-                return { min: 0, max: maxSMagnitude, center: maxSMagnitude / 2, width: maxSMagnitude, confidence: 0.1 };
-            }
-            
-            const primaryPeak = peaks.reduce((max, peak) => peak.strength > max.strength ? peak : max);
-            const bandHalfWidth = Math.max(0.5, maxSMagnitude * 0.1);
-            const binToSMagnitude = (bin) => (bin / (smoothedContent.length - 1)) * maxSMagnitude;
-            
-            const bandCenter = binToSMagnitude(primaryPeak.bin);
-            const bandMin = Math.max(0, bandCenter - bandHalfWidth);
-            const bandMax = Math.min(maxSMagnitude, bandCenter + bandHalfWidth);
-            
-            return {
-                min: bandMin,
-                max: bandMax,
-                center: bandCenter,
-                width: bandMax - bandMin,
-                confidence: Math.min(1.0, primaryPeak.strength / (smoothedContent.length * 0.1))
-            };
-        }
-
-        function contentBasedBandDetection(contentHistogram, maxSMagnitude, sensitivity) {
-            let totalContent = contentHistogram.reduce((sum, val) => sum + val, 0);
-            if (totalContent === 0) {
-                return { min: 0, max: maxSMagnitude, center: maxSMagnitude / 2, width: maxSMagnitude, confidence: 0.1 };
-            }
-            
-            let weightedSum = 0;
-            for (let i = 0; i < contentHistogram.length; i++) {
-                weightedSum += i * contentHistogram[i];
-            }
-            const centerOfMass = weightedSum / totalContent;
-            
-            const threshold = totalContent * sensitivity * 0.01;
-            let minBin = 0, maxBin = contentHistogram.length - 1;
-            
-            for (let i = 0; i < contentHistogram.length; i++) {
-                if (contentHistogram[i] > threshold) {
-                    minBin = i;
-                    break;
+                    offsets[offsetIndex] = sCoord.x * depthValue * config.depthIntensity;
+                    offsets[offsetIndex + 1] = sCoord.y * depthValue * config.depthIntensity;
                 }
             }
             
-            for (let i = contentHistogram.length - 1; i >= 0; i--) {
-                if (contentHistogram[i] > threshold) {
-                    maxBin = i;
-                    break;
-                }
-            }
-            
-            const binToSMagnitude = (bin) => (bin / (contentHistogram.length - 1)) * maxSMagnitude;
-            
-            return {
-                min: binToSMagnitude(minBin),
-                max: binToSMagnitude(maxBin),
-                center: binToSMagnitude(centerOfMass),
-                width: binToSMagnitude(maxBin) - binToSMagnitude(minBin),
-                confidence: Math.min(1.0, (maxBin - minBin) / (contentHistogram.length * 0.5))
-            };
+            return offsets;
         }
 
-        function gradientBasedBandDetection(sMagnitudeHistogram, maxSMagnitude, sensitivity) {
-            const gradient = [];
-            for (let i = 1; i < sMagnitudeHistogram.length - 1; i++) {
-                gradient[i] = sMagnitudeHistogram[i + 1] - sMagnitudeHistogram[i - 1];
-            }
+        function createDepthMap(imageData, config) {
+            const { width, height } = imageData;
+            const depthData = new Uint8Array(width * height);
             
-            const threshold = Math.max(...gradient) * sensitivity;
-            let risingEdges = [];
-            let fallingEdges = [];
-            
-            for (let i = 0; i < gradient.length; i++) {
-                if (gradient[i] > threshold) risingEdges.push(i);
-                if (gradient[i] < -threshold) fallingEdges.push(i);
-            }
-            
-            if (risingEdges.length === 0 || fallingEdges.length === 0) {
-                return { min: 0, max: maxSMagnitude, center: maxSMagnitude / 2, width: maxSMagnitude, confidence: 0.1 };
-            }
-            
-            const binToSMagnitude = (bin) => (bin / (sMagnitudeHistogram.length - 1)) * maxSMagnitude;
-            const bandMin = binToSMagnitude(risingEdges[0]);
-            const bandMax = binToSMagnitude(fallingEdges[fallingEdges.length - 1]);
-            
-            return {
-                min: bandMin,
-                max: bandMax,
-                center: (bandMin + bandMax) / 2,
-                width: bandMax - bandMin,
-                confidence: Math.min(1.0, (risingEdges.length + fallingEdges.length) / 10)
-            };
-        }
-
-        function statisticalBandDetection(sMagnitudeHistogram, contentHistogram, maxSMagnitude, sensitivity) {
-            let mean = 0, variance = 0, total = 0;
-            
-            for (let i = 0; i < sMagnitudeHistogram.length; i++) {
-                const count = sMagnitudeHistogram[i];
-                mean += i * count;
-                total += count;
-            }
-            
-            if (total === 0) {
-                return { min: 0, max: maxSMagnitude, center: maxSMagnitude / 2, width: maxSMagnitude, confidence: 0.1 };
-            }
-            
-            mean /= total;
-            
-            for (let i = 0; i < sMagnitudeHistogram.length; i++) {
-                const count = sMagnitudeHistogram[i];
-                variance += Math.pow(i - mean, 2) * count;
-            }
-            variance /= total;
-            
-            const stdDev = Math.sqrt(variance);
-            const bandHalfWidth = stdDev * (2 - sensitivity);
-            
-            const binToSMagnitude = (bin) => (bin / (sMagnitudeHistogram.length - 1)) * maxSMagnitude;
-            const center = binToSMagnitude(mean);
-            const bandMin = Math.max(0, center - binToSMagnitude(bandHalfWidth));
-            const bandMax = Math.min(maxSMagnitude, center + binToSMagnitude(bandHalfWidth));
-            
-            return {
-                min: bandMin,
-                max: bandMax,
-                center: center,
-                width: bandMax - bandMin,
-                confidence: Math.min(1.0, stdDev / (sMagnitudeHistogram.length * 0.2))
-            };
-        }
-
-        function smoothHistogram(histogram, radius) {
-            const smoothed = new Array(histogram.length).fill(0);
-            for (let i = 0; i < histogram.length; i++) {
-                let sum = 0, count = 0;
-                for (let j = Math.max(0, i - radius); j <= Math.min(histogram.length - 1, i + radius); j++) {
-                    sum += histogram[j];
-                    count++;
-                }
-                smoothed[i] = sum / count;
-            }
-            return smoothed;
-        }
-
-        function findHistogramPeaks(histogram, sensitivity) {
-            const peaks = [];
-            const minPeakHeight = Math.max(...histogram) * sensitivity * 0.1;
-            
-            for (let i = 1; i < histogram.length - 1; i++) {
-                if (histogram[i] > histogram[i - 1] && 
-                    histogram[i] > histogram[i + 1] && 
-                    histogram[i] > minPeakHeight) {
-                    peaks.push({
-                        bin: i,
-                        strength: histogram[i]
-                    });
-                }
-            }
-            
-            return peaks;
-        }
-
-function generateBandFocusedDepth(imageData, config, detectedBand) {
-    console.log('📡 Generating precise Hadit depth map with contrast enhancement...');
-    const startTime = performance.now();
-    
-    const { width, height, data } = imageData;
-    const depthBuffer = new Array(width * height);
-    
-    currentSBounds = config.sBounds;
-    
-    let minDepth = 1, maxDepth = 0, totalDepth = 0;
-    let pixelsInBand = 0, pixelsOutsideBand = 0;
-    let bandDepthSum = 0, outsideDepthSum = 0;
-    
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const idx = y * width + x;
-            const pixelIdx = idx * 4;
-            
-            const r = data[pixelIdx] / 255;
-            const g = data[pixelIdx + 1] / 255;
-            const b = data[pixelIdx + 2] / 255;
-            
-            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-            const maxCol = Math.max(r, g, b);
-            const minCol = Math.min(r, g, b);
-            const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
-            
-            const result = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
-            const { sCoord, sMagnitude } = result;
-            
-            const isInBand = sMagnitude >= detectedBand.min && sMagnitude <= detectedBand.max;
-            const distanceFromBandCenter = Math.abs(sMagnitude - detectedBand.center);
-            const bandPosition = Math.max(0, Math.min(1, (sMagnitude - detectedBand.min) / Math.max(0.001, detectedBand.width)));
-            
-            // DEPTH SOURCE SELECTION - Choose depth calculation method based on config.depthSource
-            let depth;
-            switch (config.depthSource) {
-                case 'sMagnitude':
-                    depth = calculateDepthFromSCoords(x, y, width, height, config);
-                    break;
-                case 'angular':
-                    depth = calculateAngularDepth(x, y, width, height, config);
-                    break;
-                case 'brightness':
-                default:
-                    // Original brightness/saturation based calculation
-                    depth = 0.1 + lum * 0.6 + sat * 0.3;
-                    break;
-            }
-            
-            let bandCenteredness = 0;
-            
-            if (isInBand) {
-                pixelsInBand++;
+            if (document.getElementById('useGPU').checked && webGLProcessor.isInitialized) {
+                const gpuDepth = webGLProcessor.processDepthMap(imageData, config);
                 
-                bandCenteredness = detectedBand.width > 0 ? 
-                    1.0 - (distanceFromBandCenter / (detectedBand.width * 0.5)) : 1.0;
-                bandCenteredness = Math.max(0, Math.min(1, bandCenteredness));
-                
-                // Apply band-specific modulation only for brightness/saturation mode
-                if (config.depthSource === 'brightness' || !config.depthSource) {
-                    const contentWeight = lum * 0.5 + sat * 0.3;
-                    
-                    depth = 0.3 + bandPosition * 0.6;
-                    depth *= (1 + Math.max(0, bandCenteredness) * config.focusFactor * 0.2);
-                    depth *= (1 + contentWeight * 0.3);
-                }
-                
-                bandDepthSum += depth;
-                
-            } else {
-                pixelsOutsideBand++;
-                
-                // Apply focus-only-band logic only for brightness/saturation mode
-                if (config.depthSource === 'brightness' || !config.depthSource) {
-                    if (config.focusOnlyBand) {
-                        depth = 0.05 + (lum * 0.1);
-                    } else {
-                        const falloffDistance = Math.min(
-                            Math.abs(sMagnitude - detectedBand.min),
-                            Math.abs(sMagnitude - detectedBand.max)
-                        );
-                        const falloffFactor = 1.0 / (1.0 + falloffDistance * 0.5);
-                        depth = 0.1 + lum * 0.2 * falloffFactor;
+                if (gpuDepth) {
+                    for (let i = 0; i < width * height; i++) {
+                        depthData[i] = gpuDepth[i * 4];
                     }
+                    return depthData;
                 }
-                
-                outsideDepthSum += depth;
             }
-            
-            // Apply focus factor enhancement for in-band pixels
-            if (isInBand && config.focusFactor > 1.0) {
-                depth = 0.5 + (depth - 0.5) * config.focusFactor;
-            }
-            
-            depth = applyDepthContrast(depth, config.depthContrast, bandCenteredness);
-            
-            depth = Math.max(0.05, Math.min(1.0, depth));
-            
-            minDepth = Math.min(minDepth, depth);
-            maxDepth = Math.max(maxDepth, depth);
-            totalDepth += depth;
-            
-            depthBuffer[idx] = {
-                depth: depth,
-                sCoord: sCoord,
-                sMagnitude: sMagnitude,
-                isInBand: isInBand,
-                bandPosition: bandPosition,
-                distanceFromBandCenter: distanceFromBandCenter,
-                bandCenteredness: bandCenteredness,
-                luminance: lum,
-                saturation: sat,
-                haditResult: result,
-                coverage: true
-            };
-        }
-    }
-    
-    const processingTime = performance.now() - startTime;
-    const avgDepth = totalDepth / (width * height);
-    const avgBandDepth = pixelsInBand > 0 ? bandDepthSum / pixelsInBand : 0;
-    const avgOutsideDepth = pixelsOutsideBand > 0 ? outsideDepthSum / pixelsOutsideBand : 0;
-    
-    console.log(`✅ Precise depth with contrast generated in ${processingTime.toFixed(2)}ms`);
-    console.log(`   θ=${config.haditTheta.toFixed(1)}°, φ=${config.haditPhi.toFixed(1)}°, Contrast=${config.depthContrast.toFixed(1)}x`);
-    console.log(`   Pixels in band: ${pixelsInBand}/${width * height} (${(pixelsInBand/(width*height)*100).toFixed(1)}%)`);
-    console.log(`   Depth source: ${config.depthSource || 'brightness'}`);
-    
-    return {
-        depthBuffer,
-        stats: {
-            processingTime,
-            minDepth,
-            maxDepth,
-            avgDepth,
-            avgBandDepth,
-            avgOutsideDepth,
-            pixelsInBand,
-            pixelsOutsideBand,
-            bandCoverage: pixelsInBand / (width * height)
-        }
-    };
-}
-        function applyHaditStereoWithDepth(sourceCanvas, depthBuffer, config, isRightEye = false) {
-            const sourceCtx = sourceCanvas.getContext('2d');
-            const sourceImageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
-            
-            const outputImageData = new ImageData(sourceCanvas.width, sourceCanvas.height);
-            const { width, height } = sourceImageData;
-            
-            const separationPixels = config.separation;
-            const depthIntensity = config.depthIntensity;
             
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    const idx = y * width + x;
-                    const pixelIdx = idx * 4;
+                    const pixelIndex = (y * width + x) * 4;
                     
-                    if (idx < depthBuffer.length && depthBuffer[idx]) {
-                        const depthInfo = depthBuffer[idx];
-                        const normalizedDepth = depthInfo.depth;
-                        
-                        let offsetX = (normalizedDepth - 0.5) * separationPixels * depthIntensity;
-                        if (isRightEye) offsetX = -offsetX;
-                        
-                        const sourceX = Math.round(x - offsetX);
-                        
-                        if (sourceX >= 0 && sourceX < width) {
-                            const sourceIdx = y * width + sourceX;
-                            const sourcePixelIdx = sourceIdx * 4;
-                            
-                            outputImageData.data[pixelIdx] = sourceImageData.data[sourcePixelIdx];
-                            outputImageData.data[pixelIdx + 1] = sourceImageData.data[sourcePixelIdx + 1];
-                            outputImageData.data[pixelIdx + 2] = sourceImageData.data[sourcePixelIdx + 2];
-                            outputImageData.data[pixelIdx + 3] = sourceImageData.data[sourcePixelIdx + 3];
-                        } else {
-                            outputImageData.data[pixelIdx] = 0;
-                            outputImageData.data[pixelIdx + 1] = 0;
-                            outputImageData.data[pixelIdx + 2] = 0;
-                            outputImageData.data[pixelIdx + 3] = 255;
-                        }
-                    } else {
-                        outputImageData.data[pixelIdx] = sourceImageData.data[pixelIdx];
-                        outputImageData.data[pixelIdx + 1] = sourceImageData.data[pixelIdx + 1];
-                        outputImageData.data[pixelIdx + 2] = sourceImageData.data[pixelIdx + 2];
-                        outputImageData.data[pixelIdx + 3] = sourceImageData.data[pixelIdx + 3];
+                    const r = imageData.data[pixelIndex] / 255;
+                    const g = imageData.data[pixelIndex + 1] / 255;
+                    const b = imageData.data[pixelIndex + 2] / 255;
+                    
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    const maxCol = Math.max(r, g, b);
+                    const minCol = Math.min(r, g, b);
+                    const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
+                    
+                    const sCoord = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
+                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                    const sBoundsValue = parseFloat(document.getElementById('sBounds').value);
+                    const normalizedSMagnitude = Math.min(sMagnitude / sBoundsValue, 1.0);
+                    
+                    let depthValue;
+                    const depthSource = document.getElementById('depthSource').value;
+                    
+                    switch (depthSource) {
+                        case 'brightness':
+                            depthValue = lum * 0.7 + sat * 0.3;
+                            break;
+                        case 'sMagnitude':
+                            depthValue = normalizedSMagnitude;
+                            break;
+                        case 'radial':
+                            const centerX = width / 2;
+                            const centerY = height / 2;
+                            const distX = (x - centerX) / centerX;
+                            const distY = (y - centerY) / centerY;
+                            const radialDistance = Math.sqrt(distX * distX + distY * distY);
+                            depthValue = Math.min(radialDistance, 1.0);
+                            break;
+                        case 'angular':
+                            const gTheta = (x / width) * 360;
+                            const gPhi = (y / height) * 180;
+                            const angleFactor = Math.abs(Math.sin((gTheta - config.haditTheta) * Math.PI / 180));
+                            depthValue = angleFactor * lum + (1 - angleFactor) * sat;
+                            break;
                     }
+                    
+                    const centerAdjusted = 0.5;
+                    depthValue = centerAdjusted + (depthValue - centerAdjusted) * config.depthContrast;
+                    depthValue = Math.max(0.05, Math.min(depthValue, 1.0));
+                    
+                    depthData[y * width + x] = Math.round(depthValue * 255);
                 }
             }
             
-            return outputImageData;
+            return depthData;
         }
 
-function calculateDepthFromSCoords(px, py, width, height, config) {
-    const result = calculateHaditModulatedSCoordinate(px, py, width, height, 0, 0, config);
-    const { sMagnitude } = result;
-    
-    // Use logarithmic scaling to handle larger S-magnitude ranges
-    const logS = Math.log(1 + sMagnitude);
-    const maxLogS = Math.log(1 + config.sBounds);
-    const normalizedS = Math.min(logS / maxLogS, 1.0);
-    const depth = 0.1 + (normalizedS * 0.8); // Maps to 0.1-0.9 range
-    
-    return Math.max(0.05, Math.min(1.0, depth));
-}
-
-function calculateAngularDepth(px, py, width, height, config) {
-    const result = calculateHaditModulatedSCoordinate(px, py, width, height, 0, 0, config);
-    const { originalG, reflectedG, haditVector } = result;
-    
-    // Calculate angle between original and reflected vectors
-    const dotProduct = vectorOps.dot(originalG, reflectedG);
-    const angle = Math.acos(Math.max(-1, Math.min(1, dotProduct)));
-    
-    // Larger angles = more depth
-    const normalizedAngle = angle / Math.PI;
-    return 0.1 + (normalizedAngle * 0.8);
-}
-
-// Add these functions after line ~1540, after calculateAngularDepth function
-
-function applyHaditStereoWithSCoords(sourceCanvas, depthBuffer, config, isRightEye = false) {
-    const sourceCtx = sourceCanvas.getContext('2d');
-    const sourceImageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
-    
-    const outputImageData = new ImageData(sourceCanvas.width, sourceCanvas.height);
-    const { width, height } = sourceImageData;
-    
-    // S-coordinate scaling factors
-    const sCoordScale = config.separation || 8;
-    const sCoordIntensity = config.depthIntensity || 2.0;
-    const maxSCoordOffset = config.sBounds || 20.0;
-    
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const idx = y * width + x;
-            const pixelIdx = idx * 4;
+        function renderStereoFrames(imageData, config) {
+            const { width, height } = imageData;
             
-            if (idx < depthBuffer.length && depthBuffer[idx]) {
-                const depthInfo = depthBuffer[idx];
-                const sCoord = depthInfo.sCoord;
-                
-                // Calculate S-coordinate based offsets
-                let offsetX = sCoord.x * sCoordScale * sCoordIntensity;
-                let offsetY = sCoord.y * sCoordScale * sCoordIntensity;
-                
-                // Clamp offsets to prevent extreme displacement
-                offsetX = Math.max(-maxSCoordOffset, Math.min(maxSCoordOffset, offsetX));
-                offsetY = Math.max(-maxSCoordOffset, Math.min(maxSCoordOffset, offsetY));
-                
-                // Apply eye-specific transformations
-                if (isRightEye) {
-                    offsetX = -offsetX;
-                }
-                
-                // Calculate source pixel position
-                const sourceX = Math.round(x - offsetX);
-                const sourceY = Math.round(y - offsetY);
-                
-                // Check bounds and copy pixel
-                if (sourceX >= 0 && sourceX < width && sourceY >= 0 && sourceY < height) {
-                    const sourceIdx = sourceY * width + sourceX;
-                    const sourcePixelIdx = sourceIdx * 4;
+            const depthData = createDepthMap(imageData, config);
+            const offsets = calculateSCoordOffsets(imageData, depthData, config);
+            
+            const leftCtx = document.getElementById('leftCanvas').getContext('2d');
+            const rightCtx = document.getElementById('rightCanvas').getContext('2d');
+            
+            const leftImageData = new ImageData(width, height);
+            const rightImageData = new ImageData(width, height);
+            
+            const separation = parseInt(document.getElementById('separation').value);
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const pixelIndex = (y * width + x) * 4;
+                    const offsetIndex = (y * width + x) * 2;
                     
-                    outputImageData.data[pixelIdx] = sourceImageData.data[sourcePixelIdx];
-                    outputImageData.data[pixelIdx + 1] = sourceImageData.data[sourcePixelIdx + 1];
-                    outputImageData.data[pixelIdx + 2] = sourceImageData.data[sourcePixelIdx + 2];
-                    outputImageData.data[pixelIdx + 3] = sourceImageData.data[sourcePixelIdx + 3];
-                } else {
-                    // Fill holes with black
-                    outputImageData.data[pixelIdx] = 0;
-                    outputImageData.data[pixelIdx + 1] = 0;
-                    outputImageData.data[pixelIdx + 2] = 0;
-                    outputImageData.data[pixelIdx + 3] = 255;
+                    const r = imageData.data[pixelIndex];
+                    const g = imageData.data[pixelIndex + 1];
+                    const b = imageData.data[pixelIndex + 2];
+                    const a = imageData.data[pixelIndex + 3];
+                    
+                    const sOffsetX = offsets[offsetIndex];
+                    const sOffsetY = offsets[offsetIndex + 1];
+                    
+                    const depthFactor = depthData[y * width + x] / 255;
+                    const leftShift = Math.round(separation * depthFactor / 2);
+                    const rightShift = Math.round(separation * depthFactor / 2);
+                    
+                    const leftX = Math.max(0, Math.min(width - 1, x - leftShift + Math.round(sOffsetX)));
+                    const leftY = Math.max(0, Math.min(height - 1, y + Math.round(sOffsetY)));
+                    const rightX = Math.max(0, Math.min(width - 1, x + rightShift - Math.round(sOffsetX)));
+                    const rightY = Math.max(0, Math.min(height - 1, y - Math.round(sOffsetY)));
+                    
+                    const leftIndex = (leftY * width + leftX) * 4;
+                    leftImageData.data[leftIndex] = r;
+                    leftImageData.data[leftIndex + 1] = g;
+                    leftImageData.data[leftIndex + 2] = b;
+                    leftImageData.data[leftIndex + 3] = a;
+                    
+                    const rightIndex = (rightY * width + rightX) * 4;
+                    rightImageData.data[rightIndex] = r;
+                    rightImageData.data[rightIndex + 1] = g;
+                    rightImageData.data[rightIndex + 2] = b;
+                    rightImageData.data[rightIndex + 3] = a;
                 }
+            }
+            
+            leftCtx.putImageData(leftImageData, 0, 0);
+            rightCtx.putImageData(rightImageData, 0, 0);
+        }
+
+        function processFrame(videoElement, config) {
+            const leftCanvas = document.getElementById('leftCanvas');
+            const rightCanvas = document.getElementById('rightCanvas');
+            const depthCanvas = document.getElementById('depthCanvas');
+            
+            const quality = parseFloat(document.getElementById('qualitySelect').value);
+            
+            const width = Math.round(videoElement.videoWidth * quality);
+            const height = Math.round(videoElement.videoHeight * quality);
+            
+            if (leftCanvas.width !== width || leftCanvas.height !== height) {
+                leftCanvas.width = rightCanvas.width = width;
+                leftCanvas.height = rightCanvas.height = height;
+                depthCanvas.width = width;
+                depthCanvas.height = height;
+            }
+            
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            tempCtx.drawImage(videoElement, 0, 0, width, height);
+            const imageData = tempCtx.getImageData(0, 0, width, height);
+            
+            config.haditTheta = parseFloat(document.getElementById('haditTheta').value);
+            config.haditPhi = parseFloat(document.getElementById('haditPhi').value);
+            config.haditInfluence = parseFloat(document.getElementById('haditInfluence').value);
+            config.depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
+            config.depthContrast = parseFloat(document.getElementById('depthContrast').value);
+            config.luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
+            config.saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
+            
+            if (document.getElementById('enableStereo').checked) {
+                renderStereoFrames(imageData, config);
             } else {
-                // No depth info, copy original pixel
-                outputImageData.data[pixelIdx] = sourceImageData.data[pixelIdx];
-                outputImageData.data[pixelIdx + 1] = sourceImageData.data[pixelIdx + 1];
-                outputImageData.data[pixelIdx + 2] = sourceImageData.data[pixelIdx + 2];
-                outputImageData.data[pixelIdx + 3] = sourceImageData.data[pixelIdx + 3];
+                const leftCtx = leftCanvas.getContext('2d');
+                const rightCtx = rightCanvas.getContext('2d');
+                leftCtx.putImageData(imageData, 0, 0);
+                rightCtx.putImageData(imageData, 0, 0);
+            }
+            
+            if (document.getElementById('showDepthMap').checked) {
+                const depthData = createDepthMap(imageData, config);
+                const depthImageData = new ImageData(width, height);
+                
+                for (let i = 0; i < width * height; i++) {
+                    const value = depthData[i];
+                    const index = i * 4;
+                    depthImageData.data[index] = value;
+                    depthImageData.data[index + 1] = value;
+                    depthImageData.data[index + 2] = value;
+                    depthImageData.data[index + 3] = 255;
+                }
+                
+                const depthCtx = depthCanvas.getContext('2d');
+                depthCtx.putImageData(depthImageData, 0, 0);
             }
         }
-    }
-    
-    return outputImageData;
-}
 
-function applyHaditStereoWithSCoordsAndHoleFilling(sourceCanvas, depthBuffer, config, isRightEye = false) {
-    const sourceCtx = sourceCanvas.getContext('2d');
-    const sourceImageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
-    
-    const outputImageData = new ImageData(sourceCanvas.width, sourceCanvas.height);
-    const { width, height } = sourceImageData;
-    
-    // S-coordinate scaling factors
-    const sCoordScale = config.separation || 8;
-    const sCoordIntensity = config.depthIntensity || 2.0;
-    const maxSCoordOffset = config.sBounds || 20.0;
-    
-    // Create a mapping array to track which pixels have been filled
-    const pixelFilled = new Array(width * height).fill(false);
-    
-    // Forward pass: apply S-coordinate displacement
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const idx = y * width + x;
-            const pixelIdx = idx * 4;
-            
-            if (idx < depthBuffer.length && depthBuffer[idx]) {
-                const depthInfo = depthBuffer[idx];
-                const sCoord = depthInfo.sCoord;
-                
-                // Calculate S-coordinate based offsets
-                let offsetX = sCoord.x * sCoordScale * sCoordIntensity;
-                let offsetY = sCoord.y * sCoordScale * sCoordIntensity;
-                
-                // Clamp offsets
-                offsetX = Math.max(-maxSCoordOffset, Math.min(maxSCoordOffset, offsetX));
-                offsetY = Math.max(-maxSCoordOffset, Math.min(maxSCoordOffset, offsetY));
-                
-                // Apply eye-specific transformations
-                if (isRightEye) {
-                    offsetX = -offsetX;
-                }
-                
-                // Calculate target pixel position
-                const targetX = Math.round(x + offsetX);
-                const targetY = Math.round(y + offsetY);
-                
-                // Check bounds and place pixel
-                if (targetX >= 0 && targetX < width && targetY >= 0 && targetY < height) {
-                    const targetIdx = targetY * width + targetX;
-                    const targetPixelIdx = targetIdx * 4;
-                    
-                    if (!pixelFilled[targetIdx]) {
-                        outputImageData.data[targetPixelIdx] = sourceImageData.data[pixelIdx];
-                        outputImageData.data[targetPixelIdx + 1] = sourceImageData.data[pixelIdx + 1];
-                        outputImageData.data[targetPixelIdx + 2] = sourceImageData.data[pixelIdx + 2];
-                        outputImageData.data[targetPixelIdx + 3] = sourceImageData.data[pixelIdx + 3];
-                        pixelFilled[targetIdx] = true;
-                    }
-                }
-            }
-        }
-    }
-    
-    // Hole filling pass
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const idx = y * width + x;
-            const pixelIdx = idx * 4;
-            
-            if (!pixelFilled[idx]) {
-                let found = false;
-                for (let radius = 1; radius <= 5 && !found; radius++) {
-                    for (let dy = -radius; dy <= radius && !found; dy++) {
-                        for (let dx = -radius; dx <= radius && !found; dx++) {
-                            const nx = x + dx;
-                            const ny = y + dy;
-                            
-                            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                                const nIdx = ny * width + nx;
-                                if (pixelFilled[nIdx]) {
-                                    const nPixelIdx = nIdx * 4;
-                                    outputImageData.data[pixelIdx] = outputImageData.data[nPixelIdx];
-                                    outputImageData.data[pixelIdx + 1] = outputImageData.data[nPixelIdx + 1];
-                                    outputImageData.data[pixelIdx + 2] = outputImageData.data[nPixelIdx + 2];
-                                    outputImageData.data[pixelIdx + 3] = outputImageData.data[nPixelIdx + 3];
-                                    found = true;
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if (!found) {
-                    outputImageData.data[pixelIdx] = sourceImageData.data[pixelIdx];
-                    outputImageData.data[pixelIdx + 1] = sourceImageData.data[pixelIdx + 1];
-                    outputImageData.data[pixelIdx + 2] = sourceImageData.data[pixelIdx + 2];
-                    outputImageData.data[pixelIdx + 3] = sourceImageData.data[pixelIdx + 3];
-                }
-            }
-        }
-    }
-    
-    return outputImageData;
-}
+        // ==================== INITIALIZATION AND CONTROL SETUP ====================
 
-        
-function visualizeDepthMap(depthBuffer, canvas, config, detectedBand) {
-    const ctx = canvas.getContext('2d');
-    const { width, height } = canvas;
-    
-    const imageData = new ImageData(width, height);
-    
-    // First pass: find the actual depth range for better visualization
-    let minActualDepth = 1.0;
-    let maxActualDepth = 0.0;
-    
-    for (let i = 0; i < depthBuffer.length; i++) {
-        if (depthBuffer[i] && depthBuffer[i].depth !== undefined) {
-            minActualDepth = Math.min(minActualDepth, depthBuffer[i].depth);
-            maxActualDepth = Math.max(maxActualDepth, depthBuffer[i].depth);
-        }
-    }
-    
-    const depthRange = maxActualDepth - minActualDepth;
-    
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const idx = y * width + x;
-            const pixelIdx = idx * 4;
-            
-            if (idx < depthBuffer.length && depthBuffer[idx]) {
-                const depthInfo = depthBuffer[idx];
-                let depth = depthInfo.depth;
-                
-                let r, g, b;
-                
-                if (config.showBandVisualization && depthInfo.isInBand) {
-                    const bandCenteredness = depthInfo.bandCenteredness;
-                    r = Math.floor(255 * (1 - bandCenteredness) + 255 * bandCenteredness * 0.2);
-                    g = Math.floor(255 * bandCenteredness + 100 * (1 - bandCenteredness));
-                    b = Math.floor(100 + 155 * (1 - bandCenteredness));
-                } else {
-                    // Enhanced visualization for S-magnitude and other geometric modes
-                    if (config.depthSource === 'sMagnitude' || config.depthSource === 'angular') {
-                        // Normalize depth to the actual range for better contrast
-                        const normalizedDepth = depthRange > 0 ? (depth - minActualDepth) / depthRange : 0.5;
-                        
-                        // Use a colorful heatmap for geometric depth
-                        if (normalizedDepth < 0.25) {
-                            // Blue to cyan
-                            r = 0;
-                            g = Math.floor(normalizedDepth * 4 * 255);
-                            b = 255;
-                        } else if (normalizedDepth < 0.5) {
-                            // Cyan to green
-                            r = 0;
-                            g = 255;
-                            b = Math.floor((0.5 - normalizedDepth) * 4 * 255);
-                        } else if (normalizedDepth < 0.75) {
-                            // Green to yellow
-                            r = Math.floor((normalizedDepth - 0.5) * 4 * 255);
-                            g = 255;
-                            b = 0;
-                        } else {
-                            // Yellow to red
-                            r = 255;
-                            g = Math.floor((1.0 - normalizedDepth) * 4 * 255);
-                            b = 0;
-                        }
-                    } else {
-                        // Standard grayscale for brightness mode
-                        const intensity = Math.floor(depth * 255);
-                        r = intensity;
-                        g = intensity;
-                        b = intensity;
-                    }
-                }
-                
-                imageData.data[pixelIdx] = r;
-                imageData.data[pixelIdx + 1] = g;
-                imageData.data[pixelIdx + 2] = b;
-                imageData.data[pixelIdx + 3] = 255;
-            } else {
-                imageData.data[pixelIdx] = 0;
-                imageData.data[pixelIdx + 1] = 0;
-                imageData.data[pixelIdx + 2] = 0;
-                imageData.data[pixelIdx + 3] = 255;
-            }
-        }
-    }
-    
-    ctx.putImageData(imageData, 0, 0);
-    
-    // Add debug info for S-magnitude mode
-    if (config.depthSource === 'sMagnitude') {
-        ctx.font = '10px monospace';
-        ctx.fillStyle = 'white';
-        ctx.fillText(`Depth Range: ${minActualDepth.toFixed(3)} - ${maxActualDepth.toFixed(3)}`, 5, height - 25);
-        ctx.fillText(`S-Magnitude Mode`, 5, height - 10);
-    }
-}
-        
-        // ==================== CAMERA AND VIDEO PROCESSING (WORKING ORIGINAL + OPTIONAL GPU) ====================
-        
-        let gpuProcessor = new WebGLProcessor();
-        let videoElement = null;
+        const webGLProcessor = new WebGLProcessor();
+
+        let currentStream = null;
+        let isProcessing = false;
         let animationFrameId = null;
-        let processedFrames = 0;
-        let startTime = Date.now();
-        let currentConfig = {
+        let fpsCounters = {
+            left: { frames: 0, lastTime: 0, fps: 0 },
+            right: { frames: 0, lastTime: 0, fps: 0 },
+            depth: { frames: 0, lastTime: 0, fps: 0 }
+        };
+
+        let animationStates = {
+            theta: false,
+            phi: false,
+            thetaDirection: 1,
+            phiDirection: 1,
+            thetaSpeed: 0.5,
+            phiSpeed: 0.1
+        };
+
+        const processingConfig = {
             haditTheta: 0.0,
             haditPhi: 0.1,
             haditInfluence: 1.0,
-            separation: 8,
             depthIntensity: 2.0,
             depthContrast: 0.2,
-            sBounds: 20.0,
-            bandDetectionMode: 'auto_detect',
-            depthSource: 'sMagnitude',
-            bandSizeMultiplier: 10.0,
-            focusFactor: 4.0,
             luminosityWeight: 0.0,
             saturationWeight: 0.0,
-            enableStereo: true,
-            showDepthMap: true,
-            showBandVisualization: false,
-            focusOnlyBand: false,
-            mirrorCamera: false,
-            showFPS: true,
-            debugMode: true,
-            showRawFeed: false,
-            useGPU: false, // Disabled by default to keep original working
-            qualityScale: 0.75,
-            useSCoordDisplacement: false
+            bandSizeMultiplier: 10.0,
+            focusFactor: 4.0,
+            sBounds: 20.0,
+            separation: 8
         };
 
-        const leftCanvas = document.getElementById('leftCanvas');
-        const rightCanvas = document.getElementById('rightCanvas');
-        const depthCanvas = document.getElementById('depthCanvas');
-        const debugVideo = document.getElementById('debugVideo');
-
-        function initializeCanvases() {
-            const leftCtx = leftCanvas.getContext('2d');
-            const rightCtx = rightCanvas.getContext('2d');
-            const depthCtx = depthCanvas.getContext('2d');
+        function synchronizeControls() {
+            const haditTheta = document.getElementById('haditTheta');
+            const haditThetaNumber = document.getElementById('haditThetaNumber');
+            const haditThetaValue = document.getElementById('haditThetaValue');
             
-            leftCtx.fillStyle = '#000';
-            leftCtx.fillRect(0, 0, leftCanvas.width, leftCanvas.height);
-            rightCtx.fillStyle = '#000';
-            rightCtx.fillRect(0, 0, rightCanvas.width, rightCanvas.height);
-            depthCtx.fillStyle = '#000';
-            depthCtx.fillRect(0, 0, depthCanvas.width, depthCanvas.height);
-        }
-
-        function updateFPS() {
-            if (!currentConfig.showFPS) return;
+            function updateTheta(value) {
+                const val = parseFloat(value);
+                haditTheta.value = val;
+                haditThetaNumber.value = val;
+                haditThetaValue.textContent = val.toFixed(1) + '°';
+                processingConfig.haditTheta = val;
+            }
             
-            const currentTime = Date.now();
-            const elapsedTime = (currentTime - startTime) / 1000;
-            const fps = elapsedTime > 0 ? (processedFrames / elapsedTime).toFixed(1) : '0';
+            haditTheta.addEventListener('input', (e) => updateTheta(e.target.value));
+            haditThetaNumber.addEventListener('input', (e) => updateTheta(e.target.value));
             
-            document.getElementById('leftFps').textContent = `${fps} FPS`;
-            document.getElementById('rightFps').textContent = `${fps} FPS`;
-            document.getElementById('depthFps').textContent = `${fps} FPS`;
-        }
-
-        // MAIN PROCESSING LOOP - KEEPS YOUR ORIGINAL CPU CODE WORKING
-function processFrame() {
-    if (!videoElement || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
-        animationFrameId = requestAnimationFrame(processFrame);
-        return;
-    }
-    
-    try {
-        const perfStart = performance.now();
-        
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = videoElement.videoWidth * currentConfig.qualityScale;
-        tempCanvas.height = videoElement.videoHeight * currentConfig.qualityScale;
-        const tempCtx = tempCanvas.getContext('2d');
-        
-        if (currentConfig.mirrorCamera) {
-            tempCtx.scale(-1, 1);
-            tempCtx.drawImage(videoElement, -tempCanvas.width, 0, tempCanvas.width, tempCanvas.height);
-        } else {
-            tempCtx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
-        }
-        
-        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-        
-        // ALWAYS use CPU for your core Hadit processing - this never changes
-        const bandResult = detectHaditInformationBand(imageData, currentConfig);
-        detectedBand = bandResult.band;
-        
-        const depthResult = generateBandFocusedDepth(imageData, currentConfig, detectedBand);
-        
-        // Resize canvases if needed
-        if (leftCanvas.width !== tempCanvas.width || leftCanvas.height !== tempCanvas.height) {
-            leftCanvas.width = tempCanvas.width;
-            leftCanvas.height = tempCanvas.height;
-            rightCanvas.width = tempCanvas.width;
-            rightCanvas.height = tempCanvas.height;
-        }
-        
-        if (depthCanvas.width !== tempCanvas.width || depthCanvas.height !== tempCanvas.height) {
-            depthCanvas.width = tempCanvas.width;
-            depthCanvas.height = tempCanvas.height;
-        }
-        
-        // Draw original frame to left canvas
-        const leftCtx = leftCanvas.getContext('2d');
-        leftCtx.putImageData(imageData, 0, 0);
-        
-        // Stereo processing with multiple options
-// Replace the existing stereo rendering section (around lines 1760-1800) with:
-if (enableStereo) {
-    let stereoMode = 'Unknown';
-    let usedGPUHoleFilling = false;
-    
-    // Check if S-coordinate displacement is enabled
-    if (currentConfig.useSCoordDisplacement) {
-        // NEW: S-coordinate based stereo displacement
-        if (currentConfig.useCPUHoleFilling) {
-            const leftStereoData = applyHaditStereoWithSCoordsAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, false);
-            const rightStereoData = applyHaditStereoWithSCoordsAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, true);
+            const haditPhi = document.getElementById('haditPhi');
+            const haditPhiNumber = document.getElementById('haditPhiNumber');
+            const haditPhiValue = document.getElementById('haditPhiValue');
             
-            leftCtx.putImageData(leftStereoData, 0, 0);
-            const rightCtx = rightCanvas.getContext('2d');
-            rightCtx.putImageData(rightStereoData, 0, 0);
+            function updatePhi(value) {
+                const val = Math.max(0.1, Math.min(179.9, parseFloat(value)));
+                haditPhi.value = val;
+                haditPhiNumber.value = val;
+                haditPhiValue.textContent = val.toFixed(1) + '°';
+                processingConfig.haditPhi = val;
+            }
             
-            stereoMode = 'S-Coord + CPU Hole Fill';
-        } else {
-            const leftStereoData = applyHaditStereoWithSCoords(leftCanvas, depthResult.depthBuffer, currentConfig, false);
-            const rightStereoData = applyHaditStereoWithSCoords(leftCanvas, depthResult.depthBuffer, currentConfig, true);
+            haditPhi.addEventListener('input', (e) => updatePhi(e.target.value));
+            haditPhiNumber.addEventListener('input', (e) => updatePhi(e.target.value));
             
-            leftCtx.putImageData(leftStereoData, 0, 0);
-            const rightCtx = rightCanvas.getContext('2d');
-            rightCtx.putImageData(rightStereoData, 0, 0);
+            const controls = [
+                { id: 'haditInfluence', config: 'haditInfluence', format: (v) => v.toFixed(1) },
+                { id: 'separation', config: 'separation', format: (v) => v + 'px' },
+                { id: 'depthIntensity', config: 'depthIntensity', format: (v) => v.toFixed(1) + 'x' },
+                { id: 'depthContrast', config: 'depthContrast', format: (v) => v.toFixed(1) + 'x' },
+                { id: 'sBounds', config: 'sBounds', format: (v) => '±' + v.toFixed(1) },
+                { id: 'luminosityWeight', config: 'luminosityWeight', format: (v) => v.toFixed(2) },
+                { id: 'saturationWeight', config: 'saturationWeight', format: (v) => v.toFixed(2) },
+                { id: 'bandSizeMultiplier', config: 'bandSizeMultiplier', format: (v) => v.toFixed(1) + 'x' },
+                { id: 'focusFactor', config: 'focusFactor', format: (v) => v.toFixed(1) + 'x' }
+            ];
             
-            stereoMode = 'S-Coord Displacement';
-        }
-    } else {
-        // Your existing depth-based stereo code
-        // GPU hole filling attempt
-        if (currentConfig.useGPU && gpuProcessor.gpuEnabled && currentConfig.gpuStereoMode !== 'cpu') {
-            try {
-                const success = gpuProcessor.renderStereoWithHoleFilling(
-                    leftCanvas, rightCanvas, imageData, gpuDepthData, currentConfig
-                );
+            controls.forEach(control => {
+                const element = document.getElementById(control.id);
+                const valueElement = document.getElementById(control.id + 'Value');
                 
-                if (success) {
-                    usedGPUHoleFilling = true;
-                    stereoMode = `GPU ${currentConfig.useBidirectional ? 'Bidirectional' : 'Forward'} Hole Fill`;
+                element.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    processingConfig[control.config] = value;
+                    if (valueElement) {
+                        valueElement.textContent = control.format(value);
+                    }
+                });
+                
+                const initialValue = parseFloat(element.value);
+                processingConfig[control.config] = initialValue;
+                if (valueElement) {
+                    valueElement.textContent = control.format(initialValue);
                 }
-            } catch (error) {
-                console.warn('GPU hole filling failed, using CPU:', error);
-            }
-        }
-        
-        // Use CPU stereo if GPU hole filling not used
-        if (!usedGPUHoleFilling) {
-            if (currentConfig.useCPUHoleFilling) {
-                const leftStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, false);
-                const rightStereoData = applyHaditStereoWithDepthAndHoleFilling(leftCanvas, depthResult.depthBuffer, currentConfig, true);
-                
-                leftCtx.putImageData(leftStereoData, 0, 0);
-                const rightCtx = rightCanvas.getContext('2d');
-                rightCtx.putImageData(rightStereoData, 0, 0);
-                
-                stereoMode = 'CPU + CPU Hole Fill';
-            } else {
-                const leftStereoData = applyHaditStereoWithDepth(leftCanvas, depthResult.depthBuffer, currentConfig, false);
-                const rightStereoData = applyHaditStereoWithDepth(leftCanvas, depthResult.depthBuffer, currentConfig, true);
-                
-                leftCtx.putImageData(leftStereoData, 0, 0);
-                const rightCtx = rightCanvas.getContext('2d');
-                rightCtx.putImageData(rightStereoData, 0, 0);
-                
-                stereoMode = 'CPU Original';
-            }
-        }
-    }
-    
-    console.log(`🎮 Stereo mode: ${stereoMode}`);
-} else {
-    const rightCtx = rightCanvas.getContext('2d');
-    rightCtx.putImageData(imageData, 0, 0);
-}        
-        // ALWAYS update depth map visualization using YOUR CPU Hadit depth buffer
-        if (currentConfig.showDepthMap) {
-            visualizeDepthMap(depthResult.depthBuffer, depthCanvas, currentConfig, detectedBand);
-        }
-        
-        const perfEnd = performance.now();
-        const processingTime = perfEnd - perfStart;
-        
-        processedFrames++;
-        updateFPS();
-        
-        // Update processing mode indicator
-        const analysisPanel = document.getElementById('analysisPanel');
-        if (analysisPanel) {
-            const depthMode = '⚙️ Pure CPU Hadit';
-            const stereoMode = usedGPUHoleFilling ? 
-                              `🔥 GPU Hole Fill (CPU Depth)` : 
-                              (currentConfig.useCPUHoleFilling ? '🔧 CPU + CPU Hole Fill' : '⚙️ CPU Original');
-            const performanceText = `Depth: ${depthMode} | Stereo: ${stereoMode} | ${processingTime.toFixed(1)}ms/frame`;
-            
-            const lines = analysisPanel.innerHTML.split('<div>');
-            if (lines.length > 3) {
-                lines[3] = `${performanceText}</div>`;
-            } else {
-                lines.push(`${performanceText}</div>`);
-            }
-            analysisPanel.innerHTML = lines.join('<div>');
-        }
-        
-    } catch (error) {
-        console.error('Frame processing error:', error);
-    }
-    
-    animationFrameId = requestAnimationFrame(processFrame);
-}
-
-        // Helper function to convert GPU depth data to your depth buffer format
-        function convertGPUDepthToBuffer(gpuDepthData, width, height, originalImageData, config, detectedBand) {
-            const depthBuffer = new Array(width * height);
-            
-            for (let i = 0; i < width * height; i++) {
-                const pixelIdx = i * 4;
-                const depth = gpuDepthData[pixelIdx] / 255; // Convert back to 0-1 range
-                
-                // Add minimal metadata for compatibility with your stereo function
-                const y = Math.floor(i / width);
-                const x = i % width;
-                
-                const originalPixelIdx = i * 4;
-                const r = originalImageData.data[originalPixelIdx] / 255;
-                const g = originalImageData.data[originalPixelIdx + 1] / 255;
-                const b = originalImageData.data[originalPixelIdx + 2] / 255;
-                
-                const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                const maxCol = Math.max(r, g, b);
-                const minCol = Math.min(r, g, b);
-                const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
-                
-                const result = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
-                const isInBand = result.sMagnitude >= detectedBand.min && result.sMagnitude <= detectedBand.max;
-                
-                depthBuffer[i] = {
-                    depth: depth,
-                    sCoord: result.sCoord,
-                    sMagnitude: result.sMagnitude,
-                    isInBand: isInBand,
-                    bandCenteredness: isInBand ? 1.0 - Math.abs(result.sMagnitude - detectedBand.center) / (detectedBand.width * 0.5) : 0,
-                    luminance: lum,
-                    saturation: sat,
-                    coverage: true
-                };
-            }
-            
-            return depthBuffer;
+            });
         }
 
-        // ==================== ALL YOUR ORIGINAL CAMERA AND UI CODE (UNCHANGED) ====================
-        
-        let stream = null;
-        let devices = [];
-        let currentDeviceIndex = 0;
-        let animationActive = false;
-        let animationDirection = 1;
-        let animationTarget = 'theta';
+        // ==================== CAMERA MANAGEMENT ====================
 
         async function startCamera() {
             try {
-                document.getElementById('cameraStatus').innerHTML = '<span class="status-connecting">📹 Starting camera...</span>';
+                document.getElementById('cameraStatus').innerHTML = 
+                    '<span class="status-connecting">📹 Connecting to camera...</span>';
                 
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
-
                 const resolution = document.getElementById('resolutionSelect').value;
-                const [width, height] = resolution.split('x').map(Number);
                 const facingMode = document.getElementById('facingMode').value;
-
+                const [width, height] = resolution.split('x').map(Number);
+                
                 const constraints = {
                     video: {
                         width: { ideal: width },
                         height: { ideal: height },
-                        facingMode: facingMode
+                        facingMode: { ideal: facingMode },
+                        frameRate: { ideal: 30 }
                     }
                 };
-
-                stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
-                if (!videoElement) {
-                    videoElement = document.getElementById('debugVideo');
-                }
-                
-                videoElement.srcObject = stream;
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const videoElement = document.getElementById('debugVideo');
+                videoElement.srcObject = currentStream;
                 
                 await new Promise((resolve) => {
                     videoElement.onloadedmetadata = () => {
@@ -2115,376 +1383,451 @@ if (enableStereo) {
                         resolve();
                     };
                 });
-
-                document.getElementById('cameraStatus').innerHTML = '<span class="status-active">📹 Camera active</span>';
+                
+                document.getElementById('cameraStatus').innerHTML = 
+                    '<span class="status-active">📹 Camera active - processing live feed</span>';
                 document.getElementById('startCamera').style.display = 'none';
                 document.getElementById('switchCamera').style.display = 'inline-block';
                 document.getElementById('stopCamera').style.display = 'inline-block';
+                document.getElementById('errorPanel').style.display = 'none';
                 
-                if (!animationFrameId) {
-                    processFrame();
-                }
+                startProcessing();
                 
-                startTime = Date.now();
-                processedFrames = 0;
-
             } catch (error) {
                 console.error('Camera error:', error);
-                document.getElementById('errorPanel').style.display = 'block';
-                document.getElementById('errorMessage').textContent = error.message;
-                document.getElementById('cameraStatus').innerHTML = '<span class="status-error">📹 Camera error</span>';
+                showError(error.message);
             }
         }
 
-        async function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            
-            if (videoElement) {
-                videoElement.srcObject = null;
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorPanel').style.display = 'block';
+            document.getElementById('cameraStatus').innerHTML = 
+                '<span class="status-error">❌ Camera connection failed</span>';
+        }
+
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
             }
             
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
             }
-
-            document.getElementById('cameraStatus').innerHTML = '<span class="status-connecting">📹 Camera stopped</span>';
+            
+            isProcessing = false;
+            
+            document.getElementById('cameraStatus').innerHTML = 
+                '<span class="status-connecting">📹 Camera system ready - click Start Camera</span>';
             document.getElementById('startCamera').style.display = 'inline-block';
             document.getElementById('switchCamera').style.display = 'none';
             document.getElementById('stopCamera').style.display = 'none';
+            document.getElementById('debugVideo').srcObject = null;
         }
 
         async function switchCamera() {
-            try {
-                devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
-                
-                if (videoDevices.length > 1) {
-                    currentDeviceIndex = (currentDeviceIndex + 1) % videoDevices.length;
-                    const selectedDevice = videoDevices[currentDeviceIndex];
-                    
-                    if (stream) {
-                        stream.getTracks().forEach(track => track.stop());
-                    }
-
-                    const resolution = document.getElementById('resolutionSelect').value;
-                    const [width, height] = resolution.split('x').map(Number);
-
-                    const constraints = {
-                        video: {
-                            deviceId: { exact: selectedDevice.deviceId },
-                            width: { ideal: width },
-                            height: { ideal: height }
-                        }
-                    };
-
-                    stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    videoElement.srcObject = stream;
-                }
-            } catch (error) {
-                console.error('Switch camera error:', error);
+            const facingMode = document.getElementById('facingMode');
+            facingMode.value = facingMode.value === 'user' ? 'environment' : 'user';
+            
+            if (currentStream) {
+                stopCamera();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                startCamera();
             }
         }
 
         async function requestPermissions() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                stream.getTracks().forEach(track => track.stop());
-                document.getElementById('cameraStatus').innerHTML = '<span class="status-active">📹 Permissions granted</span>';
+                await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById('infoPanel').innerHTML = 
+                    '<div>✅ Camera permissions granted successfully!</div>';
             } catch (error) {
-                document.getElementById('errorPanel').style.display = 'block';
-                document.getElementById('errorMessage').textContent = 'Camera permission denied: ' + error.message;
+                showError('Permission denied: ' + error.message);
             }
         }
 
-        function toggleDebugVideo() {
+        // ==================== PROCESSING LOOP ====================
+
+        function startProcessing() {
+            if (isProcessing) return;
+            
+            isProcessing = true;
+            const videoElement = document.getElementById('debugVideo');
+            
+            function processLoop() {
+                if (!isProcessing || !currentStream) return;
+                
+                try {
+                    updateAnimations();
+                    processFrame(videoElement, processingConfig);
+                    updateFPS();
+                    updateAnalysisPanel();
+                    
+                } catch (error) {
+                    console.error('Processing error:', error);
+                }
+                
+                animationFrameId = requestAnimationFrame(processLoop);
+            }
+            
+            processLoop();
+        }
+
+        function updateAnimations() {
+            if (animationStates.theta) {
+                const currentTheta = parseFloat(document.getElementById('haditTheta').value);
+                let newTheta = currentTheta + (animationStates.thetaSpeed * animationStates.thetaDirection);
+                
+                if (newTheta >= 360) {
+                    newTheta = 0;
+                } else if (newTheta < 0) {
+                    newTheta = 359.9;
+                }
+                
+                document.getElementById('haditTheta').value = newTheta;
+                document.getElementById('haditThetaNumber').value = newTheta;
+                document.getElementById('haditThetaValue').textContent = newTheta.toFixed(1) + '°';
+                processingConfig.haditTheta = newTheta;
+            }
+            
+            if (animationStates.phi) {
+                const currentPhi = parseFloat(document.getElementById('haditPhi').value);
+                let newPhi = currentPhi + (animationStates.phiSpeed * animationStates.phiDirection);
+                
+                if (newPhi >= 179.9) {
+                    newPhi = 179.9;
+                    animationStates.phiDirection = -1;
+                } else if (newPhi <= 0.1) {
+                    newPhi = 0.1;
+                    animationStates.phiDirection = 1;
+                }
+                
+                document.getElementById('haditPhi').value = newPhi;
+                document.getElementById('haditPhiNumber').value = newPhi;
+                document.getElementById('haditPhiValue').textContent = newPhi.toFixed(1) + '°';
+                processingConfig.haditPhi = newPhi;
+            }
+        }
+
+        function updateFPS() {
+            const now = performance.now();
+            
+            ['left', 'right', 'depth'].forEach(type => {
+                const counter = fpsCounters[type];
+                counter.frames++;
+                
+                if (now - counter.lastTime >= 1000) {
+                    counter.fps = Math.round((counter.frames * 1000) / (now - counter.lastTime));
+                    counter.frames = 0;
+                    counter.lastTime = now;
+                    
+                    const element = document.getElementById(type + 'Fps');
+                    if (element && document.getElementById('showFPS').checked) {
+                        element.textContent = counter.fps + ' FPS';
+                        element.style.display = 'block';
+                    } else if (element) {
+                        element.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function updateAnalysisPanel() {
+            if (!document.getElementById('debugMode').checked) return;
+            
+            const analysisPanel = document.getElementById('analysisPanel');
+            const config = processingConfig;
+            
+            const analysisInfo = `
+                <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Band Analysis</div>
+                <div>📐 Current Hadit Position:</div>
+                <div>&nbsp;&nbsp;θ (Theta): ${config.haditTheta.toFixed(1)}°</div>
+                <div>&nbsp;&nbsp;φ (Phi): ${config.haditPhi.toFixed(1)}°</div>
+                <div>&nbsp;&nbsp;Influence: ${config.haditInfluence.toFixed(1)}x</div>
+                <div>🎨 Depth Processing:</div>
+                <div>&nbsp;&nbsp;Source: ${document.getElementById('depthSource').value}</div>
+                <div>&nbsp;&nbsp;Intensity: ${config.depthIntensity.toFixed(1)}x</div>
+                <div>&nbsp;&nbsp;Contrast: ${config.depthContrast.toFixed(1)}x</div>
+                <div>👁️ Stereo Configuration:</div>
+                <div>&nbsp;&nbsp;Separation: ${config.separation}px</div>
+                <div>&nbsp;&nbsp;S-Bounds: ±${config.sBounds.toFixed(1)}</div>
+                <div>⚙️ Performance:</div>
+                <div>&nbsp;&nbsp;Left: ${fpsCounters.left.fps} FPS</div>
+                <div>&nbsp;&nbsp;Right: ${fpsCounters.right.fps} FPS</div>
+                <div>&nbsp;&nbsp;Depth: ${fpsCounters.depth.fps} FPS</div>
+                <div>&nbsp;&nbsp;GPU: ${document.getElementById('useGPU').checked ? 'Enabled' : 'Disabled'}</div>
+                <div>📡 Animation Status:</div>
+                <div>&nbsp;&nbsp;θ Animation: ${animationStates.theta ? '🌀 Active' : '⏹️ Stopped'}</div>
+                <div>&nbsp;&nbsp;φ Animation: ${animationStates.phi ? '🌊 Active' : '⏹️ Stopped'}</div>
+                <div style="margin-top: 10px; color: #888; font-size: 9px;">
+                    Last updated: ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+            
+            analysisPanel.innerHTML = analysisInfo;
+        }
+
+        // ==================== EVENT LISTENERS ====================
+
+        document.getElementById('startCamera').addEventListener('click', startCamera);
+        document.getElementById('stopCamera').addEventListener('click', stopCamera);
+        document.getElementById('switchCamera').addEventListener('click', switchCamera);
+        document.getElementById('requestPermissions').addEventListener('click', requestPermissions);
+
+        document.getElementById('toggleDebugVideo').addEventListener('click', () => {
             const debugVideo = document.getElementById('debugVideo');
-            if (debugVideo.style.display === 'none') {
-                debugVideo.style.display = 'block';
+            debugVideo.style.display = debugVideo.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Preset buttons
+        document.getElementById('setHaditPole').addEventListener('click', () => {
+            document.getElementById('haditPhi').value = 0.1;
+            document.getElementById('haditPhiNumber').value = 0.1;
+            document.getElementById('haditPhiValue').textContent = '0.1°';
+            processingConfig.haditPhi = 0.1;
+        });
+
+        document.getElementById('setHaditEquator').addEventListener('click', () => {
+            document.getElementById('haditPhi').value = 90.0;
+            document.getElementById('haditPhiNumber').value = 90.0;
+            document.getElementById('haditPhiValue').textContent = '90.0°';
+            processingConfig.haditPhi = 90.0;
+        });
+
+        document.getElementById('setHaditNear180').addEventListener('click', () => {
+            document.getElementById('haditPhi').value = 179.9;
+            document.getElementById('haditPhiNumber').value = 179.9;
+            document.getElementById('haditPhiValue').textContent = '179.9°';
+            processingConfig.haditPhi = 179.9;
+        });
+
+        // Animation controls
+        document.getElementById('animateTheta').addEventListener('click', () => {
+            animationStates.theta = !animationStates.theta;
+            document.getElementById('animateTheta').textContent = 
+                animationStates.theta ? '⏸️ Pause θ' : '🌀 Animate θ';
+        });
+
+        document.getElementById('animatePhi').addEventListener('click', () => {
+            animationStates.phi = !animationStates.phi;
+            document.getElementById('animatePhi').textContent = 
+                animationStates.phi ? '⏸️ Pause φ' : '🌊 Animate φ';
+        });
+
+        document.getElementById('stopAnimation').addEventListener('click', () => {
+            animationStates.theta = false;
+            animationStates.phi = false;
+            document.getElementById('animateTheta').textContent = '🌀 Animate θ';
+            document.getElementById('animatePhi').textContent = '🌊 Animate φ';
+        });
+
+        // Depth presets
+        document.getElementById('setHighContrast').addEventListener('click', () => {
+            document.getElementById('depthContrast').value = 2.5;
+            document.getElementById('depthContrastValue').textContent = '2.5x';
+            processingConfig.depthContrast = 2.5;
+        });
+
+        document.getElementById('setLowContrast').addEventListener('click', () => {
+            document.getElementById('depthContrast').value = 0.1;
+            document.getElementById('depthContrastValue').textContent = '0.1x';
+            processingConfig.depthContrast = 0.1;
+        });
+
+        document.getElementById('setExtremeDepth').addEventListener('click', () => {
+            document.getElementById('depthIntensity').value = 5.0;
+            document.getElementById('depthIntensityValue').textContent = '5.0x';
+            processingConfig.depthIntensity = 5.0;
+        });
+
+        document.getElementById('setSubtleDepth').addEventListener('click', () => {
+            document.getElementById('depthIntensity').value = 0.5;
+            document.getElementById('depthIntensityValue').textContent = '0.5x';
+            processingConfig.depthIntensity = 0.5;
+        });
+
+        // Band detection actions
+        document.getElementById('detectBand').addEventListener('click', () => {
+            // Implement auto band detection logic here
+            document.getElementById('infoPanel').innerHTML = 
+                '<div>🔍 Auto-detecting optimal band parameters...</div>';
+        });
+
+        document.getElementById('expandBandFull').addEventListener('click', () => {
+            document.getElementById('bandSizeMultiplier').value = 10.0;
+            document.getElementById('bandSizeMultiplierValue').textContent = '10.0x';
+            processingConfig.bandSizeMultiplier = 10.0;
+        });
+
+        document.getElementById('resetBand').addEventListener('click', () => {
+            document.getElementById('bandSizeMultiplier').value = 1.0;
+            document.getElementById('bandSizeMultiplierValue').textContent = '1.0x';
+            document.getElementById('focusFactor').value = 1.0;
+            document.getElementById('focusFactorValue').textContent = '1.0x';
+            processingConfig.bandSizeMultiplier = 1.0;
+            processingConfig.focusFactor = 1.0;
+        });
+
+        // GPU checkbox handler
+        document.getElementById('useGPU').addEventListener('change', async function() {
+            if (this.checked) {
+                document.getElementById('gpuStatus').style.display = 'block';
+                const success = await webGLProcessor.initialize();
+                if (success) {
+                    document.getElementById('gpuStereoMode').disabled = false;
+                } else {
+                    this.checked = false;
+                    document.getElementById('gpuStereoMode').disabled = true;
+                }
             } else {
-                debugVideo.style.display = 'none';
-            }
-        }
-
-        function startThetaAnimation() {
-            if (animationActive) return;
-            animationActive = true;
-            animationTarget = 'theta';
-            animationDirection = 1;
-            animateValues();
-        }
-
-        function startPhiAnimation() {
-            if (animationActive) return;
-            animationActive = true;
-            animationTarget = 'phi';
-            animationDirection = 1;
-            animateValues();
-        }
-
-        function stopAllAnimations() {
-            animationActive = false;
-        }
-
-        function animateValues() {
-            if (!animationActive) return;
-            
-            if (animationTarget === 'theta') {
-                currentConfig.haditTheta += animationDirection * 0.5;
-                if (currentConfig.haditTheta >= 360) {
-                    currentConfig.haditTheta = 0;
-                } else if (currentConfig.haditTheta < 0) {
-                    currentConfig.haditTheta = 359.5;
-                }
-                
-                document.getElementById('haditTheta').value = currentConfig.haditTheta;
-                document.getElementById('haditThetaNumber').value = currentConfig.haditTheta;
-                document.getElementById('haditThetaValue').textContent = currentConfig.haditTheta.toFixed(1) + '°';
-                
-            } else if (animationTarget === 'phi') {
-                currentConfig.haditPhi += animationDirection * 0.2;
-                if (currentConfig.haditPhi >= 179.9) {
-                    animationDirection = -1;
-                } else if (currentConfig.haditPhi <= 0.1) {
-                    animationDirection = 1;
-                }
-                
-                currentConfig.haditPhi = Math.max(0.1, Math.min(179.9, currentConfig.haditPhi));
-                
-                document.getElementById('haditPhi').value = currentConfig.haditPhi;
-                document.getElementById('haditPhiNumber').value = currentConfig.haditPhi;
-                document.getElementById('haditPhiValue').textContent = currentConfig.haditPhi.toFixed(1) + '°';
-            }
-            
-            setTimeout(animateValues, 50);
-        }
-
-        // ==================== EVENT LISTENERS (ORIGINAL + GPU TOGGLE) ====================
-
-        document.addEventListener('DOMContentLoaded', async function() {
-            initializeCanvases();
-
-            // Camera controls
-            document.getElementById('startCamera').addEventListener('click', startCamera);
-            document.getElementById('stopCamera').addEventListener('click', stopCamera);
-            document.getElementById('switchCamera').addEventListener('click', switchCamera);
-            document.getElementById('requestPermissions').addEventListener('click', requestPermissions);
-            document.getElementById('toggleDebugVideo').addEventListener('click', toggleDebugVideo);
-
-            // Hadit controls with dual sync
-            const haditThetaSlider = document.getElementById('haditTheta');
-            const haditThetaNumber = document.getElementById('haditThetaNumber');
-            const haditThetaValue = document.getElementById('haditThetaValue');
-
-            function updateHaditTheta(value) {
-                currentConfig.haditTheta = parseFloat(value);
-                haditThetaSlider.value = value;
-                haditThetaNumber.value = value;
-                haditThetaValue.textContent = parseFloat(value).toFixed(1) + '°';
-            }
-
-            haditThetaSlider.addEventListener('input', (e) => updateHaditTheta(e.target.value));
-            haditThetaNumber.addEventListener('input', (e) => updateHaditTheta(e.target.value));
-
-            const haditPhiSlider = document.getElementById('haditPhi');
-            const haditPhiNumber = document.getElementById('haditPhiNumber');
-            const haditPhiValue = document.getElementById('haditPhiValue');
-
-            function updateHaditPhi(value) {
-                currentConfig.haditPhi = parseFloat(value);
-                haditPhiSlider.value = value;
-                haditPhiNumber.value = value;
-                haditPhiValue.textContent = parseFloat(value).toFixed(1) + '°';
-            }
-
-            haditPhiSlider.addEventListener('input', (e) => updateHaditPhi(e.target.value));
-            haditPhiNumber.addEventListener('input', (e) => updateHaditPhi(e.target.value));
-
-            // All other controls (unchanged from your original)
-            document.getElementById('haditInfluence').addEventListener('input', (e) => {
-                currentConfig.haditInfluence = parseFloat(e.target.value);
-                document.getElementById('haditInfluenceValue').textContent = parseFloat(e.target.value).toFixed(1);
-            });
-
-            document.getElementById('separation').addEventListener('input', (e) => {
-                currentConfig.separation = parseFloat(e.target.value);
-                document.getElementById('separationValue').textContent = e.target.value + 'px';
-            });
-
-            document.getElementById('depthIntensity').addEventListener('input', (e) => {
-                currentConfig.depthIntensity = parseFloat(e.target.value);
-                document.getElementById('depthIntensityValue').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
-            });
-
-            document.getElementById('depthContrast').addEventListener('input', (e) => {
-                currentConfig.depthContrast = parseFloat(e.target.value);
-                document.getElementById('depthContrastValue').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
-            });
-
-// Add this with your other event listeners:
-document.getElementById('useSCoordDisplacement').addEventListener('change', function() {
-    updateConfig();
-});
-
-            document.getElementById('sBounds').addEventListener('input', (e) => {
-                currentConfig.sBounds = parseFloat(e.target.value);
-                document.getElementById('sBoundsValue').textContent = '±' + parseFloat(e.target.value).toFixed(1);
-            });
-
-            document.getElementById('bandSizeMultiplier').addEventListener('input', (e) => {
-                currentConfig.bandSizeMultiplier = parseFloat(e.target.value);
-                document.getElementById('bandSizeMultiplierValue').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
-            });
-
-            document.getElementById('focusFactor').addEventListener('input', (e) => {
-                currentConfig.focusFactor = parseFloat(e.target.value);
-                document.getElementById('focusFactorValue').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
-            });
-
-            document.getElementById('luminosityWeight').addEventListener('input', (e) => {
-                currentConfig.luminosityWeight = parseFloat(e.target.value);
-                document.getElementById('luminosityWeightValue').textContent = parseFloat(e.target.value).toFixed(2);
-            });
-
-            document.getElementById('saturationWeight').addEventListener('input', (e) => {
-                currentConfig.saturationWeight = parseFloat(e.target.value);
-                document.getElementById('saturationWeightValue').textContent = parseFloat(e.target.value).toFixed(2);
-            });
-
-            document.getElementById('bandDetectionMode').addEventListener('change', (e) => {
-                currentConfig.bandDetectionMode = e.target.value;
-            });
-
-            document.getElementById('qualitySelect').addEventListener('change', (e) => {
-                currentConfig.qualityScale = parseFloat(e.target.value);
-            });
-
-            // Checkbox controls
-            document.getElementById('enableStereo').addEventListener('change', (e) => {
-                currentConfig.enableStereo = e.target.checked;
-            });
-
-            document.getElementById('showDepthMap').addEventListener('change', (e) => {
-                currentConfig.showDepthMap = e.target.checked;
-            });
-
-            document.getElementById('showBandVisualization').addEventListener('change', (e) => {
-                currentConfig.showBandVisualization = e.target.checked;
-            });
-
-            document.getElementById('depthSource').addEventListener('change', function(e) {
-                currentConfig.depthSource = e.target.value;
-            });
-
-            document.getElementById('focusOnlyBand').addEventListener('change', (e) => {
-                currentConfig.focusOnlyBand = e.target.checked;
-            });
-
-            document.getElementById('mirrorCamera').addEventListener('change', (e) => {
-                currentConfig.mirrorCamera = e.target.checked;
-            });
-
-            document.getElementById('showFPS').addEventListener('change', (e) => {
-                currentConfig.showFPS = e.target.checked;
-                if (!e.target.checked) {
-                    document.getElementById('leftFps').textContent = '';
-                    document.getElementById('rightFps').textContent = '';
-                    document.getElementById('depthFps').textContent = '';
-                }
-            });
-
-            document.getElementById('debugMode').addEventListener('change', (e) => {
-                currentConfig.debugMode = e.target.checked;
-            });
-
-            document.getElementById('showRawFeed').addEventListener('change', (e) => {
-                currentConfig.showRawFeed = e.target.checked;
-                const debugVideo = document.getElementById('debugVideo');
-                debugVideo.style.display = e.target.checked ? 'block' : 'none';
-            });
-
-            // NEW GPU control - only initializes when enabled
-            document.getElementById('useGPU').addEventListener('change', async (e) => {
-                currentConfig.useGPU = e.target.checked;
-                
-                if (e.target.checked && !gpuProcessor.isInitialized) {
-                    console.log('Initializing GPU acceleration...');
-                    await gpuProcessor.initialize();
-                } else if (!e.target.checked) {
-                    document.getElementById('gpuStatus').style.display = 'none';
-                }
-            });
-
-            // Preset buttons
-            document.getElementById('setHaditPole').addEventListener('click', () => {
-                updateHaditPhi(0.1);
-            });
-
-            document.getElementById('setHaditEquator').addEventListener('click', () => {
-                updateHaditPhi(90.0);
-            });
-
-            document.getElementById('setHaditNear180').addEventListener('click', () => {
-                updateHaditPhi(179.9);
-            });
-
-            document.getElementById('animateTheta').addEventListener('click', startThetaAnimation);
-            document.getElementById('animatePhi').addEventListener('click', startPhiAnimation);
-            document.getElementById('stopAnimation').addEventListener('click', stopAllAnimations);
-
-            // Depth preset buttons
-            document.getElementById('setHighContrast').addEventListener('click', () => {
-                currentConfig.depthContrast = 2.5;
-                document.getElementById('depthContrast').value = 2.5;
-                document.getElementById('depthContrastValue').textContent = '2.5x';
-            });
-
-            document.getElementById('setLowContrast').addEventListener('click', () => {
-                currentConfig.depthContrast = 0.1;
-                document.getElementById('depthContrast').value = 0.1;
-                document.getElementById('depthContrastValue').textContent = '0.1x';
-            });
-
-            document.getElementById('setExtremeDepth').addEventListener('click', () => {
-                currentConfig.depthIntensity = 5.0;
-                document.getElementById('depthIntensity').value = 5.0;
-                document.getElementById('depthIntensityValue').textContent = '5.0x';
-            });
-
-            document.getElementById('setSubtleDepth').addEventListener('click', () => {
-                currentConfig.depthIntensity = 0.5;
-                document.getElementById('depthIntensity').value = 0.5;
-                document.getElementById('depthIntensityValue').textContent = '0.5x';
-            });
-
-            // Band action buttons
-            document.getElementById('detectBand').addEventListener('click', () => {
-                console.log('Manual band detection triggered');
-            });
-
-            document.getElementById('expandBandFull').addEventListener('click', () => {
-                currentConfig.bandDetectionMode = 'full_image';
-                document.getElementById('bandDetectionMode').value = 'full_image';
-            });
-
-            document.getElementById('resetBand').addEventListener('click', () => {
-                currentConfig.bandDetectionMode = 'auto_detect';
-                document.getElementById('bandDetectionMode').value = 'auto_detect';
-            });
-        });
-
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
+                document.getElementById('gpuStatus').style.display = 'none';
+                document.getElementById('gpuStereoMode').disabled = true;
             }
         });
+
+        // Show/hide debug video based on checkbox
+        document.getElementById('showRawFeed').addEventListener('change', function() {
+            const debugVideo = document.getElementById('debugVideo');
+            debugVideo.style.display = this.checked ? 'block' : 'none';
+        });
+
+        // ==================== INITIALIZATION ====================
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Initialize control synchronization
+            synchronizeControls();
+            
+            // Check WebGL support on page load
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                
+                const gpuStatus = document.getElementById('gpuStatus');
+                const gpuStatusText = document.getElementById('gpuStatusText');
+                
+                if (gl) {
+                    gpuStatus.style.display = 'block';
+                    gpuStatusText.textContent = 'WebGL available. Enable GPU for acceleration.';
+                } else {
+                    gpuStatus.style.display = 'block';
+                    gpuStatusText.textContent = 'WebGL not supported on this device.';
+                }
+            } catch (e) {
+                console.warn('WebGL check failed:', e);
+            }
+            
+            // Update info panel with current status
+            document.getElementById('infoPanel').innerHTML = 
+                '<div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-08 09:56:05 UTC</div>';
+                
+            // Set initial analysis panel content
+            document.getElementById('analysisPanel').innerHTML = `
+                <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Band Analysis</div>
+                <div>Ready for live camera processing with band detection...</div>
+                <div>Camera permissions status: checking...</div>
+                <div>WebGL GPU acceleration: ${document.getElementById('useGPU').checked ? 'enabled' : 'disabled'}</div>
+                <div>S-coordinate offsets: fully implemented</div>
+                <div>Depth sources: brightness, S-magnitude, radial, angular</div>
+                <div>Stereo rendering: parallel view with Hadit-based depth</div>
+                <div style="margin-top: 10px; color: #888; font-size: 9px;">
+                    System initialized: ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+        });
+
+        // ==================== UTILITY FUNCTIONS ====================
+
+        // Add keyboard shortcuts for common operations
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 's':
+                        e.preventDefault();
+                        if (currentStream) {
+                            stopCamera();
+                        } else {
+                            startCamera();
+                        }
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        if (currentStream) {
+                            switchCamera();
+                        }
+                        break;
+                    case 'g':
+                        e.preventDefault();
+                        document.getElementById('useGPU').click();
+                        break;
+                }
+            }
+        });
+
+        // Handle window resize to adjust canvas scaling
+        window.addEventListener('resize', () => {
+            // Force canvas redraw on resize
+            if (isProcessing) {
+                const canvases = ['leftCanvas', 'rightCanvas', 'depthCanvas'];
+                canvases.forEach(id => {
+                    const canvas = document.getElementById(id);
+                    canvas.style.width = '';
+                    canvas.style.height = '';
+                });
+            }
+        });
+
+        // Export configuration for debugging
+        window.exportConfig = () => {
+            const config = {
+                ...processingConfig,
+                depthSource: document.getElementById('depthSource').value,
+                quality: document.getElementById('qualitySelect').value,
+                enableStereo: document.getElementById('enableStereo').checked,
+                showDepthMap: document.getElementById('showDepthMap').checked,
+                useGPU: document.getElementById('useGPU').checked,
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('Current AndroidVR Configuration:', JSON.stringify(config, null, 2));
+            return config;
+        };
+
+        // Import configuration for debugging
+        window.importConfig = (config) => {
+            if (typeof config === 'string') {
+                config = JSON.parse(config);
+            }
+            
+            Object.keys(config).forEach(key => {
+                if (processingConfig.hasOwnProperty(key)) {
+                    processingConfig[key] = config[key];
+                    
+                    const element = document.getElementById(key);
+                    const valueElement = document.getElementById(key + 'Value');
+                    
+                    if (element) {
+                        element.value = config[key];
+                        if (valueElement) {
+                            // Update display value based on the control type
+                            if (key.includes('Weight')) {
+                                valueElement.textContent = config[key].toFixed(2);
+                            } else if (key === 'separation') {
+                                valueElement.textContent = config[key] + 'px';
+                            } else if (key.includes('sBounds')) {
+                                valueElement.textContent = '±' + config[key].toFixed(1);
+                            } else {
+                                valueElement.textContent = config[key].toFixed(1) + (key.includes('Theta') || key.includes('Phi') ? '°' : 'x');
+                            }
+                        }
+                    }
+                }
+            });
+            
+            console.log('Configuration imported successfully');
+        };
+
     </script>
 </body>
 </html>
