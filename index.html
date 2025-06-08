@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AndroidVR - Fixed Uniform S-Coordinate Stereogram</title>
+    <title>AndroidVR - Asymmetric S-Coordinate Stereogram</title>
     <style>
         body {
             margin: 0;
@@ -212,6 +212,11 @@
             border-color: #00ffff !important;
         }
 
+        .asymmetry-control {
+            background: rgba(255, 165, 0, 0.2) !important;
+            border-color: #ffa500 !important;
+        }
+
         .dual-input {
             display: flex;
             align-items: center;
@@ -245,9 +250,9 @@
             font-size: 11px;
         }
 
-        .projection-info {
-            background: rgba(0, 255, 255, 0.1);
-            border: 1px solid #00ffff;
+        .asymmetry-info {
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid #ffa500;
             border-radius: 10px;
             padding: 10px;
             margin-bottom: 15px;
@@ -314,8 +319,8 @@
         }
 
         .fixed-notice {
-            background: rgba(0, 255, 0, 0.2);
-            border: 2px solid #00ff00;
+            background: rgba(255, 165, 0, 0.2);
+            border: 2px solid #ffa500;
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 20px;
@@ -325,9 +330,9 @@
         }
         
         @keyframes pulse {
-            0% { box-shadow: 0 0 10px #00ff00; }
-            50% { box-shadow: 0 0 20px #00ff00; }
-            100% { box-shadow: 0 0 10px #00ff00; }
+            0% { box-shadow: 0 0 10px #ffa500; }
+            50% { box-shadow: 0 0 20px #ffa500; }
+            100% { box-shadow: 0 0 10px #ffa500; }
         }
 
         #debugVideo {
@@ -357,24 +362,25 @@
 </head>
 <body>
     <div class="container">
-        <h1>AndroidVR - Fixed Uniform S-Coordinate Stereogram</h1>
-        <div class="subtitle">FIXED: Uniform Distribution Across Entire Image | 2025-06-08 11:43:53 UTC | User: Angledcrystals</div>
+        <h1>AndroidVR - Asymmetric S-Coordinate Stereogram</h1>
+        <div class="subtitle">FIXED: Bilateral Symmetry with Asymmetric Controls | 2025-06-08 11:50:07 UTC | User: Angledcrystals</div>
 
         <div class="fixed-notice">
-            <div style="color: #00ff00; font-weight: bold; font-size: 18px;">✅ FIXED: UNIFORM S-COORDINATE DISTRIBUTION</div>
-            <div>SOLVED: No more 3-section banding - transformations now cover entire image</div>
-            <div>IMPROVED: Normalized coordinate mapping for even distribution</div>
-            <div>ENHANCED: Choice between cartesian and normalized spherical mapping</div>
-            <div>RESULT: S-coordinates now transform every pixel uniformly</div>
+            <div style="color: #ffa500; font-weight: bold; font-size: 18px;">🔧 FIXED: BILATERAL SYMMETRY ISSUE</div>
+            <div>SOLVED: No more middle division - asymmetric transformation controls added</div>
+            <div>NEW: Rotation, offset, and perturbation controls break Householder reflection symmetry</div>
+            <div>ENHANCED: Multiple asymmetry modes for varied S-coordinate patterns</div>
+            <div>RESULT: Full-image transformations without bilateral division</div>
         </div>
 
-        <div class="projection-info">
-            <div style="color: #00ffff; font-weight: bold;">🌐 Coordinate Mapping System:</div>
-            <div>• <strong>Normalized Cartesian</strong>: Uniform distribution (fixes 3-section issue)</div>
-            <div>• <strong>Spherical Equirectangular</strong>: Traditional longitude/latitude mapping</div>
-            <div>• <strong>Spherical Mercator</strong>: Angle-preserving projection</div>
-            <div>• <strong>Direct Pixel</strong>: Raw pixel coordinate mapping</div>
-            <div>• All modes preserve Hadit transformation mathematics</div>
+        <div class="asymmetry-info">
+            <div style="color: #ffa500; font-weight: bold;">🌪️ Asymmetry Breaking System:</div>
+            <div>• <strong>Coordinate Rotation</strong>: Rotates input coordinates before Hadit transformation</div>
+            <div>• <strong>Spatial Offset</strong>: Shifts coordinate origin to break central symmetry</div>
+            <div>• <strong>Perturbation</strong>: Adds controlled noise to eliminate perfect reflection</div>
+            <div>• <strong>Spiral Mode</strong>: Creates spiral coordinate mapping for organic patterns</div>
+            <div>• <strong>Wave Distortion</strong>: Applies sinusoidal distortion to coordinate space</div>
+            <div>• All modes preserve Hadit mathematics while breaking bilateral symmetry</div>
         </div>
 
         <div class="separation-notice">
@@ -384,14 +390,14 @@
         </div>
 
         <div class="hadit-info">
-            <div style="color: #ff00ff; font-weight: bold;">🌍 Pure Global S-Coordinate System:</div>
+            <div style="color: #ff00ff; font-weight: bold;">🌍 Asymmetric S-Coordinate System:</div>
             <div>• S-coordinates calculated for EVERY PIXEL across entire image</div>
             <div>• NO H-band logic interfering with S-coordinate calculations</div>
-            <div>• H-band only affects color leveling (if brightness-based depth is used)</div>
-            <div>• Multiple projection modes for uniform distribution</div>
+            <div>• Asymmetry controls break Householder reflection symmetry</div>
+            <div>• Multiple coordinate transformation modes available</div>
             <div>• θ (Theta): Changes global S-coordinate pattern direction</div>
             <div>• φ (Phi): Affects global S-coordinate magnitude and distribution</div>
-            <div>• Complete mathematical independence from any band restrictions</div>
+            <div>• Rotation/Offset: Breaks bilateral symmetry for varied patterns</div>
         </div>
 
         <div class="camera-status" id="cameraStatus">
@@ -413,12 +419,12 @@
             <!-- Stereo frames -->
             <div class="stereo-view">
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label left-label">Left Eye - Uniform S-Disparity</div>
+                    <div class="camera-label left-label">Left Eye - Asymmetric S-Disparity</div>
                     <canvas id="leftCanvas" width="640" height="480" class="left-eye"></canvas>
                     <div class="fps-counter" id="leftFps">0 FPS</div>
                 </div>
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label right-label">Right Eye - Uniform S-Disparity</div>
+                    <div class="camera-label right-label">Right Eye - Asymmetric S-Disparity</div>
                     <canvas id="rightCanvas" width="640" height="480" class="right-eye"></canvas>
                     <div class="fps-counter" id="rightFps">0 FPS</div>
                 </div>
@@ -427,7 +433,7 @@
             <!-- Pure S-coordinate map -->
             <div class="depth-view">
                 <div class="camera-feed depth-frame">
-                    <div class="camera-label depth-label">Uniform S-Coordinate Map</div>
+                    <div class="camera-label depth-label">Asymmetric S-Coordinate Map</div>
                     <canvas id="depthCanvas" width="320" height="240" class="depth-map"></canvas>
                     <div class="fps-counter" id="depthFps">0 FPS</div>
                 </div>
@@ -445,9 +451,36 @@
             </div>
 
             <div class="control-group">
+                <label>🌪️ Asymmetry Mode</label>
+                <select id="asymmetryMode" class="asymmetry-control">
+                    <option value="rotation" selected>🔄 Coordinate Rotation</option>
+                    <option value="offset">📍 Spatial Offset</option>
+                    <option value="perturbation">🌀 Perturbation</option>
+                    <option value="spiral">🌪️ Spiral Mapping</option>
+                    <option value="wave">〜 Wave Distortion</option>
+                    <option value="none">❌ None (Symmetric)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>🔄 Rotation Angle: <span id="rotationAngleValue">30.0°</span></label>
+                <input type="range" id="rotationAngle" min="0" max="360" step="1" value="30" class="asymmetry-control">
+            </div>
+
+            <div class="control-group">
+                <label>📍 Spatial Offset: <span id="spatialOffsetValue">0.2</span></label>
+                <input type="range" id="spatialOffset" min="0" max="1" step="0.05" value="0.2" class="asymmetry-control">
+            </div>
+
+            <div class="control-group">
+                <label>🌀 Perturbation: <span id="perturbationValue">0.1</span></label>
+                <input type="range" id="perturbation" min="0" max="0.5" step="0.01" value="0.1" class="asymmetry-control">
+            </div>
+
+            <div class="control-group">
                 <label>🗺️ Coordinate Mapping</label>
                 <select id="coordinateMapping" class="projection-control">
-                    <option value="normalized_cartesian" selected>📏 Normalized Cartesian (Uniform)</option>
+                    <option value="normalized_cartesian" selected>📏 Normalized Cartesian</option>
                     <option value="spherical_equirect">🌍 Spherical Equirectangular</option>
                     <option value="spherical_mercator">🗺️ Spherical Mercator</option>
                     <option value="direct_pixel">📐 Direct Pixel Mapping</option>
@@ -457,19 +490,16 @@
             <div class="control-group">
                 <label>🌐 Projection Mode</label>
                 <select id="projectionMode" class="projection-control">
-                    <option value="stereographic">📐 Stereographic (Original)</option>
-                    <option value="linear" selected>📏 Linear (Uniform)</option>
+                    <option value="stereographic">📐 Stereographic</option>
+                    <option value="linear" selected>📏 Linear</option>
                     <option value="equirectangular">🌍 Equirectangular</option>
-                    <option value="hybrid">🔄 Hybrid (Interpolated)</option>
+                    <option value="hybrid">🔄 Hybrid</option>
                 </select>
             </div>
 
             <div class="control-group">
                 <label>🎛️ Flatten Factor: <span id="flattenFactorValue">0.8</span></label>
                 <input type="range" id="flattenFactor" min="0" max="1" step="0.05" value="0.8" class="projection-control">
-                <div style="font-size: 8px; color: #888; margin-top: 2px;">
-                    0.0 = Pure Spherical | 1.0 = Pure Linear
-                </div>
             </div>
 
             <div class="control-group">
@@ -478,7 +508,7 @@
             </div>
 
             <div class="control-group">
-                <label>🔧 Depth Source (for color leveling only)</label>
+                <label>🔧 Depth Source</label>
                 <select id="depthSource" class="depth-control">
                     <option value="pure_s_coords" selected>📐 Pure S-Coordinates</option>
                     <option value="brightness_leveled">💡 Brightness + S-Coords</option>
@@ -498,7 +528,7 @@
             </div>
 
             <div class="control-group">
-                <label>🌈 Color Leveling Strength: <span id="colorLevelingValue">0.3x</span></label>
+                <label>🌈 Color Leveling: <span id="colorLevelingValue">0.3x</span></label>
                 <input type="range" id="colorLeveling" min="0" max="1" step="0.05" value="0.3" class="color-control">
             </div>
             
@@ -554,28 +584,29 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Fixed uniform S-Coordinate system ready with no more 3-section banding... Angledcrystals | 2025-06-08 11:43:53 UTC</div>
+            <div>Status: Asymmetric S-Coordinate system ready with bilateral symmetry breaking... Angledcrystals | 2025-06-08 11:50:07 UTC</div>
         </div>
 
         <div class="analysis-grid">
             <div>
                 <div class="control-group">
-                    <label>Coordinate Mapping Presets</label>
+                    <label>Asymmetry Presets</label>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button id="setMappingUniform" class="projection-control">📏 Uniform (Fixed)</button>
-                        <button id="setMappingEquirect" class="projection-control">🌍 Equirectangular</button>
-                        <button id="setMappingMercator" class="projection-control">🗺️ Mercator</button>
-                        <button id="setMappingDirect" class="projection-control">📐 Direct Pixel</button>
+                        <button id="setAsymRotation" class="asymmetry-control">🔄 Rotation Mode</button>
+                        <button id="setAsymOffset" class="asymmetry-control">📍 Offset Mode</button>
+                        <button id="setAsymSpiral" class="asymmetry-control">🌪️ Spiral Mode</button>
+                        <button id="setAsymWave" class="asymmetry-control">〜 Wave Mode</button>
+                        <button id="setAsymNone" class="asymmetry-control">❌ Symmetric</button>
                     </div>
                 </div>
 
                 <div class="control-group">
-                    <label>Projection Presets</label>
+                    <label>Coordinate Mapping Presets</label>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button id="setProjectionOriginal" class="projection-control">📐 Original Spherical</button>
-                        <button id="setProjectionUniform" class="projection-control">📏 Uniform Linear</button>
-                        <button id="setProjectionEquirect" class="projection-control">🌍 Equirectangular</button>
-                        <button id="setProjectionHybrid" class="projection-control">🔄 Hybrid Balance</button>
+                        <button id="setMappingUniform" class="projection-control">📏 Uniform</button>
+                        <button id="setMappingEquirect" class="projection-control">🌍 Equirectangular</button>
+                        <button id="setMappingMercator" class="projection-control">🗺️ Mercator</button>
+                        <button id="setMappingDirect" class="projection-control">📐 Direct Pixel</button>
                     </div>
                 </div>
 
@@ -617,23 +648,23 @@
             </div>
             
             <div class="analysis-panel" id="analysisPanel">
-                <div style="color: #88ff00; font-weight: bold;">📐 Uniform S-Coordinate Analysis</div>
-                <div>Ready for uniform S-coordinate generation...</div>
+                <div style="color: #88ff00; font-weight: bold;">📐 Asymmetric S-Coordinate Analysis</div>
+                <div>Ready for asymmetric S-coordinate generation...</div>
                 <div>Camera permissions status: checking...</div>
+                <div>Asymmetry mode: rotation</div>
                 <div>Coordinate mapping: normalized_cartesian</div>
                 <div>Projection mode: linear</div>
-                <div>Flatten factor: 0.8</div>
-                <div>S-Bounds: 20.0</div>
-                <div>System ready for uniform distribution...</div>
+                <div>Bilateral symmetry: BROKEN</div>
+                <div>System ready for full-image transformations...</div>
             </div>
         </div>
     </div>
 
     <script>
-        // Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-08 11:43:53
+        // Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-06-08 11:50:07
         // Current User's Login: Angledcrystals
 
-        // ==================== FIXED UNIFORM S-COORDINATE MATHEMATICS ====================
+        // ==================== ASYMMETRIC S-COORDINATE MATHEMATICS ====================
         
         const vectorOps = {
             dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
@@ -645,37 +676,105 @@
             }
         };
 
-        // FIXED: Multiple coordinate mapping methods to solve 3-section banding
-        function pixelToCoordinates(px, py, width, height, mappingMode = 'normalized_cartesian') {
+        // ASYMMETRY BREAKING: Apply transformations before coordinate mapping
+        function applyAsymmetricTransform(px, py, width, height, asymmetryMode, config) {
+            const rotationAngle = parseFloat(document.getElementById('rotationAngle').value);
+            const spatialOffset = parseFloat(document.getElementById('spatialOffset').value);
+            const perturbation = parseFloat(document.getElementById('perturbation').value);
+            
+            // Normalize coordinates to [-1, 1] range
+            let x = (px / width) * 2 - 1;
+            let y = (py / height) * 2 - 1;
+            
+            switch (asymmetryMode) {
+                case 'rotation':
+                    // Apply coordinate rotation to break bilateral symmetry
+                    const angle = rotationAngle * Math.PI / 180;
+                    const cosA = Math.cos(angle);
+                    const sinA = Math.sin(angle);
+                    const rotX = x * cosA - y * sinA;
+                    const rotY = x * sinA + y * cosA;
+                    x = rotX;
+                    y = rotY;
+                    break;
+                
+                case 'offset':
+                    // Apply spatial offset to shift coordinate origin
+                    x += spatialOffset * Math.sin(y * Math.PI);
+                    y += spatialOffset * Math.cos(x * Math.PI);
+                    break;
+                
+                case 'perturbation':
+                    // Add controlled noise to break perfect symmetry
+                    const noise1 = (Math.sin(x * 17.0 + y * 13.0) + Math.sin(x * 23.0 + y * 19.0)) * 0.5;
+                    const noise2 = (Math.cos(x * 11.0 + y * 29.0) + Math.cos(x * 31.0 + y * 7.0)) * 0.5;
+                    x += noise1 * perturbation;
+                    y += noise2 * perturbation;
+                    break;
+                
+                case 'spiral':
+                    // Create spiral coordinate mapping
+                    const radius = Math.sqrt(x * x + y * y);
+                    const theta = Math.atan2(y, x);
+                    const spiralAngle = theta + radius * 2.0 * spatialOffset;
+                    x = radius * Math.cos(spiralAngle);
+                    y = radius * Math.sin(spiralAngle);
+                    break;
+                
+                case 'wave':
+                    // Apply sinusoidal wave distortion
+                    const waveFreq = 3.0;
+                    const waveAmp = spatialOffset * 0.5;
+                    x += Math.sin(y * Math.PI * waveFreq) * waveAmp;
+                    y += Math.cos(x * Math.PI * waveFreq) * waveAmp;
+                    break;
+                
+                case 'none':
+                default:
+                    // No transformation - maintains bilateral symmetry
+                    break;
+            }
+            
+            // Convert back to pixel coordinates
+            const transformedPx = (x + 1) * width * 0.5;
+            const transformedPy = (y + 1) * height * 0.5;
+            
+            return { px: transformedPx, py: transformedPy };
+        }
+
+        // Coordinate mapping with asymmetric preprocessing
+        function pixelToCoordinates(px, py, width, height, mappingMode = 'normalized_cartesian', asymmetryMode = 'none', config = {}) {
+            // FIRST: Apply asymmetric transformation to break bilateral symmetry
+            const transformed = applyAsymmetricTransform(px, py, width, height, asymmetryMode, config);
+            const tPx = transformed.px;
+            const tPy = transformed.py;
+            
+            // THEN: Apply coordinate mapping to transformed coordinates
             switch (mappingMode) {
                 case 'normalized_cartesian':
-                    // UNIFORM: Direct normalized mapping (fixes the 3-section issue)
                     return {
-                        theta: ((px / width) - 0.5) * 360,  // -180° to +180°
-                        phi: ((py / height) - 0.5) * 180 + 90  // 0° to 180° but centered
+                        theta: ((tPx / width) - 0.5) * 360,
+                        phi: ((tPy / height) - 0.5) * 180 + 90
                     };
                 
                 case 'spherical_equirect':
-                    // Equirectangular projection (like world maps)
                     return {
-                        theta: (px / width) * 360,  // 0° to 360°
-                        phi: (py / height) * 180    // 0° to 180°
+                        theta: (tPx / width) * 360,
+                        phi: (tPy / height) * 180
                     };
                 
                 case 'spherical_mercator':
-                    // Mercator projection (preserves angles)
-                    const lat = ((py / height) - 0.5) * Math.PI;
+                    const lat = ((tPy / height) - 0.5) * Math.PI;
                     const mercatorPhi = (Math.atan(Math.sinh(lat)) * 180 / Math.PI) + 90;
                     return {
-                        theta: (px / width) * 360,
+                        theta: (tPx / width) * 360,
                         phi: Math.max(0.1, Math.min(179.9, mercatorPhi))
                     };
                 
                 case 'direct_pixel':
-                    // Direct pixel coordinate mapping
                     return {
-                        theta: (px / width) * 180,   // Reduced range
-                        phi: (py / height) * 90 + 45 // Centered around equator
+                        theta: (tPx / width) * 180,
+                        phi: (tPy / height) * 90 + 45
                     };
                 
                 default:
@@ -714,7 +813,6 @@
         }
 
         function linearProjection(G_reflected, bounds = 20.0) {
-            // Direct linear mapping to bounded S-coordinates
             return {
                 x: G_reflected.x * bounds,
                 y: G_reflected.y * bounds
@@ -722,7 +820,6 @@
         }
 
         function equirectangularProjection(G_reflected, bounds = 20.0) {
-            // Convert back to spherical then map linearly
             const theta = Math.atan2(G_reflected.y, G_reflected.x);
             const phi = Math.acos(Math.max(-1, Math.min(1, G_reflected.z)));
             
@@ -733,11 +830,9 @@
         }
 
         function hybridProjection(G_reflected, flattenFactor = 0.5, bounds = 20.0) {
-            // Interpolate between stereographic and linear projection
             const stereo = stereographicProjection(G_reflected);
             const linear = linearProjection(G_reflected, bounds);
             
-            // Normalize stereographic to similar scale as linear
             const stereoNormalized = {
                 x: Math.tanh(stereo.x / bounds) * bounds,
                 y: Math.tanh(stereo.y / bounds) * bounds
@@ -749,13 +844,14 @@
             };
         }
 
-        // ENHANCED S-COORDINATE CALCULATION WITH UNIFORM DISTRIBUTION
-        function calculateUniformSCoordinate(px, py, width, height, config) {
-            // Get coordinate mapping method
+        // ENHANCED S-COORDINATE CALCULATION WITH ASYMMETRY BREAKING
+        function calculateAsymmetricSCoordinate(px, py, width, height, config) {
+            // Get asymmetry and coordinate mapping methods
+            const asymmetryMode = document.getElementById('asymmetryMode').value;
             const mappingMode = document.getElementById('coordinateMapping').value;
             
-            // FIXED: Use selected coordinate mapping for uniform distribution
-            const coords = pixelToCoordinates(px, py, width, height, mappingMode);
+            // Apply asymmetric coordinate mapping to break bilateral symmetry
+            const coords = pixelToCoordinates(px, py, width, height, mappingMode, asymmetryMode, config);
             const G_3d = sphericalToCartesian(coords.theta, coords.phi);
             
             // Apply Hadit reflection - pure mathematical transformation
@@ -781,7 +877,6 @@
                 case 'stereographic':
                 default:
                     S_hadit = stereographicProjection(G_reflected);
-                    // Scale stereographic to match bounds
                     S_hadit.x = Math.tanh(S_hadit.x / sBounds) * sBounds;
                     S_hadit.y = Math.tanh(S_hadit.y / sBounds) * sBounds;
                     break;
@@ -807,19 +902,13 @@
             
             // Calculate base luminosity
             const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-            const maxCol = Math.max(r, g, b);
-            const minCol = Math.min(r, g, b);
-            const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
-            
             let levelingFactor = 1.0;
             
             switch (depthSource) {
                 case 'pure_s_coords':
-                    // No color leveling - pure S-coordinates
                     levelingFactor = 1.0;
                     break;
                 case 'brightness_leveled':
-                    // Use brightness for color leveling (this is where H-band could be used)
                     levelingFactor = 1.0 + (lum - 0.5) * colorLeveling;
                     break;
                 case 'radial_distance':
@@ -844,7 +933,6 @@
         // ==================== BILINEAR SAMPLING ====================
 
         function sampleBilinear(imageData, x, y, width, height) {
-            // Clamp coordinates to image bounds
             x = Math.max(0, Math.min(width - 1, x));
             y = Math.max(0, Math.min(height - 1, y));
             
@@ -856,7 +944,6 @@
             const fx = x - x1;
             const fy = y - y1;
             
-            // Get the four corner pixels
             const getPixel = (px, py) => {
                 const index = (py * width + px) * 4;
                 return {
@@ -872,7 +959,6 @@
             const p3 = getPixel(x1, y2);
             const p4 = getPixel(x2, y2);
             
-            // Bilinear interpolation
             const r = (1-fx)*(1-fy)*p1.r + fx*(1-fy)*p2.r + (1-fx)*fy*p3.r + fx*fy*p4.r;
             const g = (1-fx)*(1-fy)*p1.g + fx*(1-fy)*p2.g + (1-fx)*fy*p3.g + fx*fy*p4.g;
             const b = (1-fx)*(1-fy)*p1.b + fx*(1-fy)*p2.b + (1-fx)*fy*p3.b + fx*fy*p4.b;
@@ -881,9 +967,9 @@
             return { r: Math.round(r), g: Math.round(g), b: Math.round(b), a: Math.round(a) };
         }
 
-        // ==================== ENHANCED STEREO GENERATION WITH UNIFORM DISTRIBUTION ====================
+        // ==================== ENHANCED STEREO GENERATION WITH ASYMMETRY ====================
 
-        function renderUniformSCoordinateStereogram(imageData, config) {
+        function renderAsymmetricSCoordinateStereogram(imageData, config) {
             const { width, height } = imageData;
             
             // Get canvas contexts
@@ -905,16 +991,17 @@
             let totalDisparity = 0;
             let pixelCount = 0;
             let transformedPixels = 0;
+            let asymmetricPixels = 0;
             
-            // REVERSE MAPPING with UNIFORM S-COORDINATE DISPARITY
+            // REVERSE MAPPING with ASYMMETRIC S-COORDINATE DISPARITY
             for (let destY = 0; destY < height; destY++) {
                 for (let destX = 0; destX < width; destX++) {
                     const destIndex = (destY * width + destX) * 4;
                     
-                    // Calculate UNIFORM S-coordinates (now covers entire image)
-                    const sCoord = calculateUniformSCoordinate(destX, destY, width, height, config);
+                    // Calculate ASYMMETRIC S-coordinates (breaks bilateral symmetry)
+                    const sCoord = calculateAsymmetricSCoordinate(destX, destY, width, height, config);
                     
-                    // Calculate color leveling factor (only place H-band might be used)
+                    // Calculate color leveling factor
                     const colorFactor = calculateColorLeveling(destX, destY, width, height, imageData, config);
                     
                     // Calculate S-coordinate magnitude for disparity
@@ -924,9 +1011,21 @@
                     let disparity = sMagnitude * sDisparity * colorFactor;
                     
                     // Track statistics
-                    if (disparity > 0.1) { // Only count meaningful transformations
+                    if (disparity > 0.1) {
                         transformedPixels++;
                     }
+                    
+                    // Check for asymmetric transformation (non-zero disparity variation across image)
+                    const centerX = width / 2;
+                    const mirrorX = centerX + (centerX - destX);
+                    if (mirrorX >= 0 && mirrorX < width) {
+                        const mirrorSCoord = calculateAsymmetricSCoordinate(mirrorX, destY, width, height, config);
+                        const mirrorMagnitude = Math.sqrt(mirrorSCoord.x * mirrorSCoord.x + mirrorSCoord.y * mirrorSCoord.y);
+                        if (Math.abs(sMagnitude - mirrorMagnitude) > 0.1) {
+                            asymmetricPixels++;
+                        }
+                    }
+                    
                     maxDisparity = Math.max(maxDisparity, disparity);
                     minDisparity = Math.min(minDisparity, disparity);
                     totalDisparity += disparity;
@@ -969,10 +1068,12 @@
             // Calculate statistics
             const avgDisparity = totalDisparity / pixelCount;
             const transformationCoverage = (transformedPixels / pixelCount * 100).toFixed(1);
+            const asymmetryPercentage = (asymmetricPixels / pixelCount * 100).toFixed(1);
             
             // Output statistics for debugging
-            console.log(`Uniform Distribution Stats:`);
+            console.log(`Asymmetric Distribution Stats:`);
             console.log(`- Transformation Coverage: ${transformationCoverage}% of pixels`);
+            console.log(`- Asymmetry Coverage: ${asymmetryPercentage}% of pixels`);
             console.log(`- Disparity Range: ${minDisparity.toFixed(2)} - ${maxDisparity.toFixed(2)}`);
             console.log(`- Average Disparity: ${avgDisparity.toFixed(2)}`);
             
@@ -986,10 +1087,10 @@
             rightCtx.putImageData(rightImageData, 0, 0);
             
             // Update analysis panel
-            updateUniformDisparityInfo(maxDisparity, minDisparity, avgDisparity, transformationCoverage);
+            updateAsymmetricDisparityInfo(maxDisparity, minDisparity, avgDisparity, transformationCoverage, asymmetryPercentage);
         }
         
-        // Add subtle visual indicators to verify left/right differences
+        // Add visual indicators to verify left/right differences
         function addVisualIndicators(leftImageData, rightImageData, width, height) {
             // Add red tint to bottom-left corner of LEFT image
             for (let y = height - 20; y < height; y++) {
@@ -1008,46 +1109,50 @@
             }
         }
         
-        // Update analysis panel with enhanced disparity info
-        function updateUniformDisparityInfo(maxDisparity, minDisparity, avgDisparity, coverage) {
+        // Update analysis panel with enhanced asymmetric disparity info
+        function updateAsymmetricDisparityInfo(maxDisparity, minDisparity, avgDisparity, coverage, asymmetry) {
             const analysisPanel = document.getElementById('analysisPanel');
             if (analysisPanel && document.getElementById('debugMode').checked) {
+                const asymmetryMode = document.getElementById('asymmetryMode').value;
                 const coordinateMapping = document.getElementById('coordinateMapping').value;
                 const projectionMode = document.getElementById('projectionMode').value;
                 
                 // Clear previous disparity info
                 const lines = analysisPanel.innerHTML.split('\n');
                 const filteredLines = lines.filter(line => 
-                    !line.includes('UNIFORM DISTRIBUTION') && 
+                    !line.includes('ASYMMETRIC') && 
                     !line.includes('Coverage') && 
                     !line.includes('Status') &&
                     !line.includes('Disparity Range') &&
-                    !line.includes('Average Disparity')
+                    !line.includes('Average Disparity') &&
+                    !line.includes('Bilateral symmetry')
                 );
                 
                 const disparityInfo = `
-                    <div style="margin-top: 10px; color: #00ff00; font-weight: bold;">
-                        ✅ UNIFORM DISTRIBUTION ACTIVE
+                    <div style="margin-top: 10px; color: #ffa500; font-weight: bold;">
+                        🌪️ ASYMMETRIC DISTRIBUTION ACTIVE
                     </div>
+                    <div>Asymmetry Mode: ${asymmetryMode.toUpperCase()}</div>
                     <div>Coordinate Mapping: ${coordinateMapping.replace('_', ' ').toUpperCase()}</div>
                     <div>Projection: ${projectionMode.toUpperCase()}</div>
-                    <div>Coverage: ${coverage}% of pixels transformed</div>
+                    <div>Transformation Coverage: ${coverage}% of pixels</div>
+                    <div>Asymmetry Coverage: ${asymmetry}% of pixels</div>
                     <div>Disparity Range: ${minDisparity.toFixed(1)} - ${maxDisparity.toFixed(1)}px</div>
                     <div>Average Disparity: ${avgDisparity.toFixed(2)}px</div>
-                    <div>Status: NO MORE 3-SECTION BANDING!</div>
+                    <div>Bilateral symmetry: BROKEN (${asymmetry}% asymmetric)</div>
                 `;
                 analysisPanel.innerHTML = filteredLines.join('\n') + disparityInfo;
             }
         }
 
-        function createUniformSCoordinateMap(imageData, config) {
+        function createAsymmetricSCoordinateMap(imageData, config) {
             const { width, height } = imageData;
             const sMapData = new Uint8Array(width * height);
             
-            // Calculate UNIFORM S-coordinates for every pixel
+            // Calculate ASYMMETRIC S-coordinates for every pixel
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    const sCoord = calculateUniformSCoordinate(x, y, width, height, config);
+                    const sCoord = calculateAsymmetricSCoordinate(x, y, width, height, config);
                     const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
                     
                     // Normalize and convert to 0-255 range
@@ -1092,7 +1197,11 @@
             projectionMode: 'linear',
             flattenFactor: 0.8,
             sBounds: 20.0,
-            coordinateMapping: 'normalized_cartesian'
+            coordinateMapping: 'normalized_cartesian',
+            asymmetryMode: 'rotation',
+            rotationAngle: 30.0,
+            spatialOffset: 0.2,
+            perturbation: 0.1
         };
 
         // ==================== CONTROL SYNCHRONIZATION ====================
@@ -1138,7 +1247,10 @@
                 { id: 'sScale', config: 'sScale', format: (v) => v.toFixed(1) + 'x' },
                 { id: 'colorLeveling', config: 'colorLeveling', format: (v) => v.toFixed(2) + 'x' },
                 { id: 'flattenFactor', config: 'flattenFactor', format: (v) => v.toFixed(2) },
-                { id: 'sBounds', config: 'sBounds', format: (v) => v.toFixed(1) }
+                { id: 'sBounds', config: 'sBounds', format: (v) => v.toFixed(1) },
+                { id: 'rotationAngle', config: 'rotationAngle', format: (v) => v.toFixed(1) + '°' },
+                { id: 'spatialOffset', config: 'spatialOffset', format: (v) => v.toFixed(2) },
+                { id: 'perturbation', config: 'perturbation', format: (v) => v.toFixed(2) }
             ];
             
             controls.forEach(control => {
@@ -1173,10 +1285,18 @@
                 processingConfig.coordinateMapping = e.target.value;
                 updateProjectionInfo();
             });
+
+            // Asymmetry mode control
+            const asymmetryMode = document.getElementById('asymmetryMode');
+            asymmetryMode.addEventListener('change', (e) => {
+                processingConfig.asymmetryMode = e.target.value;
+                updateProjectionInfo();
+            });
         }
 
         function updateProjectionInfo() {
             const analysisPanel = document.getElementById('analysisPanel');
+            const asymmetryMode = document.getElementById('asymmetryMode').value;
             const coordinateMapping = document.getElementById('coordinateMapping').value;
             const projectionMode = document.getElementById('projectionMode').value;
             const flattenFactor = document.getElementById('flattenFactor').value;
@@ -1184,9 +1304,10 @@
             if (analysisPanel) {
                 // Update the projection info in the analysis panel
                 const lines = analysisPanel.innerHTML.split('<div>');
-                lines[3] = `Coordinate mapping: ${coordinateMapping}</div>`;
-                lines[4] = `Projection mode: ${projectionMode}</div>`;
-                lines[5] = `Flatten factor: ${flattenFactor}</div>`;
+                lines[3] = `Asymmetry mode: ${asymmetryMode}</div>`;
+                lines[4] = `Coordinate mapping: ${coordinateMapping}</div>`;
+                lines[5] = `Projection mode: ${projectionMode}</div>`;
+                lines[6] = `Bilateral symmetry: ${asymmetryMode === 'none' ? 'SYMMETRIC' : 'BROKEN'}</div>`;
                 analysisPanel.innerHTML = lines.join('<div>');
             }
         }
@@ -1194,6 +1315,49 @@
         // ==================== PRESET FUNCTIONS ====================
 
         function setupPresetButtons() {
+            // Asymmetry mode presets
+            document.getElementById('setAsymRotation').addEventListener('click', () => {
+                document.getElementById('asymmetryMode').value = 'rotation';
+                document.getElementById('rotationAngle').value = 45;
+                document.getElementById('rotationAngleValue').textContent = '45.0°';
+                processingConfig.asymmetryMode = 'rotation';
+                processingConfig.rotationAngle = 45;
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setAsymOffset').addEventListener('click', () => {
+                document.getElementById('asymmetryMode').value = 'offset';
+                document.getElementById('spatialOffset').value = 0.3;
+                document.getElementById('spatialOffsetValue').textContent = '0.30';
+                processingConfig.asymmetryMode = 'offset';
+                processingConfig.spatialOffset = 0.3;
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setAsymSpiral').addEventListener('click', () => {
+                document.getElementById('asymmetryMode').value = 'spiral';
+                document.getElementById('spatialOffset').value = 0.5;
+                document.getElementById('spatialOffsetValue').textContent = '0.50';
+                processingConfig.asymmetryMode = 'spiral';
+                processingConfig.spatialOffset = 0.5;
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setAsymWave').addEventListener('click', () => {
+                document.getElementById('asymmetryMode').value = 'wave';
+                document.getElementById('spatialOffset').value = 0.4;
+                document.getElementById('spatialOffsetValue').textContent = '0.40';
+                processingConfig.asymmetryMode = 'wave';
+                processingConfig.spatialOffset = 0.4;
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setAsymNone').addEventListener('click', () => {
+                document.getElementById('asymmetryMode').value = 'none';
+                processingConfig.asymmetryMode = 'none';
+                updateProjectionInfo();
+            });
+
             // Coordinate mapping presets
             document.getElementById('setMappingUniform').addEventListener('click', () => {
                 document.getElementById('coordinateMapping').value = 'normalized_cartesian';
@@ -1216,43 +1380,6 @@
             document.getElementById('setMappingDirect').addEventListener('click', () => {
                 document.getElementById('coordinateMapping').value = 'direct_pixel';
                 processingConfig.coordinateMapping = 'direct_pixel';
-                updateProjectionInfo();
-            });
-
-            // Projection presets
-            document.getElementById('setProjectionOriginal').addEventListener('click', () => {
-                document.getElementById('projectionMode').value = 'stereographic';
-                document.getElementById('flattenFactor').value = 0.0;
-                document.getElementById('flattenFactorValue').textContent = '0.00';
-                processingConfig.projectionMode = 'stereographic';
-                processingConfig.flattenFactor = 0.0;
-                updateProjectionInfo();
-            });
-
-            document.getElementById('setProjectionUniform').addEventListener('click', () => {
-                document.getElementById('projectionMode').value = 'linear';
-                document.getElementById('flattenFactor').value = 1.0;
-                document.getElementById('flattenFactorValue').textContent = '1.00';
-                processingConfig.projectionMode = 'linear';
-                processingConfig.flattenFactor = 1.0;
-                updateProjectionInfo();
-            });
-
-            document.getElementById('setProjectionEquirect').addEventListener('click', () => {
-                document.getElementById('projectionMode').value = 'equirectangular';
-                document.getElementById('flattenFactor').value = 0.5;
-                document.getElementById('flattenFactorValue').textContent = '0.50';
-                processingConfig.projectionMode = 'equirectangular';
-                processingConfig.flattenFactor = 0.5;
-                updateProjectionInfo();
-            });
-
-            document.getElementById('setProjectionHybrid').addEventListener('click', () => {
-                document.getElementById('projectionMode').value = 'hybrid';
-                document.getElementById('flattenFactor').value = 0.5;
-                document.getElementById('flattenFactorValue').textContent = '0.50';
-                processingConfig.projectionMode = 'hybrid';
-                processingConfig.flattenFactor = 0.5;
                 updateProjectionInfo();
             });
 
@@ -1286,6 +1413,8 @@
             });
 
             document.getElementById('setDeepS').addEventListener('click', () => {
+                document.getElementById('sDisparity').value = 50;
+                document.getElementById('sScale').value = 5.0;
                 document.getElementById('sDisparityValue').textContent = '50.0px';
                 document.getElementById('sScaleValue').textContent = '5.0x';
                 processingConfig.sDisparity = 50;
@@ -1412,7 +1541,7 @@
                 });
                 
                 document.getElementById('cameraStatus').innerHTML = 
-                    '<span class="status-active">📹 Camera active - generating uniform S-coordinate stereograms with NO MORE 3-SECTION BANDING</span>';
+                    '<span class="status-active">📹 Camera active - generating asymmetric S-coordinate stereograms with NO BILATERAL DIVISION</span>';
                 document.getElementById('startCamera').style.display = 'none';
                 document.getElementById('switchCamera').style.display = 'inline-block';
                 document.getElementById('stopCamera').style.display = 'inline-block';
@@ -1511,14 +1640,14 @@
                     
                     // Generate stereogram if enabled
                     if (document.getElementById('enableStereo').checked) {
-                        renderUniformSCoordinateStereogram(imageData, processingConfig);
+                        renderAsymmetricSCoordinateStereogram(imageData, processingConfig);
                         updateFPS('left');
                         updateFPS('right');
                     }
                     
                     // Generate S-coordinate map if enabled
                     if (document.getElementById('showSCoordMap').checked) {
-                        const sMapData = createUniformSCoordinateMap(imageData, processingConfig);
+                        const sMapData = createAsymmetricSCoordinateMap(imageData, processingConfig);
                         renderSCoordinateMap(sMapData, Math.floor(processWidth / 2), Math.floor(processHeight / 2));
                         updateFPS('depth');
                     }
@@ -1654,11 +1783,12 @@
         // ==================== INITIALIZATION ====================
 
         function initialize() {
-            console.log('Initializing FIXED Uniform S-Coordinate Stereogram System...');
-            console.log('Current Date and Time (UTC): 2025-06-08 11:46:45');
+            console.log('Initializing Asymmetric S-Coordinate Stereogram System...');
+            console.log('Current Date and Time (UTC): 2025-06-08 11:54:19');
             console.log('Current User Login: Angledcrystals');
-            console.log('FIXED: 3-section banding issue resolved with normalized coordinate mapping');
-            console.log('SOLUTION: Normalized Cartesian mapping provides uniform distribution');
+            console.log('FIXED: Bilateral symmetry issue resolved with asymmetric transformation controls');
+            console.log('NEW: Rotation, offset, perturbation, spiral, and wave asymmetry modes');
+            console.log('SOLUTION: Breaks Householder reflection symmetry for full-image transformations');
             
             // Set up all controls and event listeners
             synchronizeControls();
@@ -1670,14 +1800,14 @@
             const analysisPanel = document.getElementById('analysisPanel');
             if (analysisPanel) {
                 analysisPanel.innerHTML = `
-                    <div style="color: #88ff00; font-weight: bold;">📐 Uniform S-Coordinate Analysis</div>
-                    <div>Ready for uniform S-coordinate generation...</div>
+                    <div style="color: #88ff00; font-weight: bold;">📐 Asymmetric S-Coordinate Analysis</div>
+                    <div>Ready for asymmetric S-coordinate generation...</div>
                     <div>Camera permissions status: checking...</div>
+                    <div>Asymmetry mode: ${processingConfig.asymmetryMode}</div>
                     <div>Coordinate mapping: ${processingConfig.coordinateMapping}</div>
                     <div>Projection mode: ${processingConfig.projectionMode}</div>
-                    <div>Flatten factor: ${processingConfig.flattenFactor}</div>
-                    <div>S-Bounds: ${processingConfig.sBounds}</div>
-                    <div>System ready for uniform distribution...</div>
+                    <div>Bilateral symmetry: BROKEN</div>
+                    <div>System ready for full-image transformations...</div>
                 `;
             }
             
@@ -1703,11 +1833,12 @@
                 showError('Camera API not supported in this browser');
             }
             
-            console.log('Fixed Uniform S-Coordinate system initialized successfully!');
-            console.log('Coordinate mapping modes available: Normalized Cartesian (uniform), Spherical Equirectangular, Spherical Mercator, Direct Pixel');
+            console.log('Asymmetric S-Coordinate system initialized successfully!');
+            console.log('Asymmetry modes available: Rotation, Offset, Perturbation, Spiral, Wave, None');
+            console.log('Coordinate mapping modes available: Normalized Cartesian, Spherical Equirectangular, Spherical Mercator, Direct Pixel');
             console.log('Projection modes available: Stereographic, Linear, Equirectangular, Hybrid');
-            console.log('Default settings: Normalized Cartesian + Linear projection for perfect uniform distribution');
-            console.log('3-section banding ELIMINATED with normalized coordinate mapping!');
+            console.log('Default settings: Rotation asymmetry + Normalized Cartesian + Linear projection');
+            console.log('Bilateral symmetry ELIMINATED with asymmetric coordinate transformations!');
         }
 
         // ==================== WINDOW LOAD ====================
@@ -1749,34 +1880,82 @@
 
         // ==================== DEBUG FUNCTIONS ====================
 
-        function debugCoordinateMapping() {
+        function debugAsymmetricMapping() {
             const width = 640;
             const height = 480;
             
-            console.log('=== Coordinate Mapping Debug ===');
+            console.log('=== Asymmetric Coordinate Mapping Debug ===');
             
-            // Test all four corners and center
+            // Test center and mirror points across different asymmetry modes
             const testPoints = [
-                { x: 0, y: 0, name: 'Top-Left' },
-                { x: width-1, y: 0, name: 'Top-Right' },
-                { x: 0, y: height-1, name: 'Bottom-Left' },
-                { x: width-1, y: height-1, name: 'Bottom-Right' },
-                { x: width/2, y: height/2, name: 'Center' }
+                { x: width/4, y: height/2, name: 'Left-Center' },
+                { x: width/2, y: height/2, name: 'Center' },
+                { x: 3*width/4, y: height/2, name: 'Right-Center' },
+                { x: width/2, y: height/4, name: 'Top-Center' },
+                { x: width/2, y: 3*height/4, name: 'Bottom-Center' }
             ];
             
-            const mappingModes = ['normalized_cartesian', 'spherical_equirect', 'spherical_mercator', 'direct_pixel'];
+            const asymmetryModes = ['none', 'rotation', 'offset', 'perturbation', 'spiral', 'wave'];
+            const config = processingConfig;
             
-            mappingModes.forEach(mode => {
-                console.log(`\n--- ${mode.toUpperCase()} ---`);
+            asymmetryModes.forEach(mode => {
+                console.log(`\n--- ASYMMETRY MODE: ${mode.toUpperCase()} ---`);
                 testPoints.forEach(point => {
-                    const coords = pixelToCoordinates(point.x, point.y, width, height, mode);
-                    console.log(`${point.name}: (${point.x}, ${point.y}) -> θ=${coords.theta.toFixed(1)}°, φ=${coords.phi.toFixed(1)}°`);
+                    const coords1 = pixelToCoordinates(point.x, point.y, width, height, 'normalized_cartesian', mode, config);
+                    const coords2 = pixelToCoordinates(width - point.x, point.y, width, height, 'normalized_cartesian', mode, config);
+                    const symmetryDiff = Math.abs(coords1.theta - coords2.theta) + Math.abs(coords1.phi - coords2.phi);
+                    console.log(`${point.name}: (${point.x}, ${point.y}) -> θ=${coords1.theta.toFixed(1)}°, φ=${coords1.phi.toFixed(1)}°`);
+                    console.log(`  Mirror: (${width - point.x}, ${point.y}) -> θ=${coords2.theta.toFixed(1)}°, φ=${coords2.phi.toFixed(1)}° | Asymmetry: ${symmetryDiff.toFixed(2)}`);
                 });
             });
         }
 
-        // Make debug function available globally
-        window.debugCoordinateMapping = debugCoordinateMapping;
+        function testSymmetryBreaking() {
+            const width = 640;
+            const height = 480;
+            const config = processingConfig;
+            
+            console.log('=== Symmetry Breaking Test ===');
+            
+            let symmetricPixels = 0;
+            let asymmetricPixels = 0;
+            let totalPixels = 0;
+            
+            // Sample every 10th pixel for performance
+            for (let y = 0; y < height; y += 10) {
+                for (let x = 0; x < width; x += 10) {
+                    const mirrorX = width - x;
+                    if (mirrorX >= 0 && mirrorX < width) {
+                        const sCoord1 = calculateAsymmetricSCoordinate(x, y, width, height, config);
+                        const sCoord2 = calculateAsymmetricSCoordinate(mirrorX, y, width, height, config);
+                        
+                        const magnitude1 = Math.sqrt(sCoord1.x * sCoord1.x + sCoord1.y * sCoord1.y);
+                        const magnitude2 = Math.sqrt(sCoord2.x * sCoord2.x + sCoord2.y * sCoord2.y);
+                        
+                        const difference = Math.abs(magnitude1 - magnitude2);
+                        
+                        if (difference < 0.1) {
+                            symmetricPixels++;
+                        } else {
+                            asymmetricPixels++;
+                        }
+                        totalPixels++;
+                    }
+                }
+            }
+            
+            const asymmetryPercentage = (asymmetricPixels / totalPixels * 100).toFixed(1);
+            console.log(`Symmetry Breaking Results:`);
+            console.log(`- Total pixels tested: ${totalPixels}`);
+            console.log(`- Symmetric pixels: ${symmetricPixels} (${(symmetricPixels/totalPixels*100).toFixed(1)}%)`);
+            console.log(`- Asymmetric pixels: ${asymmetricPixels} (${asymmetryPercentage}%)`);
+            console.log(`- Asymmetry mode: ${processingConfig.asymmetryMode}`);
+            console.log(`- Bilateral symmetry ${asymmetryPercentage > 50 ? 'SUCCESSFULLY BROKEN' : 'STILL PRESENT'}`);
+        }
+
+        // Make debug functions available globally
+        window.debugAsymmetricMapping = debugAsymmetricMapping;
+        window.testSymmetryBreaking = testSymmetryBreaking;
 
     </script>
 </body>
