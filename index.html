@@ -1516,9 +1516,11 @@ function calculateDepthFromSCoords(px, py, width, height, config) {
     const result = calculateHaditModulatedSCoordinate(px, py, width, height, 0, 0, config);
     const { sMagnitude } = result;
     
-    // Normalize S-magnitude to depth range
-    const normalizedS = Math.min(sMagnitude / config.sBounds, 1.0);
-    const depth = 0.2 + (normalizedS * 0.6); // Maps to 0.2-0.8 range
+    // Use logarithmic scaling to handle larger S-magnitude ranges
+    const logS = Math.log(1 + sMagnitude);
+    const maxLogS = Math.log(1 + config.sBounds);
+    const normalizedS = Math.min(logS / maxLogS, 1.0);
+    const depth = 0.1 + (normalizedS * 0.8); // Maps to 0.1-0.9 range
     
     return Math.max(0.05, Math.min(1.0, depth));
 }
@@ -1538,51 +1540,102 @@ function calculateAngularDepth(px, py, width, height, config) {
 
 
         
-        function visualizeDepthMap(depthBuffer, canvas, config, detectedBand) {
-            const ctx = canvas.getContext('2d');
-            const { width, height } = canvas;
+function visualizeDepthMap(depthBuffer, canvas, config, detectedBand) {
+    const ctx = canvas.getContext('2d');
+    const { width, height } = canvas;
+    
+    const imageData = new ImageData(width, height);
+    
+    // First pass: find the actual depth range for better visualization
+    let minActualDepth = 1.0;
+    let maxActualDepth = 0.0;
+    
+    for (let i = 0; i < depthBuffer.length; i++) {
+        if (depthBuffer[i] && depthBuffer[i].depth !== undefined) {
+            minActualDepth = Math.min(minActualDepth, depthBuffer[i].depth);
+            maxActualDepth = Math.max(maxActualDepth, depthBuffer[i].depth);
+        }
+    }
+    
+    const depthRange = maxActualDepth - minActualDepth;
+    
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = y * width + x;
+            const pixelIdx = idx * 4;
             
-            const imageData = new ImageData(width, height);
-            
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const idx = y * width + x;
-                    const pixelIdx = idx * 4;
-                    
-                    if (idx < depthBuffer.length && depthBuffer[idx]) {
-                        const depthInfo = depthBuffer[idx];
-                        const depth = depthInfo.depth;
+            if (idx < depthBuffer.length && depthBuffer[idx]) {
+                const depthInfo = depthBuffer[idx];
+                let depth = depthInfo.depth;
+                
+                let r, g, b;
+                
+                if (config.showBandVisualization && depthInfo.isInBand) {
+                    const bandCenteredness = depthInfo.bandCenteredness;
+                    r = Math.floor(255 * (1 - bandCenteredness) + 255 * bandCenteredness * 0.2);
+                    g = Math.floor(255 * bandCenteredness + 100 * (1 - bandCenteredness));
+                    b = Math.floor(100 + 155 * (1 - bandCenteredness));
+                } else {
+                    // Enhanced visualization for S-magnitude and other geometric modes
+                    if (config.depthSource === 'sMagnitude' || config.depthSource === 'angular') {
+                        // Normalize depth to the actual range for better contrast
+                        const normalizedDepth = depthRange > 0 ? (depth - minActualDepth) / depthRange : 0.5;
                         
-                        let r, g, b;
-                        
-                        if (config.showBandVisualization && depthInfo.isInBand) {
-                            const bandCenteredness = depthInfo.bandCenteredness;
-                            r = Math.floor(255 * (1 - bandCenteredness) + 255 * bandCenteredness * 0.2);
-                            g = Math.floor(255 * bandCenteredness + 100 * (1 - bandCenteredness));
-                            b = Math.floor(50 + 205 * depth);
+                        // Use a colorful heatmap for geometric depth
+                        if (normalizedDepth < 0.25) {
+                            // Blue to cyan
+                            r = 0;
+                            g = Math.floor(normalizedDepth * 4 * 255);
+                            b = 255;
+                        } else if (normalizedDepth < 0.5) {
+                            // Cyan to green
+                            r = 0;
+                            g = 255;
+                            b = Math.floor((0.5 - normalizedDepth) * 4 * 255);
+                        } else if (normalizedDepth < 0.75) {
+                            // Green to yellow
+                            r = Math.floor((normalizedDepth - 0.5) * 4 * 255);
+                            g = 255;
+                            b = 0;
                         } else {
-                            const depthValue = Math.floor(depth * 255);
-                            r = depthValue;
-                            g = depthValue;
-                            b = depthValue;
+                            // Yellow to red
+                            r = 255;
+                            g = Math.floor((1.0 - normalizedDepth) * 4 * 255);
+                            b = 0;
                         }
-                        
-                        imageData.data[pixelIdx] = r;
-                        imageData.data[pixelIdx + 1] = g;
-                        imageData.data[pixelIdx + 2] = b;
-                        imageData.data[pixelIdx + 3] = 255;
                     } else {
-                        imageData.data[pixelIdx] = 0;
-                        imageData.data[pixelIdx + 1] = 0;
-                        imageData.data[pixelIdx + 2] = 0;
-                        imageData.data[pixelIdx + 3] = 255;
+                        // Standard grayscale for brightness mode
+                        const intensity = Math.floor(depth * 255);
+                        r = intensity;
+                        g = intensity;
+                        b = intensity;
                     }
                 }
+                
+                imageData.data[pixelIdx] = r;
+                imageData.data[pixelIdx + 1] = g;
+                imageData.data[pixelIdx + 2] = b;
+                imageData.data[pixelIdx + 3] = 255;
+            } else {
+                imageData.data[pixelIdx] = 0;
+                imageData.data[pixelIdx + 1] = 0;
+                imageData.data[pixelIdx + 2] = 0;
+                imageData.data[pixelIdx + 3] = 255;
             }
-            
-            ctx.putImageData(imageData, 0, 0);
         }
-
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+    
+    // Add debug info for S-magnitude mode
+    if (config.depthSource === 'sMagnitude') {
+        ctx.font = '10px monospace';
+        ctx.fillStyle = 'white';
+        ctx.fillText(`Depth Range: ${minActualDepth.toFixed(3)} - ${maxActualDepth.toFixed(3)}`, 5, height - 25);
+        ctx.fillText(`S-Magnitude Mode`, 5, height - 10);
+    }
+}
+        
         // ==================== CAMERA AND VIDEO PROCESSING (WORKING ORIGINAL + OPTIONAL GPU) ====================
         
         let gpuProcessor = new WebGLProcessor();
