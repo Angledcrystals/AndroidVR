@@ -1512,19 +1512,22 @@ function generateBandFocusedDepth(imageData, config, detectedBand) {
             return outputImageData;
         }
 
-function calculateDepthFromSCoords(px, py, width, height, config) {
-    const result = calculateHaditModulatedSCoordinate(px, py, width, height, 0, 0, config);
+function calculateDepthFromSCoords(px, py, width, height, config, lum, sat) {
+    // Include actual luminance and saturation from the camera
+    const result = calculateHaditModulatedSCoordinate(px, py, width, height, lum, sat, config);
     const { sMagnitude } = result;
     
-    // Use logarithmic scaling to handle larger S-magnitude ranges
-    const logS = Math.log(1 + sMagnitude);
-    const maxLogS = Math.log(1 + config.sBounds);
-    const normalizedS = Math.min(logS / maxLogS, 1.0);
-    const depth = 0.1 + (normalizedS * 0.8); // Maps to 0.1-0.9 range
+    // Use S-magnitude as base, but modulate with content
+    const normalizedS = Math.min(sMagnitude / config.sBounds, 1.0);
+    const geometricDepth = 0.2 + (normalizedS * 0.6);
     
-    return Math.max(0.05, Math.min(1.0, depth));
+    // Modulate geometric depth with visual content
+    const contentWeight = lum * 0.4 + sat * 0.3;
+    const finalDepth = geometricDepth * (0.7 + contentWeight * 0.6);
+    
+    return Math.max(0.05, Math.min(1.0, finalDepth));
 }
-
+        
 function calculateAngularDepth(px, py, width, height, config) {
     const result = calculateHaditModulatedSCoordinate(px, py, width, height, 0, 0, config);
     const { originalG, reflectedG, haditVector } = result;
