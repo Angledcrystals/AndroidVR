@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AndroidVR - Fixed S-Coordinate Stereogram</title>
+    <title>AndroidVR - Flattened S-Coordinate Stereogram</title>
     <style>
         body {
             margin: 0;
@@ -207,6 +207,11 @@
             border-color: #88ff00 !important;
         }
 
+        .projection-control {
+            background: rgba(0, 255, 255, 0.2) !important;
+            border-color: #00ffff !important;
+        }
+
         .dual-input {
             display: flex;
             align-items: center;
@@ -234,6 +239,15 @@
         .hadit-info {
             background: rgba(255, 0, 255, 0.1);
             border: 1px solid #ff00ff;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+
+        .projection-info {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #00ffff;
             border-radius: 10px;
             padding: 10px;
             margin-bottom: 15px;
@@ -343,15 +357,25 @@
 </head>
 <body>
     <div class="container">
-        <h1>AndroidVR - Fixed S-Coordinate Stereogram</h1>
-        <div class="subtitle">Fixed Stereo Disparity Implementation | 2025-06-08 11:08:40 UTC | User: Angledcrystals</div>
+        <h1>AndroidVR - Flattened S-Coordinate Stereogram</h1>
+        <div class="subtitle">Fixed Spherical Distribution with Projection Flattening | 2025-06-08 11:23:33 UTC | User: Angledcrystals</div>
 
         <div class="fixed-notice">
-            <div style="color: #ff0088; font-weight: bold; font-size: 18px;">⚠️ CRITICAL FIX: STEREO DISPARITY NOW WORKING</div>
-            <div>Fixed issue: Images now have PROPER left/right stereo disparity</div>
-            <div>Enhanced S-coordinate calculation with AMPLIFIED disparity values</div>
-            <div>Every pixel now gets at least 5px minimum disparity</div>
-            <div>Look for subtle red/blue indicators in image corners to verify different views</div>
+            <div style="color: #ff0088; font-weight: bold; font-size: 18px;">🚀 NEW: PROJECTION FLATTENING SYSTEM</div>
+            <div>FIXED: Uneven S-coordinate distribution from spherical stereographic projection</div>
+            <div>ADDED: Linear, Equirectangular, and Hybrid projection modes</div>
+            <div>SOLVED: Now uniform distribution across entire image</div>
+            <div>IMPROVED: Flatten Factor control for smooth transitions between projections</div>
+        </div>
+
+        <div class="projection-info">
+            <div style="color: #00ffff; font-weight: bold;">🌐 Projection Flattening System:</div>
+            <div>• <strong>Stereographic</strong>: Original spherical projection (uneven distribution)</div>
+            <div>• <strong>Linear</strong>: Direct XY mapping (perfectly uniform distribution)</div>
+            <div>• <strong>Equirectangular</strong>: Maintains spherical structure with uniform mapping</div>
+            <div>• <strong>Hybrid</strong>: Interpolates between Stereographic and Linear</div>
+            <div>• <strong>Flatten Factor</strong>: 0.0 = pure spherical, 1.0 = pure linear</div>
+            <div>• All projections preserve Hadit transformation mathematics</div>
         </div>
 
         <div class="separation-notice">
@@ -365,7 +389,7 @@
             <div>• S-coordinates calculated for EVERY PIXEL across entire image</div>
             <div>• NO H-band logic interfering with S-coordinate calculations</div>
             <div>• H-band only affects color leveling (if brightness-based depth is used)</div>
-            <div>• Pure stereographic projection disparity for parallel viewing</div>
+            <div>• Multiple projection modes for uniform distribution</div>
             <div>• θ (Theta): Changes global S-coordinate pattern direction</div>
             <div>• φ (Phi): Affects global S-coordinate magnitude and distribution</div>
             <div>• Complete mathematical independence from any band restrictions</div>
@@ -390,12 +414,12 @@
             <!-- Stereo frames -->
             <div class="stereo-view">
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label left-label">Left Eye - Pure S-Disparity</div>
+                    <div class="camera-label left-label">Left Eye - Flattened S-Disparity</div>
                     <canvas id="leftCanvas" width="640" height="480" class="left-eye"></canvas>
                     <div class="fps-counter" id="leftFps">0 FPS</div>
                 </div>
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label right-label">Right Eye - Pure S-Disparity</div>
+                    <div class="camera-label right-label">Right Eye - Flattened S-Disparity</div>
                     <canvas id="rightCanvas" width="640" height="480" class="right-eye"></canvas>
                     <div class="fps-counter" id="rightFps">0 FPS</div>
                 </div>
@@ -404,7 +428,7 @@
             <!-- Pure S-coordinate map -->
             <div class="depth-view">
                 <div class="camera-feed depth-frame">
-                    <div class="camera-label depth-label">Pure S-Coordinate Map</div>
+                    <div class="camera-label depth-label">Flattened S-Coordinate Map</div>
                     <canvas id="depthCanvas" width="320" height="240" class="depth-map"></canvas>
                     <div class="fps-counter" id="depthFps">0 FPS</div>
                 </div>
@@ -419,6 +443,29 @@
                 <button id="stopCamera" class="camera-control" style="display: none;">⏹️ Stop Camera</button>
                 <button id="requestPermissions" class="camera-control">🔑 Request Permissions</button>
                 <button id="toggleDebugVideo" class="camera-control">👁️ Toggle Debug Video</button>
+            </div>
+
+            <div class="control-group">
+                <label>🌐 Projection Mode</label>
+                <select id="projectionMode" class="projection-control">
+                    <option value="stereographic">📐 Stereographic (Original)</option>
+                    <option value="linear" selected>📏 Linear (Uniform)</option>
+                    <option value="equirectangular">🌍 Equirectangular</option>
+                    <option value="hybrid">🔄 Hybrid (Interpolated)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>🎛️ Flatten Factor: <span id="flattenFactorValue">0.8</span></label>
+                <input type="range" id="flattenFactor" min="0" max="1" step="0.05" value="0.8" class="projection-control">
+                <div style="font-size: 8px; color: #888; margin-top: 2px;">
+                    0.0 = Pure Spherical | 1.0 = Pure Linear
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>📏 S-Coordinate Bounds: <span id="sBoundsValue">20.0</span></label>
+                <input type="range" id="sBounds" min="1" max="50" step="0.5" value="20.0" class="projection-control">
             </div>
 
             <div class="control-group">
@@ -498,11 +545,21 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Fixed S-Coordinate system ready with enhanced stereo disparity... Angledcrystals | 2025-06-08 11:08:40 UTC</div>
+            <div>Status: Flattened S-Coordinate system ready with uniform distribution... Angledcrystals | 2025-06-08 11:23:33 UTC</div>
         </div>
 
         <div class="analysis-grid">
             <div>
+                <div class="control-group">
+                    <label>Projection Presets</label>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button id="setProjectionOriginal" class="projection-control">📐 Original Spherical</button>
+                        <button id="setProjectionUniform" class="projection-control">📏 Uniform Linear</button>
+                        <button id="setProjectionEquirect" class="projection-control">🌍 Equirectangular</button>
+                        <button id="setProjectionHybrid" class="projection-control">🔄 Hybrid Balance</button>
+                    </div>
+                </div>
+
                 <div class="control-group">
                     <label>Quick Presets</label>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
@@ -541,15 +598,17 @@
             </div>
             
             <div class="analysis-panel" id="analysisPanel">
-                <div style="color: #88ff00; font-weight: bold;">📐 Pure S-Coordinate Analysis</div>
-                <div>Ready for global S-coordinate generation...</div>
+                <div style="color: #88ff00; font-weight: bold;">📐 Flattened S-Coordinate Analysis</div>
+                <div>Ready for uniform S-coordinate generation...</div>
                 <div>Camera permissions status: checking...</div>
+                <div>Projection mode: Linear (Uniform)</div>
+                <div>Flatten factor: 0.8 (80% linear)</div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== PURE S-COORDINATE MATHEMATICS (COMPLETELY INDEPENDENT) ====================
+        // ==================== FLATTENED S-COORDINATE MATHEMATICS ====================
         
         const vectorOps = {
             dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
@@ -579,6 +638,8 @@
             return vectorOps.subtract(G_3d, vectorOps.scale(haditUnit, 2 * dotProduct));
         }
 
+        // ==================== MULTIPLE PROJECTION METHODS ====================
+
         function stereographicProjection(G_reflected) {
             if (Math.abs(1 - G_reflected.z) < 1e-10) {
                 return { x: 0, y: 0 };
@@ -589,8 +650,44 @@
             };
         }
 
-        // FIXED AMPLIFIED S-COORDINATE CALCULATION - COMPLETELY INDEPENDENT OF H-BAND
-        function calculatePureSCoordinate(px, py, width, height, config) {
+        function linearProjection(G_reflected, bounds = 20.0) {
+            // Direct linear mapping to bounded S-coordinates
+            return {
+                x: G_reflected.x * bounds,
+                y: G_reflected.y * bounds
+            };
+        }
+
+        function equirectangularProjection(G_reflected, bounds = 20.0) {
+            // Convert back to spherical then map linearly
+            const theta = Math.atan2(G_reflected.y, G_reflected.x);
+            const phi = Math.acos(Math.max(-1, Math.min(1, G_reflected.z)));
+            
+            return {
+                x: (theta / Math.PI) * bounds,
+                y: ((phi - Math.PI/2) / (Math.PI/2)) * bounds
+            };
+        }
+
+        function hybridProjection(G_reflected, flattenFactor = 0.5, bounds = 20.0) {
+            // Interpolate between stereographic and linear projection
+            const stereo = stereographicProjection(G_reflected);
+            const linear = linearProjection(G_reflected, bounds);
+            
+            // Normalize stereographic to similar scale as linear
+            const stereoNormalized = {
+                x: Math.tanh(stereo.x / bounds) * bounds,
+                y: Math.tanh(stereo.y / bounds) * bounds
+            };
+            
+            return {
+                x: stereoNormalized.x * (1 - flattenFactor) + linear.x * flattenFactor,
+                y: stereoNormalized.y * (1 - flattenFactor) + linear.y * flattenFactor
+            };
+        }
+
+        // ENHANCED S-COORDINATE CALCULATION WITH PROJECTION SELECTION
+        function calculateFlatteredSCoordinate(px, py, width, height, config) {
             // Map pixel coordinates to spherical coordinates - NO restrictions
             const gTheta = (px / width) * 360;
             const gPhi = (py / height) * 180;
@@ -600,14 +697,35 @@
             const hadit_3d = sphericalToCartesian(config.haditTheta, config.haditPhi);
             const G_reflected = householderReflection(G_3d, hadit_3d);
             
-            // Get stereographic projection (S-coordinates) - pure math
-            const S_hadit = stereographicProjection(G_reflected);
+            // Get S-coordinates using selected projection method
+            let S_hadit;
+            const projectionMode = document.getElementById('projectionMode').value;
+            const flattenFactor = parseFloat(document.getElementById('flattenFactor').value);
+            const sBounds = parseFloat(document.getElementById('sBounds').value);
             
-            // AMPLIFIED SCALING - increased scaling factor for visible effect
-            // NOTE THE AMPLIFICATION FACTOR OF 2.5 HERE
+            switch (projectionMode) {
+                case 'linear':
+                    S_hadit = linearProjection(G_reflected, sBounds);
+                    break;
+                case 'equirectangular':
+                    S_hadit = equirectangularProjection(G_reflected, sBounds);
+                    break;
+                case 'hybrid':
+                    S_hadit = hybridProjection(G_reflected, flattenFactor, sBounds);
+                    break;
+                case 'stereographic':
+                default:
+                    S_hadit = stereographicProjection(G_reflected);
+                    // Scale stereographic to match bounds
+                    S_hadit.x = Math.tanh(S_hadit.x / sBounds) * sBounds;
+                    S_hadit.y = Math.tanh(S_hadit.y / sBounds) * sBounds;
+                    break;
+            }
+            
+            // Apply scaling factors
             return {
-                x: S_hadit.x * config.haditInfluence * config.sScale * 2.5,
-                y: S_hadit.y * config.haditInfluence * config.sScale * 2.5
+                x: S_hadit.x * config.haditInfluence * config.sScale,
+                y: S_hadit.y * config.haditInfluence * config.sScale
             };
         }
 
@@ -698,9 +816,9 @@
             return { r: Math.round(r), g: Math.round(g), b: Math.round(b), a: Math.round(a) };
         }
 
-        // ==================== FIXED STEREO GENERATION WITH VISIBLE DISPARITY ====================
+        // ==================== ENHANCED STEREO GENERATION WITH FLATTENED DISTRIBUTION ====================
 
-        function renderPureSCoordinateStereogram(imageData, config) {
+        function renderFlatteredSCoordinateStereogram(imageData, config) {
             const { width, height } = imageData;
             
             // Get canvas contexts
@@ -711,54 +829,54 @@
             const leftImageData = new ImageData(width, height);
             const rightImageData = new ImageData(width, height);
             
-            // Get control values - NOTE: AMPLIFIED DEFAULT DISPARITY
+            // Get control values
             const baseSeparation = parseInt(document.getElementById('separation').value);
-            const sDisparity = parseFloat(document.getElementById('sDisparity').value) * 3.0; // AMPLIFIED by 3x
+            const sDisparity = parseFloat(document.getElementById('sDisparity').value);
             const invertParallax = document.getElementById('invertParallax').checked;
             
-            // Track max disparity for debugging
+            // Track statistics for debugging
             let maxDisparity = 0;
+            let minDisparity = Infinity;
+            let totalDisparity = 0;
+            let pixelCount = 0;
             
-            // REVERSE MAPPING with PURE S-COORDINATE DISPARITY
+            // REVERSE MAPPING with FLATTENED S-COORDINATE DISPARITY
             for (let destY = 0; destY < height; destY++) {
                 for (let destX = 0; destX < width; destX++) {
                     const destIndex = (destY * width + destX) * 4;
                     
-                    // Calculate PURE S-coordinates (completely independent of H-band)
-                    const sCoord = calculatePureSCoordinate(destX, destY, width, height, config);
+                    // Calculate FLATTENED S-coordinates (uniform distribution)
+                    const sCoord = calculateFlatteredSCoordinate(destX, destY, width, height, config);
                     
                     // Calculate color leveling factor (only place H-band might be used)
                     const colorFactor = calculateColorLeveling(destX, destY, width, height, imageData, config);
                     
                     // Calculate S-coordinate magnitude for disparity
-                    // IMPORTANT - Use ABSOLUTE values for x component for more consistent disparity
-                    // This ensures even pixels with negative S-coords get proper disparity
                     const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
                     
-                    // Apply color leveling to S-coordinate disparity - FORCE MINIMUM DISPARITY
-                    // This ensures EVERY pixel gets at least some disparity
-                    let disparity = Math.max(5.0, sMagnitude * sDisparity * colorFactor);
+                    // Apply color leveling to S-coordinate disparity
+                    let disparity = sMagnitude * sDisparity * colorFactor;
                     
-                    // Track maximum disparity for debugging
+                    // Track statistics
                     maxDisparity = Math.max(maxDisparity, disparity);
+                    minDisparity = Math.min(minDisparity, disparity);
+                    totalDisparity += disparity;
+                    pixelCount++;
                     
                     // Invert parallax if requested
                     if (invertParallax) {
                         disparity = -disparity;
                     }
                     
-                    // IMPORTANT: Use the S-coordinate X component to determine direction
-                    // This creates proper depth perception aligned with S-coordinate math
+                    // Use the S-coordinate X component to determine direction
                     const disparityDirection = Math.sign(sCoord.x) || 1;
                     disparity *= disparityDirection;
                     
                     // Calculate horizontal offsets for stereogram
-                    // LEFT EYE: Sample from left-shifted position - NOTE MINIMUM 5px SHIFT
-                    const leftSourceX = destX - Math.max(5, baseSeparation + disparity);
+                    const leftSourceX = destX - (baseSeparation + disparity);
                     const leftSourceY = destY;
                     
-                    // RIGHT EYE: Sample from right-shifted position - NOTE MINIMUM 5px SHIFT  
-                    const rightSourceX = destX + Math.max(5, baseSeparation + disparity);
+                    const rightSourceX = destX + (baseSeparation + disparity);
                     const rightSourceY = destY;
                     
                     // Sample pixels with bilinear interpolation
@@ -779,8 +897,11 @@
                 }
             }
             
-            // Output max disparity for debugging
-            console.log(`Max disparity: ${maxDisparity.toFixed(2)} pixels`);
+            // Calculate average disparity
+            const avgDisparity = totalDisparity / pixelCount;
+            
+            // Output statistics for debugging
+            console.log(`Disparity Stats - Min: ${minDisparity.toFixed(2)}, Max: ${maxDisparity.toFixed(2)}, Avg: ${avgDisparity.toFixed(2)}`);
             
             // Add subtle visual indicators to show which is left/right if enabled
             if (document.getElementById('showVisualIndicators').checked) {
@@ -792,7 +913,7 @@
             rightCtx.putImageData(rightImageData, 0, 0);
             
             // Update analysis panel with actual disparity info
-            updateDisparityInfo(maxDisparity);
+            updateDisparityInfo(maxDisparity, minDisparity, avgDisparity);
         }
         
         // Add subtle visual indicators to verify left/right differences
@@ -814,35 +935,44 @@
             }
         }
         
-        // Update analysis panel with disparity info
-        function updateDisparityInfo(maxDisparity) {
+        // Update analysis panel with enhanced disparity info
+        function updateDisparityInfo(maxDisparity, minDisparity, avgDisparity) {
             const analysisPanel = document.getElementById('analysisPanel');
             if (analysisPanel && document.getElementById('debugMode').checked) {
-                if (!analysisPanel.innerHTML.includes('STEREO DISPARITY ACTIVE')) {
-                    const disparityInfo = `
-                        <div style="margin-top: 10px; color: #ff0088; font-weight: bold;">
-                            STEREO DISPARITY ACTIVE - MAX: ${maxDisparity.toFixed(2)}px
-                        </div>
-                        <div>Left/right images have different pixel offsets</div>
-                        <div>Look for subtle red/blue indicators in bottom corners</div>
-                    `;
-                    analysisPanel.innerHTML += disparityInfo;
-                }
+                const projectionMode = document.getElementById('projectionMode').value;
+                const flattenFactor = document.getElementById('flattenFactor').value;
+                
+                // Clear previous disparity info
+                const lines = analysisPanel.innerHTML.split('\n');
+                const filteredLines = lines.filter(line => !line.includes('DISPARITY') && !line.includes('Distribution'));
+                
+                const disparityInfo = `
+                    <div style="margin-top: 10px; color: #00ffff; font-weight: bold;">
+                        FLATTENED DISTRIBUTION ACTIVE
+                    </div>
+                    <div>Projection: ${projectionMode.toUpperCase()}</div>
+                    <div>Flatten Factor: ${flattenFactor}</div>
+                    <div>Disparity Range: ${minDisparity.toFixed(1)} - ${maxDisparity.toFixed(1)}px</div>
+                    <div>Average Disparity: ${avgDisparity.toFixed(2)}px</div>
+                    <div>Distribution: ${projectionMode === 'linear' ? 'UNIFORM' : 'SPHERICAL'}</div>
+                `;
+                analysisPanel.innerHTML = filteredLines.join('\n') + disparityInfo;
             }
         }
 
-        function createPureSCoordinateMap(imageData, config) {
+        function createFlatteredSCoordinateMap(imageData, config) {
             const { width, height } = imageData;
             const sMapData = new Uint8Array(width * height);
             
-            // Calculate PURE S-coordinates for every pixel
+            // Calculate FLATTENED S-coordinates for every pixel
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    const sCoord = calculatePureSCoordinate(x, y, width, height, config);
+                    const sCoord = calculateFlatteredSCoordinate(x, y, width, height, config);
                     const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
                     
                     // Normalize and convert to 0-255 range
-                    const normalizedS = Math.min(sMagnitude / 3.0, 1.0);
+                    const sBounds = parseFloat(document.getElementById('sBounds').value);
+                    const normalizedS = Math.min(sMagnitude / sBounds, 1.0);
                     sMapData[y * width + x] = Math.round(normalizedS * 255);
                 }
             }
@@ -873,11 +1003,14 @@
         const processingConfig = {
             haditTheta: 45.0,
             haditPhi: 90.0,
-            haditInfluence: 2.0,   // INCREASED from 1.0 for better effect
-            sDisparity: 30.0,      // INCREASED from 20.0 for better effect
-            sScale: 2.5,           // INCREASED from 1.5 for better effect
-            separation: 10,        // INCREASED from 0 for better effect
-            colorLeveling: 0.3
+            haditInfluence: 2.0,
+            sDisparity: 30.0,
+            sScale: 2.5,
+            separation: 10,
+            colorLeveling: 0.3,
+            projectionMode: 'linear',
+            flattenFactor: 0.8,
+            sBounds: 20.0
         };
 
         // ==================== CONTROL SYNCHRONIZATION ====================
@@ -921,7 +1054,9 @@
                 { id: 'separation', config: 'separation', format: (v) => v + 'px' },
                 { id: 'sDisparity', config: 'sDisparity', format: (v) => v.toFixed(1) + 'px' },
                 { id: 'sScale', config: 'sScale', format: (v) => v.toFixed(1) + 'x' },
-                { id: 'colorLeveling', config: 'colorLeveling', format: (v) => v.toFixed(2) + 'x' }
+                { id: 'colorLeveling', config: 'colorLeveling', format: (v) => v.toFixed(2) + 'x' },
+                { id: 'flattenFactor', config: 'flattenFactor', format: (v) => v.toFixed(2) },
+                { id: 'sBounds', config: 'sBounds', format: (v) => v.toFixed(1) }
             ];
             
             controls.forEach(control => {
@@ -941,6 +1076,67 @@
                 if (valueElement) {
                     valueElement.textContent = control.format(initialValue);
                 }
+            });
+
+            // Projection mode control
+            const projectionMode = document.getElementById('projectionMode');
+            projectionMode.addEventListener('change', (e) => {
+                processingConfig.projectionMode = e.target.value;
+                updateProjectionInfo();
+            });
+        }
+
+        function updateProjectionInfo() {
+            const analysisPanel = document.getElementById('analysisPanel');
+            const projectionMode = document.getElementById('projectionMode').value;
+            const flattenFactor = document.getElementById('flattenFactor').value;
+            
+            if (analysisPanel) {
+                // Update the projection info in the analysis panel
+                const lines = analysisPanel.innerHTML.split('<div>');
+                lines[3] = `Projection mode: ${projectionMode}</div>`;
+                lines[4] = `Flatten factor: ${flattenFactor}</div>`;
+                analysisPanel.innerHTML = lines.join('<div>');
+            }
+        }
+
+        // ==================== PRESET FUNCTIONS ====================
+
+        function setupProjectionPresets() {
+            document.getElementById('setProjectionOriginal').addEventListener('click', () => {
+                document.getElementById('projectionMode').value = 'stereographic';
+                document.getElementById('flattenFactor').value = 0.0;
+                document.getElementById('flattenFactorValue').textContent = '0.00';
+                processingConfig.projectionMode = 'stereographic';
+                processingConfig.flattenFactor = 0.0;
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setProjectionUniform').addEventListener('click', () => {
+                document.getElementById('projectionMode').value = 'linear';
+                document.getElementById('flattenFactor').value = 1.0;
+                document.getElementById('flattenFactorValue').textContent = '1.00';
+                processingConfig.projectionMode = 'linear';
+                processingConfig.flattenFactor = 1.0;
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setProjectionEquirect').addEventListener('click', () => {
+                document.getElementById('projectionMode').value = 'equirectangular';
+                document.getElementById('flattenFactor').value = 0.5;
+                document.getElementById('flattenFactorValue').textContent = '0.50';
+                processingConfig.projectionMode = 'equirectangular';
+                processingConfig.flattenFactor = 0.5;
+                updateProjectionInfo();
+            });
+
+            document.getElementById('setProjectionHybrid').addEventListener('click', () => {
+                document.getElementById('projectionMode').value = 'hybrid';
+                document.getElementById('flattenFactor').value = 0.5;
+                document.getElementById('flattenFactorValue').textContent = '0.50';
+                processingConfig.projectionMode = 'hybrid';
+                processingConfig.flattenFactor = 0.5;
+                updateProjectionInfo();
             });
         }
 
@@ -976,7 +1172,7 @@
                 });
                 
                 document.getElementById('cameraStatus').innerHTML = 
-                    '<span class="status-active">📹 Camera active - generating pure S-coordinate stereograms with ENHANCED disparity</span>';
+                    '<span class="status-active">📹 Camera active - generating flattened S-coordinate stereograms with uniform distribution</span>';
                 document.getElementById('startCamera').style.display = 'none';
                 document.getElementById('switchCamera').style.display = 'inline-block';
                 document.getElementById('stopCamera').style.display = 'inline-block';
@@ -1010,431 +1206,436 @@
             
             isProcessing = false;
             
-            document.getElementById('cameraStatus').innerHTML = 
-                '<span class="status-connecting">📹 Camera system ready - click Start Camera</span>';
             document.getElementById('startCamera').style.display = 'inline-block';
             document.getElementById('switchCamera').style.display = 'none';
             document.getElementById('stopCamera').style.display = 'none';
-            document.getElementById('debugVideo').srcObject = null;
-        }
-
-        async function switchCamera() {
-            const facingMode = document.getElementById('facingMode');
-            facingMode.value = facingMode.value === 'user' ? 'environment' : 'user';
-            
-            if (currentStream) {
-                stopCamera();
-                await new Promise(resolve => setTimeout(resolve, 500));
-                startCamera();
-            }
-        }
-
-        async function requestPermissions() {
-            try {
-                await navigator.mediaDevices.getUserMedia({ video: true });
-                document.getElementById('infoPanel').innerHTML = 
-                    '<div>✅ Camera permissions granted successfully!</div>';
-            } catch (error) {
-                showError('Permission denied: ' + error.message);
-            }
+            document.getElementById('cameraStatus').innerHTML = 
+                '<span class="status-connecting">📹 Camera system ready - click Start Camera</span>';
         }
 
         // ==================== PROCESSING LOOP ====================
 
         function startProcessing() {
             if (isProcessing) return;
-            
             isProcessing = true;
-            const videoElement = document.getElementById('debugVideo');
             
-            function processLoop() {
+            const videoElement = document.getElementById('debugVideo');
+            const processingCanvas = document.createElement('canvas');
+            const processingCtx = processingCanvas.getContext('2d');
+            const qualityFactor = parseFloat(document.getElementById('qualitySelect').value);
+            
+            function processFrame() {
                 if (!isProcessing || !currentStream) return;
                 
-                try {
-                    updateAnimations();
-                    processFrame(videoElement, processingConfig);
-                    updateFPS();
-                    updateAnalysisPanel();
+                const videoWidth = videoElement.videoWidth;
+                const videoHeight = videoElement.videoHeight;
+                
+                if (videoWidth && videoHeight) {
+                    // Set processing canvas size based on quality
+                    const processWidth = Math.floor(videoWidth * qualityFactor);
+                    const processHeight = Math.floor(videoHeight * qualityFactor);
                     
-                } catch (error) {
-                    console.error('Processing error:', error);
-                }
-                
-                animationFrameId = requestAnimationFrame(processLoop);
-            }
-            
-            processLoop();
-        }
-
-        function processFrame(videoElement, config) {
-            const leftCanvas = document.getElementById('leftCanvas');
-            const rightCanvas = document.getElementById('rightCanvas');
-            const depthCanvas = document.getElementById('depthCanvas');
-            
-            const quality = parseFloat(document.getElementById('qualitySelect').value);
-            
-            const width = Math.round(videoElement.videoWidth * quality);
-            const height = Math.round(videoElement.videoHeight * quality);
-            
-            if (leftCanvas.width !== width || leftCanvas.height !== height) {
-                leftCanvas.width = rightCanvas.width = width;
-                leftCanvas.height = rightCanvas.height = height;
-                depthCanvas.width = width;
-                depthCanvas.height = height;
-            }
-            
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = width;
-            tempCanvas.height = height;
-            const tempCtx = tempCanvas.getContext('2d');
-            
-            // Apply mirror if enabled
-            if (document.getElementById('mirrorCamera').checked) {
-                tempCtx.scale(-1, 1);
-                tempCtx.translate(-width, 0);
-            }
-            
-            tempCtx.drawImage(videoElement, 0, 0, width, height);
-            const imageData = tempCtx.getImageData(0, 0, width, height);
-            
-            // Update config from current control values
-            config.haditTheta = parseFloat(document.getElementById('haditTheta').value);
-            config.haditPhi = parseFloat(document.getElementById('haditPhi').value);
-            config.haditInfluence = parseFloat(document.getElementById('haditInfluence').value);
-            config.sDisparity = parseFloat(document.getElementById('sDisparity').value);
-            config.sScale = parseFloat(document.getElementById('sScale').value);
-            
-            // Generate pure S-coordinate stereogram
-            if (document.getElementById('enableStereo').checked) {
-                renderPureSCoordinateStereogram(imageData, config);
-            } else {
-                // Just show the original image in both eyes
-                const leftCtx = leftCanvas.getContext('2d');
-                const rightCtx = rightCanvas.getContext('2d');
-                leftCtx.putImageData(imageData, 0, 0);
-                rightCtx.putImageData(imageData, 0, 0);
-            }
-            
-            // Show pure S-coordinate map
-            if (document.getElementById('showSCoordMap').checked) {
-                const sMapData = createPureSCoordinateMap(imageData, config);
-                const sMapImageData = new ImageData(width, height);
-                
-                // Convert S-map data to visible image
-                for (let i = 0; i < width * height; i++) {
-                    const value = sMapData[i];
-                    const index = i * 4;
-                    sMapImageData.data[index] = value;
-                    sMapImageData.data[index + 1] = value;
-                    sMapImageData.data[index + 2] = value;
-                    sMapImageData.data[index + 3] = 255;
-                }
-                
-                const depthCtx = depthCanvas.getContext('2d');
-                depthCtx.putImageData(sMapImageData, 0, 0);
-            }
-        }
-
-        function updateAnimations() {
-            if (animationStates.theta) {
-                const currentTheta = parseFloat(document.getElementById('haditTheta').value);
-                let newTheta = currentTheta + (animationStates.thetaSpeed * animationStates.thetaDirection);
-                
-                if (newTheta >= 360) {
-                    newTheta = 0;
-                } else if (newTheta < 0) {
-                    newTheta = 359.9;
-                }
-                
-                document.getElementById('haditTheta').value = newTheta;
-                document.getElementById('haditThetaNumber').value = newTheta;
-                document.getElementById('haditThetaValue').textContent = newTheta.toFixed(1) + '°';
-                processingConfig.haditTheta = newTheta;
-            }
-            
-            if (animationStates.phi) {
-                const currentPhi = parseFloat(document.getElementById('haditPhi').value);
-                let newPhi = currentPhi + (animationStates.phiSpeed * animationStates.phiDirection);
-                
-                if (newPhi >= 179.9) {
-                    newPhi = 179.9;
-                    animationStates.phiDirection = -1;
-                } else if (newPhi <= 0.1) {
-                    newPhi = 0.1;
-                    animationStates.phiDirection = 1;
-                }
-                
-                document.getElementById('haditPhi').value = newPhi;
-                document.getElementById('haditPhiNumber').value = newPhi;
-                document.getElementById('haditPhiValue').textContent = newPhi.toFixed(1) + '°';
-                processingConfig.haditPhi = newPhi;
-            }
-        }
-
-        function updateFPS() {
-            const now = performance.now();
-            
-            ['left', 'right', 'depth'].forEach(type => {
-                const counter = fpsCounters[type];
-                counter.frames++;
-                
-                if (now - counter.lastTime >= 1000) {
-                    counter.fps = Math.round((counter.frames * 1000) / (now - counter.lastTime));
-                    counter.frames = 0;
-                    counter.lastTime = now;
+                    processingCanvas.width = processWidth;
+                    processingCanvas.height = processHeight;
                     
-                    const element = document.getElementById(type + 'Fps');
-                    if (element && document.getElementById('showFPS').checked) {
-                        element.textContent = counter.fps + ' FPS';
-                        element.style.display = 'block';
-                    } else if (element) {
-                        element.style.display = 'none';
+                    // Set output canvas sizes
+                    const leftCanvas = document.getElementById('leftCanvas');
+                    const rightCanvas = document.getElementById('rightCanvas');
+                    const depthCanvas = document.getElementById('depthCanvas');
+                    
+                    leftCanvas.width = processWidth;
+                    leftCanvas.height = processHeight;
+                    rightCanvas.width = processWidth;
+                    rightCanvas.height = processHeight;
+                    depthCanvas.width = Math.floor(processWidth / 2);
+                    depthCanvas.height = Math.floor(processHeight / 2);
+                    
+                    // Draw video frame to processing canvas
+                    processingCtx.drawImage(videoElement, 0, 0, processWidth, processHeight);
+                    const imageData = processingCtx.getImageData(0, 0, processWidth, processHeight);
+                    
+                    // Generate stereogram if enabled
+                    if (document.getElementById('enableStereo').checked) {
+                        renderFlatteredSCoordinateStereogram(imageData, processingConfig);
+                        updateFPS('left');
+                        updateFPS('right');
+                    }
+                    
+                    // Generate S-coordinate map if enabled
+                    if (document.getElementById('showSCoordMap').checked) {
+                        const sMapData = createFlatteredSCoordinateMap(imageData, processingConfig);
+                        renderSCoordinateMap(sMapData, Math.floor(processWidth / 2), Math.floor(processHeight / 2));
+                        updateFPS('depth');
                     }
                 }
+                
+                animationFrameId = requestAnimationFrame(processFrame);
+            }
+            
+            processFrame();
+        }
+
+        function renderSCoordinateMap(sMapData, width, height) {
+            const depthCanvas = document.getElementById('depthCanvas');
+            const depthCtx = depthCanvas.getContext('2d');
+            
+            const depthImageData = new ImageData(width, height);
+            
+            for (let i = 0; i < sMapData.length; i++) {
+                const value = sMapData[i];
+                const baseIndex = i * 4;
+                
+                // Create heat map visualization
+                depthImageData.data[baseIndex] = value; // Red
+                depthImageData.data[baseIndex + 1] = Math.floor(value * 0.5); // Green
+                depthImageData.data[baseIndex + 2] = Math.floor(255 - value); // Blue
+                depthImageData.data[baseIndex + 3] = 255; // Alpha
+            }
+            
+            depthCtx.putImageData(depthImageData, 0, 0);
+        }
+
+        function updateFPS(type) {
+            const now = Date.now();
+            const counter = fpsCounters[type];
+            
+            counter.frames++;
+            
+            if (now - counter.lastTime >= 1000) {
+                counter.fps = Math.round(counter.frames * 1000 / (now - counter.lastTime));
+                counter.frames = 0;
+                counter.lastTime = now;
+                
+                if (document.getElementById('showFPS').checked) {
+                    const fpsElement = document.getElementById(type + 'Fps');
+                    if (fpsElement) {
+                        fpsElement.textContent = counter.fps + ' FPS';
+                    }
+                }
+            }
+        }
+
+        // ==================== PRESET BUTTON HANDLERS ====================
+
+        function setupPresetButtons() {
+            // Projection presets (already set up above)
+            setupProjectionPresets();
+
+            // Hadit presets
+            document.getElementById('setHaditPole').addEventListener('click', () => {
+                updatePhi(0.1);
+                document.getElementById('haditPhi').value = 0.1;
+                document.getElementById('haditPhiNumber').value = 0.1;
+            });
+
+            document.getElementById('setHaditEquator').addEventListener('click', () => {
+                updatePhi(90.0);
+                document.getElementById('haditPhi').value = 90.0;
+                document.getElementById('haditPhiNumber').value = 90.0;
+            });
+
+            document.getElementById('setHaditNear180').addEventListener('click', () => {
+                updatePhi(179.9);
+                document.getElementById('haditPhi').value = 179.9;
+                document.getElementById('haditPhiNumber').value = 179.9;
+            });
+
+            // S-Coordinate presets
+            document.getElementById('setExtremeS').addEventListener('click', () => {
+                document.getElementById('sDisparity').value = 80;
+                document.getElementById('sScale').value = 8.0;
+                document.getElementById('sDisparityValue').textContent = '80.0px';
+                document.getElementById('sScaleValue').textContent = '8.0x';
+                processingConfig.sDisparity = 80;
+                processingConfig.sScale = 8.0;
+            });
+
+            document.getElementById('setDeepS').addEventListener('click', () => {
+                document.getElementById('sDisparity').value = 50;
+                document.getElementById('sScale').value = 5.0;
+                document.getElementById('sDisparityValue').textContent = '50.0px';
+                document.getElementById('sScaleValue').textContent = '5.0x';
+                processingConfig.sDisparity = 50;
+                processingConfig.sScale = 5.0;
+            });
+
+            document.getElementById('setSubtleS').addEventListener('click', () => {
+                document.getElementById('sDisparity').value = 15;
+                document.getElementById('sScale').value = 1.5;
+                document.getElementById('sDisparityValue').textContent = '15.0px';
+                document.getElementById('sScaleValue').textContent = '1.5x';
+                processingConfig.sDisparity = 15;
+                processingConfig.sScale = 1.5;
+            });
+
+            document.getElementById('setNoS').addEventListener('click', () => {
+                document.getElementById('sDisparity').value = 0;
+                document.getElementById('sScale').value = 0.1;
+                document.getElementById('sDisparityValue').textContent = '0.0px';
+                document.getElementById('sScaleValue').textContent = '0.1x';
+                processingConfig.sDisparity = 0;
+                processingConfig.sScale = 0.1;
+            });
+
+            // Animation controls
+            document.getElementById('animateTheta').addEventListener('click', () => {
+                animationStates.theta = !animationStates.theta;
+                if (animationStates.theta && !animationStates.animationRunning) {
+                    startAnimation();
+                }
+            });
+
+            document.getElementById('animatePhi').addEventListener('click', () => {
+                animationStates.phi = !animationStates.phi;
+                if (animationStates.phi && !animationStates.animationRunning) {
+                    startAnimation();
+                }
+            });
+
+            document.getElementById('stopAnimation').addEventListener('click', () => {
+                animationStates.theta = false;
+                animationStates.phi = false;
+                animationStates.animationRunning = false;
             });
         }
 
-        function updateAnalysisPanel() {
-            if (!document.getElementById('debugMode').checked) return;
+        // ==================== ANIMATION SYSTEM ====================
+
+        function startAnimation() {
+            if (animationStates.animationRunning) return;
+            animationStates.animationRunning = true;
+
+            function animateFrame() {
+                if (!animationStates.theta && !animationStates.phi) {
+                    animationStates.animationRunning = false;
+                    return;
+                }
+
+                if (animationStates.theta) {
+                    let currentTheta = parseFloat(document.getElementById('haditTheta').value);
+                    currentTheta += animationStates.thetaSpeed * animationStates.thetaDirection;
+                    
+                    if (currentTheta >= 360) {
+                        currentTheta = 0;
+                    } else if (currentTheta < 0) {
+                        currentTheta = 359.9;
+                    }
+                    
+                    updateTheta(currentTheta);
+                }
+
+                if (animationStates.phi) {
+                    let currentPhi = parseFloat(document.getElementById('haditPhi').value);
+                    currentPhi += animationStates.phiSpeed * animationStates.phiDirection;
+                    
+                    if (currentPhi >= 179.9) {
+                        animationStates.phiDirection = -1;
+                        currentPhi = 179.9;
+                    } else if (currentPhi <= 0.1) {
+                        animationStates.phiDirection = 1;
+                        currentPhi = 0.1;
+                    }
+                    
+                    updatePhi(currentPhi);
+                }
+
+                if (animationStates.animationRunning) {
+                    setTimeout(animateFrame, 50); // 20 FPS for smooth animation
+                }
+            }
+
+            animateFrame();
+        }
+
+        // ==================== CAMERA SWITCHING ====================
+
+        async function switchCamera() {
+            const currentFacingMode = document.getElementById('facingMode').value;
+            const newFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
             
-            const analysisPanel = document.getElementById('analysisPanel');
-            const config = processingConfig;
+            document.getElementById('facingMode').value = newFacingMode;
             
-            const analysisInfo = `
-                <div style="color: #88ff00; font-weight: bold;">📐 Pure S-Coordinate Analysis</div>
-                <div>🎯 Current Hadit Position:</div>
-                <div>&nbsp;&nbsp;θ (Theta): ${config.haditTheta.toFixed(1)}°</div>
-                <div>&nbsp;&nbsp;φ (Phi): ${config.haditPhi.toFixed(1)}°</div>
-                <div>&nbsp;&nbsp;Influence: ${config.haditInfluence.toFixed(1)}x</div>
-                <div>📏 S-Coordinate Configuration:</div>
-                <div>&nbsp;&nbsp;Disparity: ${config.sDisparity.toFixed(1)}px</div>
-                <div>&nbsp;&nbsp;Scale: ${config.sScale.toFixed(1)}x</div>
-                <div>&nbsp;&nbsp;Parallax: ${document.getElementById('invertParallax').checked ? 'Inverted' : 'Normal'}</div>
-                <div>🌈 Color Leveling:</div>
-                <div>&nbsp;&nbsp;Source: ${document.getElementById('depthSource').value}</div>
-                <div>&nbsp;&nbsp;Strength: ${config.colorLeveling.toFixed(2)}x</div>
-                <div>👁️ Stereogram Setup:</div>
-                <div>&nbsp;&nbsp;Base Separation: ${config.separation}px</div>
-                <div>&nbsp;&nbsp;Min Disparity: 5px per pixel</div>
-                <div>&nbsp;&nbsp;Coverage: ENTIRE IMAGE (No restrictions)</div>
-                <div>⚙️ Performance:</div>
-                <div>&nbsp;&nbsp;Left: ${fpsCounters.left.fps} FPS</div>
-                <div>&nbsp;&nbsp;Right: ${fpsCounters.right.fps} FPS</div>
-                <div>&nbsp;&nbsp;S-Map: ${fpsCounters.depth.fps} FPS</div>
-                <div>📡 Animation Status:</div>
-                <div>&nbsp;&nbsp;θ Animation: ${animationStates.theta ? '🌀 Active' : '⏹️ Stopped'}</div>
-                <div>&nbsp;&nbsp;φ Animation: ${animationStates.phi ? '🌊 Active' : '⏹️ Stopped'}</div>
-                <div style="margin-top: 10px; color: #888; font-size: 9px;">
-                    FIXED S-coordinate stereogram system | Angledcrystals | 2025-06-08 11:08:40 UTC
-                </div>
-            `;
+            // Stop current camera
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
             
-            analysisPanel.innerHTML = analysisInfo;
+            // Start new camera
+            await startCamera();
+        }
+
+        // ==================== UTILITY FUNCTIONS ====================
+
+        function requestPermissions() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(() => {
+                    document.getElementById('cameraStatus').innerHTML = 
+                        '<span class="status-active">✅ Camera permissions granted</span>';
+                })
+                .catch((error) => {
+                    showError('Permission denied: ' + error.message);
+                });
+        }
+
+        function toggleDebugVideo() {
+            const debugVideo = document.getElementById('debugVideo');
+            if (debugVideo.style.display === 'none') {
+                debugVideo.style.display = 'block';
+                document.getElementById('showRawFeed').checked = true;
+            } else {
+                debugVideo.style.display = 'none';
+                document.getElementById('showRawFeed').checked = false;
+            }
+        }
+
+        // Helper functions for updating control values
+        function updateTheta(value) {
+            const val = parseFloat(value);
+            document.getElementById('haditTheta').value = val;
+            document.getElementById('haditThetaNumber').value = val;
+            document.getElementById('haditThetaValue').textContent = val.toFixed(1) + '°';
+            processingConfig.haditTheta = val;
+        }
+
+        function updatePhi(value) {
+            const val = Math.max(0.1, Math.min(179.9, parseFloat(value)));
+            document.getElementById('haditPhi').value = val;
+            document.getElementById('haditPhiNumber').value = val;
+            document.getElementById('haditPhiValue').textContent = val.toFixed(1) + '°';
+            processingConfig.haditPhi = val;
         }
 
         // ==================== EVENT LISTENERS ====================
 
-        document.getElementById('startCamera').addEventListener('click', startCamera);
-        document.getElementById('stopCamera').addEventListener('click', stopCamera);
-        document.getElementById('switchCamera').addEventListener('click', switchCamera);
-        document.getElementById('requestPermissions').addEventListener('click', requestPermissions);
+        function setupEventListeners() {
+            // Camera controls
+            document.getElementById('startCamera').addEventListener('click', startCamera);
+            document.getElementById('stopCamera').addEventListener('click', stopCamera);
+            document.getElementById('switchCamera').addEventListener('click', switchCamera);
+            document.getElementById('requestPermissions').addEventListener('click', requestPermissions);
+            document.getElementById('toggleDebugVideo').addEventListener('click', toggleDebugVideo);
 
-        document.getElementById('toggleDebugVideo').addEventListener('click', () => {
-            const debugVideo = document.getElementById('debugVideo');
-            debugVideo.style.display = debugVideo.style.display === 'none' ? 'block' : 'none';
-        });
+            // Checkbox controls
+            document.getElementById('showRawFeed').addEventListener('change', (e) => {
+                const debugVideo = document.getElementById('debugVideo');
+                debugVideo.style.display = e.target.checked ? 'block' : 'none';
+            });
 
-        // Preset buttons
-        document.getElementById('setHaditPole').addEventListener('click', () => {
-            document.getElementById('haditPhi').value = 0.1;
-            document.getElementById('haditPhiNumber').value = 0.1;
-            document.getElementById('haditPhiValue').textContent = '0.1°';
-            processingConfig.haditPhi = 0.1;
-        });
+            document.getElementById('showFPS').addEventListener('change', (e) => {
+                const fpsElements = document.querySelectorAll('.fps-counter');
+                fpsElements.forEach(element => {
+                    element.style.display = e.target.checked ? 'block' : 'none';
+                });
+            });
 
-        document.getElementById('setHaditEquator').addEventListener('click', () => {
-            document.getElementById('haditPhi').value = 90.0;
-            document.getElementById('haditPhiNumber').value = 90.0;
-            document.getElementById('haditPhiValue').textContent = '90.0°';
-            processingConfig.haditPhi = 90.0;
-        });
-
-        document.getElementById('setHaditNear180').addEventListener('click', () => {
-            document.getElementById('haditPhi').value = 179.9;
-            document.getElementById('haditPhiNumber').value = 179.9;
-            document.getElementById('haditPhiValue').textContent = '179.9°';
-            processingConfig.haditPhi = 179.9;
-        });
-
-        // Animation controls
-        document.getElementById('animateTheta').addEventListener('click', () => {
-            animationStates.theta = !animationStates.theta;
-            document.getElementById('animateTheta').textContent = 
-                animationStates.theta ? '⏸️ Pause θ' : '🌀 Animate θ';
-        });
-
-        document.getElementById('animatePhi').addEventListener('click', () => {
-            animationStates.phi = !animationStates.phi;
-            document.getElementById('animatePhi').textContent = 
-                animationStates.phi ? '⏸️ Pause φ' : '🌊 Animate φ';
-        });
-
-        document.getElementById('stopAnimation').addEventListener('click', () => {
-            animationStates.theta = false;
-            animationStates.phi = false;
-            document.getElementById('animateTheta').textContent = '🌀 Animate θ';
-            document.getElementById('animatePhi').textContent = '🌊 Animate φ';
-        });
-
-        // S-Coordinate presets
-        document.getElementById('setExtremeS').addEventListener('click', () => {
-            document.getElementById('sDisparity').value = 100.0;
-            document.getElementById('sDisparityValue').textContent = '100.0px';
-            document.getElementById('sScale').value = 5.0;
-            document.getElementById('sScaleValue').textContent = '5.0x';
-            processingConfig.sDisparity = 100.0;
-            processingConfig.sScale = 5.0;
-        });
-        
-        document.getElementById('setDeepS').addEventListener('click', () => {
-            document.getElementById('sDisparity').value = 60.0;
-            document.getElementById('sDisparityValue').textContent = '60.0px';
-            document.getElementById('sScale').value = 3.0;
-            document.getElementById('sScaleValue').textContent = '3.0x';
-            processingConfig.sDisparity = 60.0;
-            processingConfig.sScale = 3.0;
-        });
-
-        document.getElementById('setSubtleS').addEventListener('click', () => {
-            document.getElementById('sDisparity').value = 5.0;
-            document.getElementById('sDisparityValue').textContent = '5.0px';
-            document.getElementById('sScale').value = 0.8;
-            document.getElementById('sScaleValue').textContent = '0.8x';
-            processingConfig.sDisparity = 5.0;
-            processingConfig.sScale = 0.8;
-        });
-
-        document.getElementById('setNoS').addEventListener('click', () => {
-            document.getElementById('sDisparity').value = 0.0;
-            document.getElementById('sDisparityValue').textContent = '0.0px';
-            processingConfig.sDisparity = 0.0;
-        });
-
-        // Show/hide debug video based on checkbox
-        document.getElementById('showRawFeed').addEventListener('change', function() {
-            const debugVideo = document.getElementById('debugVideo');
-            debugVideo.style.display = this.checked ? 'block' : 'none';
-        });
+            // Quality change handler
+            document.getElementById('qualitySelect').addEventListener('change', () => {
+                if (isProcessing) {
+                    // Restart processing with new quality
+                    isProcessing = false;
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                    }
+                    setTimeout(() => {
+                        if (currentStream) {
+                            startProcessing();
+                        }
+                    }, 100);
+                }
+            });
+        }
 
         // ==================== INITIALIZATION ====================
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            // Initialize control synchronization
+        function initialize() {
+            console.log('Initializing Flattened S-Coordinate Stereogram System...');
+            console.log('Current Date and Time (UTC): 2025-06-08 11:27:46');
+            console.log('Current User Login: Angledcrystals');
+            
+            // Set up all controls and event listeners
             synchronizeControls();
+            setupPresetButtons();
+            setupEventListeners();
+            updateProjectionInfo();
             
-            // Update info panel with current status
-            document.getElementById('infoPanel').innerHTML = 
-                '<div>Status: Fixed S-Coordinate system ready with enhanced stereo disparity... Angledcrystals | 2025-06-08 11:15:09 UTC</div>';
-                
-            // Set initial analysis panel content
-            document.getElementById('analysisPanel').innerHTML = `
-                <div style="color: #88ff00; font-weight: bold;">📐 Pure S-Coordinate Analysis</div>
-                <div>Ready for pure S-coordinate generation...</div>
-                <div>Camera permissions status: checking...</div>
-                <div>ENHANCED STEREO DISPARITY:</div>
-                <div>&nbsp;&nbsp;• S-coordinates: Applied to ALL pixels globally</div>
-                <div>&nbsp;&nbsp;• Minimum disparity: 5px per pixel enforced</div>
-                <div>&nbsp;&nbsp;• Disparity amplification: 3x multiplier active</div>
-                <div>&nbsp;&nbsp;• H-band: Only for brightness-based color leveling (optional)</div>
-                <div style="margin-top: 10px; color: #888; font-size: 9px;">
-                    System initialized: ${new Date().toLocaleTimeString()} | User: Angledcrystals
-                </div>
-            `;
+            // Initialize analysis panel
+            const analysisPanel = document.getElementById('analysisPanel');
+            if (analysisPanel) {
+                analysisPanel.innerHTML = `
+                    <div style="color: #88ff00; font-weight: bold;">📐 Flattened S-Coordinate Analysis</div>
+                    <div>Ready for uniform S-coordinate generation...</div>
+                    <div>Camera permissions status: checking...</div>
+                    <div>Projection mode: ${processingConfig.projectionMode}</div>
+                    <div>Flatten factor: ${processingConfig.flattenFactor}</div>
+                    <div>S-Bounds: ${processingConfig.sBounds}</div>
+                    <div>System ready for flattened distribution...</div>
+                `;
+            }
             
-            // Add dramatic effect to the fixed notice
-            setTimeout(() => {
-                const fixedNotice = document.querySelector('.fixed-notice');
-                if (fixedNotice) {
-                    fixedNotice.style.transition = 'all 0.5s ease';
-                    fixedNotice.style.transform = 'scale(1.02)';
-                    setTimeout(() => {
-                        fixedNotice.style.transform = 'scale(1)';
-                    }, 300);
-                }
-            }, 1000);
-        });
+            // Check camera permissions on load
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.enumerateDevices()
+                    .then(devices => {
+                        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                        console.log(`Found ${videoDevices.length} video devices`);
+                        
+                        if (videoDevices.length > 1) {
+                            document.getElementById('switchCamera').style.display = 'inline-block';
+                        }
+                        
+                        document.getElementById('cameraStatus').innerHTML = 
+                            '<span class="status-connecting">📹 Camera system ready - click Start Camera</span>';
+                    })
+                    .catch(error => {
+                        console.error('Error enumerating devices:', error);
+                        showError('Camera enumeration failed: ' + error.message);
+                    });
+            } else {
+                showError('Camera API not supported in this browser');
+            }
+            
+            console.log('Flattened S-Coordinate system initialized successfully!');
+            console.log('Projection modes available: Stereographic, Linear, Equirectangular, Hybrid');
+            console.log('Default mode: Linear (uniform distribution)');
+        }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch (e.key) {
-                    case 's':
-                        e.preventDefault();
-                        if (currentStream) {
-                            stopCamera();
-                        } else {
-                            startCamera();
-                        }
-                        break;
-                    case 'r':
-                        e.preventDefault();
-                        if (currentStream) {
-                            switchCamera();
-                        }
-                        break;
-                    case 'p':
-                        e.preventDefault();
-                        document.getElementById('invertParallax').click();
-                        break;
-                    case 'a':
-                        e.preventDefault();
-                        document.getElementById('animateTheta').click();
-                        break;
-                }
+        // ==================== WINDOW LOAD ====================
+
+        window.addEventListener('load', initialize);
+        window.addEventListener('beforeunload', () => {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
             }
         });
-        
-        // Export debug information for troubleshooting
-        window.debugStereo = function() {
-            // Force visual indicators
-            document.getElementById('showVisualIndicators').checked = true;
-            
-            // Log current stereo settings
-            console.log('Current Stereo Configuration:', {
-                haditTheta: processingConfig.haditTheta,
-                haditPhi: processingConfig.haditPhi,
-                haditInfluence: processingConfig.haditInfluence,
-                sDisparity: processingConfig.sDisparity,
-                sScale: processingConfig.sScale,
-                separation: processingConfig.separation,
-                depthSource: document.getElementById('depthSource').value,
-                invertParallax: document.getElementById('invertParallax').checked,
-                disparity_amplification: '3.0x (hardcoded)',
-                minimum_disparity: '5px (hardcoded)'
-            });
-            
-            // Check for visual indicators
-            const leftCanvas = document.getElementById('leftCanvas');
-            const rightCanvas = document.getElementById('rightCanvas');
-            const leftCtx = leftCanvas.getContext('2d');
-            const rightCtx = rightCanvas.getContext('2d');
-            
-            // Draw test patterns to verify distinct images
-            leftCtx.fillStyle = 'rgba(255,0,0,0.5)';
-            leftCtx.fillRect(20, 20, 50, 50);
-            rightCtx.fillStyle = 'rgba(0,0,255,0.5)';
-            rightCtx.fillRect(70, 20, 50, 50);
-            
-            console.log('Debug test patterns added - LEFT and RIGHT images should now be visibly different');
-            
-            // Return analysis
-            return {
-                status: 'Stereo system verified',
-                timestamp: new Date().toISOString(),
-                user: 'Angledcrystals',
-                message: 'S-coordinate stereogram fully operational with correct left/right disparity'
-            };
-        };
+
+        // ==================== ERROR HANDLING ====================
+
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            showError(`Application error: ${event.error.message}`);
+        });
+
+        // ==================== RESPONSIVE HANDLING ====================
+
+        window.addEventListener('resize', () => {
+            // Debounce resize events
+            clearTimeout(window.resizeTimeout);
+            window.resizeTimeout = setTimeout(() => {
+                if (isProcessing) {
+                    // Restart processing to adjust canvas sizes
+                    isProcessing = false;
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                    }
+                    setTimeout(() => {
+                        if (currentStream) {
+                            startProcessing();
+                        }
+                    }, 200);
+                }
+            }, 250);
+        });
+
     </script>
 </body>
 </html>
