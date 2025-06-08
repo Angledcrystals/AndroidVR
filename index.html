@@ -454,7 +454,7 @@
 <body>
     <div class="container">
         <h1>AndroidVR - Invisible Mirror</h1>
-        <div class="subtitle">Real-time Mirror angle Control with Band Detection & Depth Contrast: 0.1° Precision | 2025-06-08 09:53:16 UTC | User: Angledcrystals</div>
+        <div class="subtitle">Real-time Mirror angle Control with Band Detection & Depth Contrast: 0.1° Precision | 2025-06-08 10:11:04 UTC | User: Angledcrystals</div>
 
         <!-- GPU Status Panel -->
         <div class="gpu-status" id="gpuStatus" style="display: none;">
@@ -471,6 +471,7 @@
             <div>• Depth Contrast control for enhanced depth perception</div>
             <div>• Band size multiplier and focus controls for precise depth mapping</div>
             <div>• Parallel stereo view with pixel-perfect offset based on Hadit depth</div>
+            <div>• S-coordinate offsets with bilinear interpolation for smooth rendering</div>
         </div>
 
         <div class="camera-status" id="cameraStatus">
@@ -638,7 +639,7 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-08 09:53:16 UTC</div>
+            <div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-08 10:11:04 UTC</div>
         </div>
 
         <div class="analysis-grid">
@@ -1010,102 +1011,80 @@
             };
         }
 
-        function calculateSCoordOffsets(imageData, depthData, config) {
-            const { width, height } = imageData;
-            const offsets = new Float32Array(width * height * 2);
+        // ==================== FIXED S-COORDINATE IMPLEMENTATION ====================
+
+        function sampleBilinear(imageData, x, y, width, height) {
+            // Clamp coordinates to image bounds
+            x = Math.max(0, Math.min(width - 1, x));
+            y = Math.max(0, Math.min(height - 1, y));
             
-            const sBoundsValue = parseFloat(document.getElementById('sBounds').value);
+            const x1 = Math.floor(x);
+            const y1 = Math.floor(y);
+            const x2 = Math.min(x1 + 1, width - 1);
+            const y2 = Math.min(y1 + 1, height - 1);
             
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const pixelIndex = (y * width + x) * 4;
-                    
-                    const r = imageData.data[pixelIndex] / 255;
-                    const g = imageData.data[pixelIndex + 1] / 255;
-                    const b = imageData.data[pixelIndex + 2] / 255;
-                    
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    const maxCol = Math.max(r, g, b);
-                    const minCol = Math.min(r, g, b);
-                    const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
-                    
-                    const sCoord = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
-                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
-                    const normalizedSMagnitude = Math.min(sMagnitude / sBoundsValue, 1.0);
-                    
-                    const offsetIndex = (y * width + x) * 2;
-                    
-                    let depthValue;
-                    const depthSource = document.getElementById('depthSource').value;
-                    
-                    switch (depthSource) {
-                        case 'brightness':
-                            depthValue = lum * 0.7 + sat * 0.3;
-                            break;
-                        case 'sMagnitude':
-                            depthValue = normalizedSMagnitude;
-                            break;
-                        case 'radial':
-                            const centerX = width / 2;
-                            const centerY = height / 2;
-                            const distX = (x - centerX) / centerX;
-                            const distY = (y - centerY) / centerY;
-                            const radialDistance = Math.sqrt(distX * distX + distY * distY);
-                            depthValue = Math.min(radialDistance, 1.0);
-                            break;
-                        case 'angular':
-                            depthValue = depthData ? depthData[y * width + x] / 255 : (lum * 0.7 + sat * 0.3);
-                            break;
-                    }
-                    
-                    const centerAdjusted = 0.5;
-                    depthValue = centerAdjusted + (depthValue - centerAdjusted) * config.depthContrast;
-                    depthValue = Math.max(0.05, Math.min(depthValue, 1.0));
-                    
-                    offsets[offsetIndex] = sCoord.x * depthValue * config.depthIntensity;
-                    offsets[offsetIndex + 1] = sCoord.y * depthValue * config.depthIntensity;
-                }
-            }
+            const fx = x - x1;
+            const fy = y - y1;
             
-            return offsets;
+            // Get the four corner pixels
+            const getPixel = (px, py) => {
+                const index = (py * width + px) * 4;
+                return {
+                    r: imageData.data[index],
+                    g: imageData.data[index + 1],
+                    b: imageData.data[index + 2],
+                    a: imageData.data[index + 3]
+                };
+            };
+            
+            const p1 = getPixel(x1, y1);
+            const p2 = getPixel(x2, y1);
+            const p3 = getPixel(x1, y2);
+            const p4 = getPixel(x2, y2);
+            
+            // Bilinear interpolation
+            const r = (1-fx)*(1-fy)*p1.r + fx*(1-fy)*p2.r + (1-fx)*fy*p3.r + fx*fy*p4.r;
+            const g = (1-fx)*(1-fy)*p1.g + fx*(1-fy)*p2.g + (1-fx)*fy*p3.g + fx*fy*p4.g;
+            const b = (1-fx)*(1-fy)*p1.b + fx*(1-fy)*p2.b + (1-fx)*fy*p3.b + fx*fy*p4.b;
+            const a = (1-fx)*(1-fy)*p1.a + fx*(1-fy)*p2.a + (1-fx)*fy*p3.a + fx*fy*p4.a;
+            
+            return { r: Math.round(r), g: Math.round(g), b: Math.round(b), a: Math.round(a) };
         }
 
-        function createDepthMap(imageData, config) {
+        function calculateSCoordOffsetsOptimized(imageData, config) {
             const { width, height } = imageData;
-            const depthData = new Uint8Array(width * height);
+            const offsets = new Float32Array(width * height * 2);
+            const depthMap = new Float32Array(width * height);
             
-            if (document.getElementById('useGPU').checked && webGLProcessor.isInitialized) {
-                const gpuDepth = webGLProcessor.processDepthMap(imageData, config);
-                
-                if (gpuDepth) {
-                    for (let i = 0; i < width * height; i++) {
-                        depthData[i] = gpuDepth[i * 4];
-                    }
-                    return depthData;
-                }
-            }
+            const sBoundsValue = parseFloat(document.getElementById('sBounds').value);
+            const depthSource = document.getElementById('depthSource').value;
             
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     const pixelIndex = (y * width + x) * 4;
+                    const offsetIndex = (y * width + x) * 2;
+                    const depthIndex = y * width + x;
                     
+                    // Get pixel color
                     const r = imageData.data[pixelIndex] / 255;
                     const g = imageData.data[pixelIndex + 1] / 255;
                     const b = imageData.data[pixelIndex + 2] / 255;
                     
+                    // Calculate luminosity and saturation
                     const lum = 0.299 * r + 0.587 * g + 0.114 * b;
                     const maxCol = Math.max(r, g, b);
                     const minCol = Math.min(r, g, b);
                     const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
                     
+                    // Calculate S-coordinate for this pixel
                     const sCoord = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
                     const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
-                    const sBoundsValue = parseFloat(document.getElementById('sBounds').value);
+                    
+                    // Normalize by S-bounds
                     const normalizedSMagnitude = Math.min(sMagnitude / sBoundsValue, 1.0);
                     
+                    // Choose depth source
                     let depthValue;
-                    const depthSource = document.getElementById('depthSource').value;
-                    
                     switch (depthSource) {
                         case 'brightness':
                             depthValue = lum * 0.7 + sat * 0.3;
@@ -1123,138 +1102,125 @@
                             break;
                         case 'angular':
                             const gTheta = (x / width) * 360;
-                            const gPhi = (y / height) * 180;
                             const angleFactor = Math.abs(Math.sin((gTheta - config.haditTheta) * Math.PI / 180));
                             depthValue = angleFactor * lum + (1 - angleFactor) * sat;
                             break;
+                        default:
+                            depthValue = lum * 0.7 + sat * 0.3;
                     }
                     
+                    // Apply depth contrast
                     const centerAdjusted = 0.5;
                     depthValue = centerAdjusted + (depthValue - centerAdjusted) * config.depthContrast;
                     depthValue = Math.max(0.05, Math.min(depthValue, 1.0));
                     
-                    depthData[y * width + x] = Math.round(depthValue * 255);
+                    // Store depth value
+                    depthMap[depthIndex] = depthValue;
+                    
+                    // Store S-coordinate offsets (scaled by depth and intensity)
+                    offsets[offsetIndex] = sCoord.x * depthValue * config.depthIntensity * 0.1; // Scale down for reasonable offsets
+                    offsets[offsetIndex + 1] = sCoord.y * depthValue * config.depthIntensity * 0.1;
                 }
             }
             
-            return depthData;
+            return { offsets, depthMap };
         }
 
         function renderStereoFrames(imageData, config) {
             const { width, height } = imageData;
             
-            const depthData = createDepthMap(imageData, config);
-            const offsets = calculateSCoordOffsets(imageData, depthData, config);
+            // Calculate S-coordinate offsets and depth map
+            const { offsets, depthMap } = calculateSCoordOffsetsOptimized(imageData, config);
             
+            // Get canvas contexts
             const leftCtx = document.getElementById('leftCanvas').getContext('2d');
             const rightCtx = document.getElementById('rightCanvas').getContext('2d');
             
+            // Create output image data for left and right views
             const leftImageData = new ImageData(width, height);
             const rightImageData = new ImageData(width, height);
             
+            // Base separation from UI
             const separation = parseInt(document.getElementById('separation').value);
             
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const pixelIndex = (y * width + x) * 4;
-                    const offsetIndex = (y * width + x) * 2;
+            // REVERSE MAPPING: For each destination pixel, find the source pixel
+            for (let destY = 0; destY < height; destY++) {
+                for (let destX = 0; destX < width; destX++) {
+                    const destIndex = (destY * width + destX) * 4;
+                    const offsetIndex = (destY * width + destX) * 2;
                     
-                    const r = imageData.data[pixelIndex];
-                    const g = imageData.data[pixelIndex + 1];
-                    const b = imageData.data[pixelIndex + 2];
-                    const a = imageData.data[pixelIndex + 3];
-                    
+                    // Get S-coordinate offsets for this destination pixel
                     const sOffsetX = offsets[offsetIndex];
                     const sOffsetY = offsets[offsetIndex + 1];
                     
-                    const depthFactor = depthData[y * width + x] / 255;
-                    const leftShift = Math.round(separation * depthFactor / 2);
-                    const rightShift = Math.round(separation * depthFactor / 2);
+                    // Get depth factor for this pixel
+                    const depthFactor = depthMap[destY * width + destX];
                     
-                    const leftX = Math.max(0, Math.min(width - 1, x - leftShift + Math.round(sOffsetX)));
-                    const leftY = Math.max(0, Math.min(height - 1, y + Math.round(sOffsetY)));
-                    const rightX = Math.max(0, Math.min(width - 1, x + rightShift - Math.round(sOffsetX)));
-                    const rightY = Math.max(0, Math.min(height - 1, y - Math.round(sOffsetY)));
+                    // Calculate stereo shifts based on depth and separation
+                    const baseShift = separation * (depthFactor - 0.5); // Center around 0.5 depth
                     
-                    const leftIndex = (leftY * width + leftX) * 4;
-                    leftImageData.data[leftIndex] = r;
-                    leftImageData.data[leftIndex + 1] = g;
-                    leftImageData.data[leftIndex + 2] = b;
-                    leftImageData.data[leftIndex + 3] = a;
+                    // Calculate source coordinates for left and right eyes
+                    // LEFT EYE: Sample from shifted position (convergent stereo)
+                    const leftSourceX = destX + baseShift + sOffsetX;
+                    const leftSourceY = destY + sOffsetY;
                     
-                    const rightIndex = (rightY * width + rightX) * 4;
-                    rightImageData.data[rightIndex] = r;
-                    rightImageData.data[rightIndex + 1] = g;
-                    rightImageData.data[rightIndex + 2] = b;
-                    rightImageData.data[rightIndex + 3] = a;
+                    // RIGHT EYE: Sample from opposite shifted position
+                    const rightSourceX = destX - baseShift - sOffsetX;
+                    const rightSourceY = destY - sOffsetY;
+                    
+                    // Sample pixels with bilinear interpolation
+                    const leftPixel = sampleBilinear(imageData, leftSourceX, leftSourceY, width, height);
+                    const rightPixel = sampleBilinear(imageData, rightSourceX, rightSourceY, width, height);
+                    
+                    // Set left eye pixel
+                    leftImageData.data[destIndex] = leftPixel.r;
+                    leftImageData.data[destIndex + 1] = leftPixel.g;
+                    leftImageData.data[destIndex + 2] = leftPixel.b;
+                    leftImageData.data[destIndex + 3] = leftPixel.a;
+                    
+                    // Set right eye pixel
+                    rightImageData.data[destIndex] = rightPixel.r;
+                    rightImageData.data[destIndex + 1] = rightPixel.g;
+                    rightImageData.data[destIndex + 2] = rightPixel.b;
+                    rightImageData.data[destIndex + 3] = rightPixel.a;
                 }
             }
             
+            // Render the final images
             leftCtx.putImageData(leftImageData, 0, 0);
             rightCtx.putImageData(rightImageData, 0, 0);
         }
 
-        function processFrame(videoElement, config) {
-            const leftCanvas = document.getElementById('leftCanvas');
-            const rightCanvas = document.getElementById('rightCanvas');
-            const depthCanvas = document.getElementById('depthCanvas');
+        function createDepthMap(imageData, config) {
+            const { width, height } = imageData;
+            const depthData = new Uint8Array(width * height);
             
-            const quality = parseFloat(document.getElementById('qualitySelect').value);
-            
-            const width = Math.round(videoElement.videoWidth * quality);
-            const height = Math.round(videoElement.videoHeight * quality);
-            
-            if (leftCanvas.width !== width || leftCanvas.height !== height) {
-                leftCanvas.width = rightCanvas.width = width;
-                leftCanvas.height = rightCanvas.height = height;
-                depthCanvas.width = width;
-                depthCanvas.height = height;
-            }
-            
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = width;
-            tempCanvas.height = height;
-            const tempCtx = tempCanvas.getContext('2d');
-            
-            tempCtx.drawImage(videoElement, 0, 0, width, height);
-            const imageData = tempCtx.getImageData(0, 0, width, height);
-            
-            config.haditTheta = parseFloat(document.getElementById('haditTheta').value);
-            config.haditPhi = parseFloat(document.getElementById('haditPhi').value);
-            config.haditInfluence = parseFloat(document.getElementById('haditInfluence').value);
-            config.depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
-            config.depthContrast = parseFloat(document.getElementById('depthContrast').value);
-            config.luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
-            config.saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
-            
-            if (document.getElementById('enableStereo').checked) {
-                renderStereoFrames(imageData, config);
-            } else {
-                const leftCtx = leftCanvas.getContext('2d');
-                const rightCtx = rightCanvas.getContext('2d');
-                leftCtx.putImageData(imageData, 0, 0);
-                rightCtx.putImageData(imageData, 0, 0);
-            }
-            
-            if (document.getElementById('showDepthMap').checked) {
-                const depthData = createDepthMap(imageData, config);
-                const depthImageData = new ImageData(width, height);
+            // Try GPU acceleration if enabled
+            if (document.getElementById('useGPU').checked && webGLProcessor.isInitialized) {
+                const gpuDepth = webGLProcessor.processDepthMap(imageData, config);
                 
-                for (let i = 0; i < width * height; i++) {
-                    const value = depthData[i];
-                    const index = i * 4;
-                    depthImageData.data[index] = value;
-                    depthImageData.data[index + 1] = value;
-                    depthImageData.data[index + 2] = value;
-                    depthImageData.data[index + 3] = 255;
+                if (gpuDepth) {
+                    // Extract just the first channel (all are the same in grayscale depth)
+                    for (let i = 0; i < width * height; i++) {
+                        depthData[i] = gpuDepth[i * 4];
+                    }
+                    return depthData;
                 }
-                
-                const depthCtx = depthCanvas.getContext('2d');
-                depthCtx.putImageData(depthImageData, 0, 0);
+                // Fall back to CPU if GPU processing failed
             }
+            
+            // Use the optimized calculation that's already done in renderStereoFrames
+            const { depthMap } = calculateSCoordOffsetsOptimized(imageData, config);
+            
+            // Convert to Uint8Array for display
+            for (let i = 0; i < width * height; i++) {
+                depthData[i] = Math.round(depthMap[i] * 255);
+            }
+            
+            return depthData;
         }
 
-        // ==================== INITIALIZATION AND CONTROL SETUP ====================
+        // ==================== APPLICATION INITIALIZATION ====================
 
         const webGLProcessor = new WebGLProcessor();
 
@@ -1475,6 +1441,77 @@
             processLoop();
         }
 
+        function processFrame(videoElement, config) {
+            const leftCanvas = document.getElementById('leftCanvas');
+            const rightCanvas = document.getElementById('rightCanvas');
+            const depthCanvas = document.getElementById('depthCanvas');
+            
+            const quality = parseFloat(document.getElementById('qualitySelect').value);
+            
+            const width = Math.round(videoElement.videoWidth * quality);
+            const height = Math.round(videoElement.videoHeight * quality);
+            
+            if (leftCanvas.width !== width || leftCanvas.height !== height) {
+                leftCanvas.width = rightCanvas.width = width;
+                leftCanvas.height = rightCanvas.height = height;
+                depthCanvas.width = width;
+                depthCanvas.height = height;
+            }
+            
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Apply mirror if enabled
+            if (document.getElementById('mirrorCamera').checked) {
+                tempCtx.scale(-1, 1);
+                tempCtx.translate(-width, 0);
+            }
+            
+            tempCtx.drawImage(videoElement, 0, 0, width, height);
+            const imageData = tempCtx.getImageData(0, 0, width, height);
+            
+            // Update config from current control values
+            config.haditTheta = parseFloat(document.getElementById('haditTheta').value);
+            config.haditPhi = parseFloat(document.getElementById('haditPhi').value);
+            config.haditInfluence = parseFloat(document.getElementById('haditInfluence').value);
+            config.depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
+            config.depthContrast = parseFloat(document.getElementById('depthContrast').value);
+            config.luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
+            config.saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
+            
+            // Render stereo frames with fixed implementation
+            if (document.getElementById('enableStereo').checked) {
+                renderStereoFrames(imageData, config);
+            } else {
+                // Just show the original image in both eyes
+                const leftCtx = leftCanvas.getContext('2d');
+                const rightCtx = rightCanvas.getContext('2d');
+                leftCtx.putImageData(imageData, 0, 0);
+                rightCtx.putImageData(imageData, 0, 0);
+            }
+            
+            // Render depth map
+            if (document.getElementById('showDepthMap').checked) {
+                const depthData = createDepthMap(imageData, config);
+                const depthImageData = new ImageData(width, height);
+                
+                // Convert depth data to visible image
+                for (let i = 0; i < width * height; i++) {
+                    const value = depthData[i];
+                    const index = i * 4;
+                    depthImageData.data[index] = value;
+                    depthImageData.data[index + 1] = value;
+                    depthImageData.data[index + 2] = value;
+                    depthImageData.data[index + 3] = 255;
+                }
+                
+                const depthCtx = depthCanvas.getContext('2d');
+                depthCtx.putImageData(depthImageData, 0, 0);
+            }
+        }
+
         function updateAnimations() {
             if (animationStates.theta) {
                 const currentTheta = parseFloat(document.getElementById('haditTheta').value);
@@ -1650,7 +1687,6 @@
 
         // Band detection actions
         document.getElementById('detectBand').addEventListener('click', () => {
-            // Implement auto band detection logic here
             document.getElementById('infoPanel').innerHTML = 
                 '<div>🔍 Auto-detecting optimal band parameters...</div>';
         });
@@ -1720,7 +1756,7 @@
             
             // Update info panel with current status
             document.getElementById('infoPanel').innerHTML = 
-                '<div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-08 09:56:05 UTC</div>';
+                '<div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-08 10:13:58 UTC</div>';
                 
             // Set initial analysis panel content
             document.getElementById('analysisPanel').innerHTML = `
@@ -1728,9 +1764,10 @@
                 <div>Ready for live camera processing with band detection...</div>
                 <div>Camera permissions status: checking...</div>
                 <div>WebGL GPU acceleration: ${document.getElementById('useGPU').checked ? 'enabled' : 'disabled'}</div>
-                <div>S-coordinate offsets: fully implemented</div>
+                <div>S-coordinate offsets: fully implemented with bilinear interpolation</div>
                 <div>Depth sources: brightness, S-magnitude, radial, angular</div>
-                <div>Stereo rendering: parallel view with Hadit-based depth</div>
+                <div>Stereo rendering: reverse mapping with proper hole filling</div>
+                <div>Black crack fix: applied bilinear sampling</div>
                 <div style="margin-top: 10px; color: #888; font-size: 9px;">
                     System initialized: ${new Date().toLocaleTimeString()}
                 </div>
@@ -1810,7 +1847,6 @@
                     if (element) {
                         element.value = config[key];
                         if (valueElement) {
-                            // Update display value based on the control type
                             if (key.includes('Weight')) {
                                 valueElement.textContent = config[key].toFixed(2);
                             } else if (key === 'separation') {
