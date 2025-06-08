@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AndroidVR - Invisible Mirror</title>
+    <title>AndroidVR - S-Coordinate Stereograms</title>
     <style>
         body {
             margin: 0;
@@ -35,7 +35,6 @@
             margin-bottom: 15px;
         }
 
-        /* VR-optimized camera layout */
         .camera-container {
             display: flex;
             flex-direction: column;
@@ -44,7 +43,6 @@
             margin-bottom: 20px;
         }
 
-        /* Stereo view - optimized for VR headsets with responsive scaling */
         .stereo-view {
             display: flex;
             gap: 15px;
@@ -59,7 +57,6 @@
             box-sizing: border-box;
         }
 
-        /* Depth view - positioned below stereo frames */
         .depth-view {
             display: flex;
             justify-content: center;
@@ -76,7 +73,6 @@
             overflow: hidden;
         }
 
-        /* Enhanced stereo frame sizing for VR with dynamic scaling */
         .stereo-frame {
             flex: 1;
             max-width: calc(50% - 10px);
@@ -93,7 +89,6 @@
             display: block;
         }
 
-        /* Depth frame sizing with responsive scaling */
         .depth-frame {
             width: 100%;
             max-width: 400px;
@@ -197,11 +192,6 @@
             border-color: #ff00ff !important;
         }
 
-        .band-control {
-            background: rgba(255, 255, 0, 0.2) !important;
-            border-color: #ffff00 !important;
-        }
-
         .stereo-control {
             background: rgba(255, 68, 136, 0.2) !important;
             border-color: #ff4488 !important;
@@ -210,11 +200,6 @@
         .depth-control {
             background: rgba(255, 136, 0, 0.2) !important;
             border-color: #ff8800 !important;
-        }
-
-        .warp-control {
-            background: rgba(136, 0, 255, 0.2) !important;
-            border-color: #8800ff !important;
         }
 
         .dual-input {
@@ -267,17 +252,6 @@
             overflow-y: auto;
         }
 
-        .processing {
-            box-shadow: 0 0 20px rgba(255, 255, 0, 0.5) !important;
-            animation: processing 1s ease-in-out infinite;
-        }
-
-        @keyframes processing {
-            0% { box-shadow: 0 0 20px rgba(255, 255, 0, 0.3); }
-            50% { box-shadow: 0 0 40px rgba(255, 255, 0, 0.8); }
-            100% { box-shadow: 0 0 20px rgba(255, 255, 0, 0.3); }
-        }
-
         .fps-counter {
             position: absolute;
             top: 5px;
@@ -310,24 +284,11 @@
             color: #ff4444;
         }
 
-        /* GPU Status Panel */
-        .gpu-status {
-            background: rgba(0, 255, 255, 0.1);
-            border: 1px solid #00ffff;
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 15px;
-            font-size: 11px;
-            text-align: center;
-        }
-
-        /* Debug video (visible) */
         #debugVideo {
             max-width: 200px;
             border: 1px solid #ffff00;
         }
 
-        /* Responsive design remains the same... */
         @media (orientation: landscape) and (min-width: 768px) {
             .stereo-view { padding: 25px; gap: 20px; max-width: 98vw; }
             .stereo-frame { max-width: calc(50% - 15px); min-width: 350px; }
@@ -350,23 +311,18 @@
 </head>
 <body>
     <div class="container">
-        <h1>AndroidVR - Invisible Mirror</h1>
-        <div class="subtitle">Real-time Global S-Coordinate Warping | 2025-06-08 10:25:08 UTC | User: Angledcrystals</div>
-
-        <!-- GPU Status Panel -->
-        <div class="gpu-status" id="gpuStatus" style="display: none;">
-            <div style="color: #00ffff; font-weight: bold;">🔥 GPU Acceleration Status:</div>
-            <div id="gpuStatusText">Checking WebGL support...</div>
-        </div>
+        <h1>AndroidVR - S-Coordinate Stereograms</h1>
+        <div class="subtitle">Real-time S-Coordinate Disparity Stereograms | 2025-06-08 10:32:31 UTC | User: Angledcrystals</div>
 
         <div class="hadit-info">
-            <div style="color: #ff00ff; font-weight: bold;">⚡ Global S-Coordinate Warping:</div>
-            <div>• S-coordinates applied across the ENTIRE IMAGE - no band restrictions</div>
-            <div>• Full-image stereographic projection warping based on Hadit reflection</div>
-            <div>• θ (Theta): 0° to 360° - changes global warping direction</div>
-            <div>• φ (Phi): 0.1° to 179.9° - affects warping intensity and pattern</div>
-            <div>• Warp Intensity: Amplifies S-coordinate displacement globally</div>
-            <div>• Every pixel gets S-coordinate transformation regardless of bands</div>
+            <div style="color: #ff00ff; font-weight: bold;">📐 S-Coordinate Disparity Stereograms:</div>
+            <div>• S-coordinates determine horizontal pixel disparity for depth perception</div>
+            <div>• Left/Right eyes sample pixels at S-coordinate-shifted positions</div>
+            <div>• NO spherical warping - maintains original image geometry</div>
+            <div>• Disparity creates true stereoscopic depth when cross-viewed</div>
+            <div>• θ (Theta): Changes disparity direction and pattern</div>
+            <div>• φ (Phi): Affects disparity magnitude and distribution</div>
+            <div>• Pure horizontal offset stereogram generation</div>
         </div>
 
         <div class="camera-status" id="cameraStatus">
@@ -388,12 +344,12 @@
             <!-- Stereo frames optimized for VR headsets -->
             <div class="stereo-view">
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label left-label">Left Eye (Red) - S-Warped</div>
+                    <div class="camera-label left-label">Left Eye - S-Disparity</div>
                     <canvas id="leftCanvas" width="640" height="480" class="left-eye"></canvas>
                     <div class="fps-counter" id="leftFps">0 FPS</div>
                 </div>
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label right-label">Right Eye (Blue) - S-Warped</div>
+                    <div class="camera-label right-label">Right Eye - S-Disparity</div>
                     <canvas id="rightCanvas" width="640" height="480" class="right-eye"></canvas>
                     <div class="fps-counter" id="rightFps">0 FPS</div>
                 </div>
@@ -402,7 +358,7 @@
             <!-- Depth map positioned below stereo frames -->
             <div class="depth-view">
                 <div class="camera-feed depth-frame">
-                    <div class="camera-label depth-label">S-Coordinate Magnitude</div>
+                    <div class="camera-label depth-label">S-Coordinate Disparity Map</div>
                     <canvas id="depthCanvas" width="320" height="240" class="depth-map"></canvas>
                     <div class="fps-counter" id="depthFps">0 FPS</div>
                 </div>
@@ -420,23 +376,23 @@
             </div>
 
             <div class="control-group">
-                <label>🌊 S-Coordinate Warping Mode</label>
-                <select id="warpMode" class="warp-control">
-                    <option value="global" selected>🌍 Global Full-Image Warp</option>
-                    <option value="pure_s">📐 Pure S-Coordinate Only</option>
-                    <option value="enhanced">⚡ Enhanced S-Magnitude</option>
-                    <option value="stereographic">🔮 Stereographic Projection</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label>🔧 Warp Intensity: <span id="warpIntensityValue">5.0x</span></label>
-                <input type="range" id="warpIntensity" min="0.1" max="20.0" step="0.1" value="5.0" class="warp-control">
+                <label>📐 Disparity Intensity: <span id="disparityIntensityValue">10.0px</span></label>
+                <input type="range" id="disparityIntensity" min="0" max="50" step="0.5" value="10.0" class="stereo-control">
             </div>
 
             <div class="control-group">
                 <label>🎯 S-Coordinate Scale: <span id="sCoordScaleValue">1.0x</span></label>
-                <input type="range" id="sCoordScale" min="0.1" max="10.0" step="0.1" value="1.0" class="warp-control">
+                <input type="range" id="sCoordScale" min="0.1" max="5.0" step="0.1" value="1.0" class="stereo-control">
+            </div>
+
+            <div class="control-group">
+                <label>🔧 Disparity Mode</label>
+                <select id="disparityMode" class="stereo-control">
+                    <option value="s_magnitude" selected>📏 S-Magnitude Disparity</option>
+                    <option value="s_x_only">↔️ S-X Component Only</option>
+                    <option value="s_combined">🎭 Combined S-Components</option>
+                    <option value="linear_depth">📈 Linear Depth Map</option>
+                </select>
             </div>
             
             <div class="control-group">
@@ -461,8 +417,8 @@
             </div>
             
             <div class="control-group">
-                <label>👁️ Stereo Separation: <span id="separationValue">8px</span></label>
-                <input type="range" id="separation" min="0" max="50" value="8" step="1" class="stereo-control">
+                <label>👁️ Base Stereo Separation: <span id="separationValue">5px</span></label>
+                <input type="range" id="separation" min="0" max="20" value="5" step="1" class="stereo-control">
             </div>
             
             <div class="control-group">
@@ -491,7 +447,7 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Global S-Coordinate warping system ready... Angledcrystals | 2025-06-08 10:25:08 UTC</div>
+            <div>Status: S-Coordinate disparity stereogram system ready... Angledcrystals | 2025-06-08 10:32:31 UTC</div>
         </div>
 
         <div class="analysis-grid">
@@ -509,12 +465,12 @@
                 </div>
 
                 <div class="control-group">
-                    <label>Warp Presets</label>
+                    <label>Disparity Presets</label>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button id="setExtremeWarp" class="warp-control">💥 Extreme Warp</button>
-                        <button id="setSubtleWarp" class="warp-control">🌫️ Subtle Warp</button>
-                        <button id="setPureS" class="warp-control">📐 Pure S-Coords</button>
-                        <button id="setNoWarp" class="warp-control">⭕ No Warp</button>
+                        <button id="setExtremeDisparity" class="stereo-control">💥 Extreme Disparity</button>
+                        <button id="setSubtleDisparity" class="stereo-control">🌫️ Subtle Disparity</button>
+                        <button id="setPureS" class="stereo-control">📐 Pure S-Coords</button>
+                        <button id="setNoDisparity" class="stereo-control">⭕ No Disparity</button>
                     </div>
                 </div>
                 
@@ -522,77 +478,24 @@
                     <label>Options & Debug</label>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <label><input type="checkbox" id="enableStereo" checked> Enable Stereo</label>
-                        <label><input type="checkbox" id="showSMagnitude" checked> Show S-Magnitude</label>
+                        <label><input type="checkbox" id="showDisparityMap" checked> Show Disparity Map</label>
                         <label><input type="checkbox" id="mirrorCamera"> Mirror Camera</label>
                         <label><input type="checkbox" id="showFPS" checked> Show FPS</label>
                         <label><input type="checkbox" id="debugMode" checked> Debug Mode</label>
                         <label><input type="checkbox" id="showRawFeed"> Show Raw Feed</label>
-                        <label><input type="checkbox" id="useGPU"> Enable GPU Acceleration</label>
                     </div>
                 </div>
             </div>
             
             <div class="analysis-panel" id="analysisPanel">
-                <div style="color: #88ff00; font-weight: bold;">⚡ Global S-Coordinate Warping</div>
-                <div>Ready for full-image stereographic warping...</div>
+                <div style="color: #88ff00; font-weight: bold;">📐 S-Coordinate Disparity Analysis</div>
+                <div>Ready for stereogram generation...</div>
                 <div>Camera permissions status: checking...</div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== GLOBAL S-COORDINATE WARPING SYSTEM ====================
-        
-        class WebGLProcessor {
-            constructor() {
-                this.gl = null;
-                this.program = null;
-                this.isInitialized = false;
-                this.gpuEnabled = false;
-            }
-
-            async initialize() {
-                if (!document.getElementById('useGPU').checked) {
-                    return false;
-                }
-
-                try {
-                    this.canvas = document.createElement('canvas');
-                    this.gl = this.canvas.getContext('webgl2') || this.canvas.getContext('webgl');
-                    
-                    if (!this.gl) {
-                        throw new Error('WebGL not supported');
-                    }
-
-                    await this.createShaders();
-                    this.createBuffers();
-                    this.isInitialized = true;
-                    this.gpuEnabled = true;
-                    
-                    console.log('🔥 GPU acceleration initialized');
-                    this.updateGPUStatus(true, 'GPU Acceleration: ENABLED ✓');
-                    
-                    return true;
-                } catch (error) {
-                    console.warn('GPU acceleration failed:', error);
-                    this.updateGPUStatus(false, 'GPU Acceleration: FAILED ❌');
-                    this.gpuEnabled = false;
-                    return false;
-                }
-            }
-
-            updateGPUStatus(enabled, message) {
-                const statusElement = document.getElementById('gpuStatusText');
-                const statusPanel = document.getElementById('gpuStatus');
-                
-                if (statusElement && statusPanel) {
-                    statusElement.textContent = message;
-                    statusPanel.style.display = 'block';
-                    statusPanel.style.borderColor = enabled ? '#00ffff' : '#ffaa00';
-                }
-            }
-        }
-
         // ==================== MATHEMATICAL OPERATIONS ====================
         
         const vectorOps = {
@@ -633,7 +536,7 @@
             };
         }
 
-        function calculateGlobalSCoordinate(px, py, width, height, config) {
+        function calculateSCoordinateDisparity(px, py, width, height, config) {
             // Map pixel coordinates to spherical coordinates (0-360° theta, 0-180° phi)
             const gTheta = (px / width) * 360;
             const gPhi = (py / height) * 180;
@@ -646,14 +549,16 @@
             // Get stereographic projection (S-coordinates)
             const S_hadit = stereographicProjection(G_reflected);
             
-            // Apply global scaling and influence
-            return {
+            // Apply scaling and influence
+            const scaledS = {
                 x: S_hadit.x * config.haditInfluence * config.sCoordScale,
                 y: S_hadit.y * config.haditInfluence * config.sCoordScale
             };
+            
+            return scaledS;
         }
 
-        // ==================== ENHANCED BILINEAR SAMPLING ====================
+        // ==================== BILINEAR SAMPLING ====================
 
         function sampleBilinear(imageData, x, y, width, height) {
             // Clamp coordinates to image bounds
@@ -693,9 +598,9 @@
             return { r: Math.round(r), g: Math.round(g), b: Math.round(b), a: Math.round(a) };
         }
 
-        // ==================== GLOBAL S-COORDINATE WARPING ====================
+        // ==================== S-COORDINATE DISPARITY STEREOGRAMS ====================
 
-        function renderGlobalSWarpedStereo(imageData, config) {
+        function renderSCoordinateStereogram(imageData, config) {
             const { width, height } = imageData;
             
             // Get canvas contexts
@@ -706,56 +611,56 @@
             const leftImageData = new ImageData(width, height);
             const rightImageData = new ImageData(width, height);
             
-            // Base separation from UI
-            const separation = parseInt(document.getElementById('separation').value);
-            const warpIntensity = parseFloat(document.getElementById('warpIntensity').value);
-            const warpMode = document.getElementById('warpMode').value;
+            // Get control values
+            const baseSeparation = parseInt(document.getElementById('separation').value);
+            const disparityIntensity = parseFloat(document.getElementById('disparityIntensity').value);
+            const disparityMode = document.getElementById('disparityMode').value;
             
-            // REVERSE MAPPING with GLOBAL S-COORDINATE WARPING
+            // REVERSE MAPPING with S-COORDINATE DISPARITY
             for (let destY = 0; destY < height; destY++) {
                 for (let destX = 0; destX < width; destX++) {
                     const destIndex = (destY * width + destX) * 4;
                     
                     // Calculate S-coordinates for this destination pixel
-                    const sCoord = calculateGlobalSCoordinate(destX, destY, width, height, config);
-                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                    const sCoord = calculateSCoordinateDisparity(destX, destY, width, height, config);
                     
-                    // Apply different warping modes
-                    let warpX, warpY;
-                    switch (warpMode) {
-                        case 'pure_s':
-                            // Pure S-coordinates only
-                            warpX = sCoord.x * warpIntensity;
-                            warpY = sCoord.y * warpIntensity;
+                    // Calculate disparity based on mode
+                    let disparity;
+                    switch (disparityMode) {
+                        case 's_magnitude':
+                            // Use S-coordinate magnitude as disparity
+                            const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                            disparity = sMagnitude * disparityIntensity;
                             break;
-                        case 'enhanced':
-                            // Enhanced with magnitude modulation
-                            const magnitudeBoost = Math.min(sMagnitude * 0.1, 1.0);
-                            warpX = sCoord.x * warpIntensity * (1 + magnitudeBoost);
-                            warpY = sCoord.y * warpIntensity * (1 + magnitudeBoost);
+                        case 's_x_only':
+                            // Use only S-X component
+                            disparity = sCoord.x * disparityIntensity;
                             break;
-                        case 'stereographic':
-                            // Direct stereographic projection warping
-                            warpX = sCoord.x * warpIntensity * 0.5;
-                            warpY = sCoord.y * warpIntensity * 0.5;
+                        case 's_combined':
+                            // Combine both S components
+                            disparity = (sCoord.x + sCoord.y * 0.5) * disparityIntensity;
                             break;
-                        default: // 'global'
-                            // Global full-image warp
-                            warpX = sCoord.x * warpIntensity;
-                            warpY = sCoord.y * warpIntensity;
+                        case 'linear_depth':
+                            // Linear depth based on distance from center
+                            const centerX = width / 2;
+                            const centerY = height / 2;
+                            const distX = (destX - centerX) / centerX;
+                            const distY = (destY - centerY) / centerY;
+                            const radialDistance = Math.sqrt(distX * distX + distY * distY);
+                            disparity = radialDistance * disparityIntensity;
+                            break;
+                        default:
+                            disparity = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y) * disparityIntensity;
                     }
                     
-                    // Calculate stereo shifts (small compared to warp)
-                    const stereoShift = separation * 0.1; // Much smaller than warp
+                    // Calculate horizontal offsets for left and right eyes
+                    // LEFT EYE: Sample from left-shifted position
+                    const leftSourceX = destX - (baseSeparation + disparity);
+                    const leftSourceY = destY;
                     
-                    // Calculate source coordinates for left and right eyes
-                    // LEFT EYE: Apply S-coordinate warp + left stereo shift
-                    const leftSourceX = destX + warpX - stereoShift;
-                    const leftSourceY = destY + warpY;
-                    
-                    // RIGHT EYE: Apply S-coordinate warp + right stereo shift  
-                    const rightSourceX = destX + warpX + stereoShift;
-                    const rightSourceY = destY + warpY;
+                    // RIGHT EYE: Sample from right-shifted position  
+                    const rightSourceX = destX + (baseSeparation + disparity);
+                    const rightSourceY = destY;
                     
                     // Sample pixels with bilinear interpolation
                     const leftPixel = sampleBilinear(imageData, leftSourceX, leftSourceY, width, height);
@@ -775,33 +680,56 @@
                 }
             }
             
-            // Render the final images
+            // Render the final stereogram images
             leftCtx.putImageData(leftImageData, 0, 0);
             rightCtx.putImageData(rightImageData, 0, 0);
         }
 
-        function createSMagnitudeMap(imageData, config) {
+        function createDisparityMap(imageData, config) {
             const { width, height } = imageData;
-            const sMagnitudeData = new Uint8Array(width * height);
+            const disparityData = new Uint8Array(width * height);
             
-            // Calculate S-magnitude for each pixel
+            const disparityIntensity = parseFloat(document.getElementById('disparityIntensity').value);
+            const disparityMode = document.getElementById('disparityMode').value;
+            
+            // Calculate disparity for each pixel
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
-                    const sCoord = calculateGlobalSCoordinate(x, y, width, height, config);
-                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                    const sCoord = calculateSCoordinateDisparity(x, y, width, height, config);
+                    
+                    let disparity;
+                    switch (disparityMode) {
+                        case 's_magnitude':
+                            const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                            disparity = sMagnitude;
+                            break;
+                        case 's_x_only':
+                            disparity = Math.abs(sCoord.x);
+                            break;
+                        case 's_combined':
+                            disparity = Math.abs(sCoord.x + sCoord.y * 0.5);
+                            break;
+                        case 'linear_depth':
+                            const centerX = width / 2;
+                            const centerY = height / 2;
+                            const distX = (x - centerX) / centerX;
+                            const distY = (y - centerY) / centerY;
+                            disparity = Math.sqrt(distX * distX + distY * distY);
+                            break;
+                        default:
+                            disparity = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                    }
                     
                     // Normalize and convert to 0-255 range
-                    const normalizedMagnitude = Math.min(sMagnitude / 10.0, 1.0); // Adjust scale as needed
-                    sMagnitudeData[y * width + x] = Math.round(normalizedMagnitude * 255);
+                    const normalizedDisparity = Math.min(disparity / 5.0, 1.0); // Adjust scale as needed
+                    disparityData[y * width + x] = Math.round(normalizedDisparity * 255);
                 }
             }
             
-            return sMagnitudeData;
+            return disparityData;
         }
 
         // ==================== APPLICATION STATE ====================
-
-        const webGLProcessor = new WebGLProcessor();
 
         let currentStream = null;
         let isProcessing = false;
@@ -825,9 +753,9 @@
             haditTheta: 0.0,
             haditPhi: 90.0,
             haditInfluence: 1.0,
-            warpIntensity: 5.0,
+            disparityIntensity: 10.0,
             sCoordScale: 1.0,
-            separation: 8
+            separation: 5
         };
 
         // ==================== CONTROL SYNCHRONIZATION ====================
@@ -869,7 +797,7 @@
             const controls = [
                 { id: 'haditInfluence', config: 'haditInfluence', format: (v) => v.toFixed(1) },
                 { id: 'separation', config: 'separation', format: (v) => v + 'px' },
-                { id: 'warpIntensity', config: 'warpIntensity', format: (v) => v.toFixed(1) + 'x' },
+                { id: 'disparityIntensity', config: 'disparityIntensity', format: (v) => v.toFixed(1) + 'px' },
                 { id: 'sCoordScale', config: 'sCoordScale', format: (v) => v.toFixed(1) + 'x' }
             ];
             
@@ -925,7 +853,7 @@
                 });
                 
                 document.getElementById('cameraStatus').innerHTML = 
-                    '<span class="status-active">📹 Camera active - applying global S-coordinate warping</span>';
+                    '<span class="status-active">📹 Camera active - generating S-coordinate stereograms</span>';
                 document.getElementById('startCamera').style.display = 'none';
                 document.getElementById('switchCamera').style.display = 'inline-block';
                 document.getElementById('stopCamera').style.display = 'inline-block';
@@ -1050,12 +978,12 @@
             config.haditTheta = parseFloat(document.getElementById('haditTheta').value);
             config.haditPhi = parseFloat(document.getElementById('haditPhi').value);
             config.haditInfluence = parseFloat(document.getElementById('haditInfluence').value);
-            config.warpIntensity = parseFloat(document.getElementById('warpIntensity').value);
+            config.disparityIntensity = parseFloat(document.getElementById('disparityIntensity').value);
             config.sCoordScale = parseFloat(document.getElementById('sCoordScale').value);
             
-            // Apply global S-coordinate warping
+            // Generate S-coordinate stereogram
             if (document.getElementById('enableStereo').checked) {
-                renderGlobalSWarpedStereo(imageData, config);
+                renderSCoordinateStereogram(imageData, config);
             } else {
                 // Just show the original image in both eyes
                 const leftCtx = leftCanvas.getContext('2d');
@@ -1064,23 +992,23 @@
                 rightCtx.putImageData(imageData, 0, 0);
             }
             
-            // Show S-magnitude map
-            if (document.getElementById('showSMagnitude').checked) {
-                const sMagnitudeData = createSMagnitudeMap(imageData, config);
-                const sMagnitudeImageData = new ImageData(width, height);
+            // Show disparity map
+            if (document.getElementById('showDisparityMap').checked) {
+                const disparityData = createDisparityMap(imageData, config);
+                const disparityImageData = new ImageData(width, height);
                 
-                // Convert S-magnitude data to visible image
+                // Convert disparity data to visible image
                 for (let i = 0; i < width * height; i++) {
-                    const value = sMagnitudeData[i];
+                    const value = disparityData[i];
                     const index = i * 4;
-                    sMagnitudeImageData.data[index] = value;
-                    sMagnitudeImageData.data[index + 1] = value;
-                    sMagnitudeImageData.data[index + 2] = value;
-                    sMagnitudeImageData.data[index + 3] = 255;
+                    disparityImageData.data[index] = value;
+                    disparityImageData.data[index + 1] = value;
+                    disparityImageData.data[index + 2] = value;
+                    disparityImageData.data[index + 3] = 255;
                 }
                 
                 const depthCtx = depthCanvas.getContext('2d');
-                depthCtx.putImageData(sMagnitudeImageData, 0, 0);
+                depthCtx.putImageData(disparityImageData, 0, 0);
             }
         }
 
@@ -1150,26 +1078,26 @@
             const config = processingConfig;
             
             const analysisInfo = `
-                <div style="color: #88ff00; font-weight: bold;">⚡ Global S-Coordinate Warping</div>
-                <div>📐 Current Hadit Position:</div>
+                <div style="color: #88ff00; font-weight: bold;">📐 S-Coordinate Disparity Analysis</div>
+                <div>🎯 Current Hadit Position:</div>
                 <div>&nbsp;&nbsp;θ (Theta): ${config.haditTheta.toFixed(1)}°</div>
                 <div>&nbsp;&nbsp;φ (Phi): ${config.haditPhi.toFixed(1)}°</div>
                 <div>&nbsp;&nbsp;Influence: ${config.haditInfluence.toFixed(1)}x</div>
-                <div>🌊 Warping Configuration:</div>
-                <div>&nbsp;&nbsp;Mode: ${document.getElementById('warpMode').value}</div>
-                <div>&nbsp;&nbsp;Intensity: ${config.warpIntensity.toFixed(1)}x</div>
+                <div>📏 Disparity Configuration:</div>
+                <div>&nbsp;&nbsp;Mode: ${document.getElementById('disparityMode').value}</div>
+                <div>&nbsp;&nbsp;Intensity: ${config.disparityIntensity.toFixed(1)}px</div>
                 <div>&nbsp;&nbsp;S-Scale: ${config.sCoordScale.toFixed(1)}x</div>
                 <div>👁️ Stereo Configuration:</div>
-                <div>&nbsp;&nbsp;Separation: ${config.separation}px</div>
+                <div>&nbsp;&nbsp;Base Separation: ${config.separation}px</div>
                 <div>⚙️ Performance:</div>
                 <div>&nbsp;&nbsp;Left: ${fpsCounters.left.fps} FPS</div>
                 <div>&nbsp;&nbsp;Right: ${fpsCounters.right.fps} FPS</div>
-                <div>&nbsp;&nbsp;S-Magnitude: ${fpsCounters.depth.fps} FPS</div>
+                <div>&nbsp;&nbsp;Disparity: ${fpsCounters.depth.fps} FPS</div>
                 <div>📡 Animation Status:</div>
                 <div>&nbsp;&nbsp;θ Animation: ${animationStates.theta ? '🌀 Active' : '⏹️ Stopped'}</div>
                 <div>&nbsp;&nbsp;φ Animation: ${animationStates.phi ? '🌊 Active' : '⏹️ Stopped'}</div>
                 <div style="margin-top: 10px; color: #888; font-size: 9px;">
-                    Global warping applied to entire image
+                    Stereogram disparity mapping active
                 </div>
             `;
             
@@ -1230,40 +1158,30 @@
             document.getElementById('animatePhi').textContent = '🌊 Animate φ';
         });
 
-        // Warp presets
-        document.getElementById('setExtremeWarp').addEventListener('click', () => {
-            document.getElementById('warpIntensity').value = 20.0;
-            document.getElementById('warpIntensityValue').textContent = '20.0x';
-            processingConfig.warpIntensity = 20.0;
+        // Disparity presets
+        document.getElementById('setExtremeDisparity').addEventListener('click', () => {
+            document.getElementById('disparityIntensity').value = 50.0;
+            document.getElementById('disparityIntensityValue').textContent = '50.0px';
+            processingConfig.disparityIntensity = 50.0;
         });
 
-        document.getElementById('setSubtleWarp').addEventListener('click', () => {
-            document.getElementById('warpIntensity').value = 0.5;
-            document.getElementById('warpIntensityValue').textContent = '0.5x';
-            processingConfig.warpIntensity = 0.5;
+        document.getElementById('setSubtleDisparity').addEventListener('click', () => {
+            document.getElementById('disparityIntensity').value = 2.0;
+            document.getElementById('disparityIntensityValue').textContent = '2.0px';
+            processingConfig.disparityIntensity = 2.0;
         });
 
         document.getElementById('setPureS').addEventListener('click', () => {
-            document.getElementById('warpMode').value = 'pure_s';
-            document.getElementById('warpIntensity').value = 10.0;
-            document.getElementById('warpIntensityValue').textContent = '10.0x';
-            processingConfig.warpIntensity = 10.0;
+            document.getElementById('disparityMode').value = 's_magnitude';
+            document.getElementById('disparityIntensity').value = 15.0;
+            document.getElementById('disparityIntensityValue').textContent = '15.0px';
+            processingConfig.disparityIntensity = 15.0;
         });
 
-        document.getElementById('setNoWarp').addEventListener('click', () => {
-            document.getElementById('warpIntensity').value = 0.0;
-            document.getElementById('warpIntensityValue').textContent = '0.0x';
-            processingConfig.warpIntensity = 0.0;
-        });
-
-        // GPU checkbox handler
-        document.getElementById('useGPU').addEventListener('change', async function() {
-            if (this.checked) {
-                document.getElementById('gpuStatus').style.display = 'block';
-                await webGLProcessor.initialize();
-            } else {
-                document.getElementById('gpuStatus').style.display = 'none';
-            }
+        document.getElementById('setNoDisparity').addEventListener('click', () => {
+            document.getElementById('disparityIntensity').value = 0.0;
+            document.getElementById('disparityIntensityValue').textContent = '0.0px';
+            processingConfig.disparityIntensity = 0.0;
         });
 
         // Show/hide debug video based on checkbox
@@ -1278,37 +1196,18 @@
             // Initialize control synchronization
             synchronizeControls();
             
-            // Check WebGL support on page load
-            try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-                
-                const gpuStatus = document.getElementById('gpuStatus');
-                const gpuStatusText = document.getElementById('gpuStatusText');
-                
-                if (gl) {
-                    gpuStatus.style.display = 'block';
-                    gpuStatusText.textContent = 'WebGL available. Enable GPU for acceleration.';
-                } else {
-                    gpuStatus.style.display = 'block';
-                    gpuStatusText.textContent = 'WebGL not supported on this device.';
-                }
-            } catch (e) {
-                console.warn('WebGL check failed:', e);
-            }
-            
             // Update info panel with current status
             document.getElementById('infoPanel').innerHTML = 
-                '<div>Status: Global S-Coordinate warping system ready... Angledcrystals | 2025-06-08 10:25:08 UTC</div>';
+                '<div>Status: S-Coordinate disparity stereogram system ready... Angledcrystals | 2025-06-08 10:32:31 UTC</div>';
                 
             // Set initial analysis panel content
             document.getElementById('analysisPanel').innerHTML = `
-                <div style="color: #88ff00; font-weight: bold;">⚡ Global S-Coordinate Warping</div>
-                <div>Ready for full-image stereographic warping...</div>
+                <div style="color: #88ff00; font-weight: bold;">📐 S-Coordinate Disparity Analysis</div>
+                <div>Ready for stereogram generation...</div>
                 <div>Camera permissions status: checking...</div>
-                <div>S-coordinates: Applied globally across entire image</div>
-                <div>Warping modes: Global, Pure S, Enhanced, Stereographic</div>
-                <div>No band restrictions: Every pixel gets S-coordinate transformation</div>
+                <div>Disparity mode: S-magnitude based horizontal offsets</div>
+                <div>No spherical warping: Pure stereogram generation</div>
+                <div>Depth perception: Horizontal pixel disparity only</div>
                 <div style="margin-top: 10px; color: #888; font-size: 9px;">
                     System initialized: ${new Date().toLocaleTimeString()}
                 </div>
@@ -1332,10 +1231,6 @@
                         if (currentStream) {
                             switchCamera();
                         }
-                        break;
-                    case 'g':
-                        e.preventDefault();
-                        document.getElementById('useGPU').click();
                         break;
                 }
             }
