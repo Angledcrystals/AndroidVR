@@ -212,6 +212,11 @@
             border-color: #ff8800 !important;
         }
 
+        .warp-control {
+            background: rgba(136, 0, 255, 0.2) !important;
+            border-color: #8800ff !important;
+        }
+
         .dual-input {
             display: flex;
             align-items: center;
@@ -322,139 +327,31 @@
             border: 1px solid #ffff00;
         }
 
-        /* Landscape optimizations for VR */
+        /* Responsive design remains the same... */
         @media (orientation: landscape) and (min-width: 768px) {
-            .stereo-view {
-                padding: 25px;
-                gap: 20px;
-                max-width: 98vw;
-            }
-            
-            .stereo-frame {
-                max-width: calc(50% - 15px);
-                min-width: 350px;
-            }
-            
-            .stereo-frame canvas {
-                max-height: 75vh;
-            }
-            
-            .depth-view {
-                max-width: 500px;
-            }
-            
-            .camera-label {
-                font-size: 14px;
-                margin-bottom: 10px;
-            }
+            .stereo-view { padding: 25px; gap: 20px; max-width: 98vw; }
+            .stereo-frame { max-width: calc(50% - 15px); min-width: 350px; }
+            .stereo-frame canvas { max-height: 75vh; }
+            .depth-view { max-width: 500px; }
+            .camera-label { font-size: 14px; margin-bottom: 10px; }
         }
 
-        /* Mobile and portrait optimizations */
         @media (max-width: 768px), (orientation: portrait) {
-            .stereo-view {
-                flex-direction: column;
-                align-items: center;
-                gap: 15px;
-                max-width: 95vw;
-            }
-            
-            .stereo-frame {
-                min-width: 280px;
-                max-width: 90vw;
-                width: 100%;
-            }
-            
-            .stereo-frame canvas {
-                max-height: 50vh;
-            }
-            
-            .depth-view {
-                max-width: 90vw;
-            }
-            
-            .controls {
-                grid-template-columns: 1fr;
-            }
-            
-            .analysis-grid {
-                grid-template-columns: 1fr;
-            }
+            .stereo-view { flex-direction: column; align-items: center; gap: 15px; max-width: 95vw; }
+            .stereo-frame { min-width: 280px; max-width: 90vw; width: 100%; }
+            .stereo-frame canvas { max-height: 50vh; }
+            .depth-view { max-width: 90vw; }
+            .controls { grid-template-columns: 1fr; }
+            .analysis-grid { grid-template-columns: 1fr; }
         }
 
-        /* Extra large landscape screens (VR friendly) */
-        @media (orientation: landscape) and (min-width: 1200px) {
-            .stereo-view {
-                max-width: 98vw;
-                padding: 30px;
-                gap: 25px;
-            }
-            
-            .stereo-frame {
-                min-width: 450px;
-                max-width: calc(50% - 20px);
-            }
-            
-            .stereo-frame canvas {
-                max-height: 80vh;
-            }
-            
-            .camera-label {
-                font-size: 16px;
-            }
-        }
-
-        /* Ultra-wide displays (VR optimized) */
-        @media (orientation: landscape) and (min-width: 1600px) {
-            .stereo-view {
-                max-width: 95vw;
-                padding: 35px;
-                gap: 30px;
-            }
-            
-            .stereo-frame {
-                min-width: 600px;
-                max-width: calc(50% - 25px);
-            }
-            
-            .stereo-frame canvas {
-                max-height: 85vh;
-            }
-        }
-
-        /* Small screens - ensure no cutoff */
-        @media (max-width: 480px) {
-            body {
-                padding: 5px;
-            }
-            
-            .stereo-view {
-                padding: 10px;
-                gap: 10px;
-                max-width: 98vw;
-            }
-            
-            .stereo-frame {
-                min-width: 250px;
-                max-width: 95vw;
-            }
-            
-            .stereo-frame canvas {
-                max-height: 40vh;
-            }
-        }
-
-        /* Force canvas to respect container bounds */
-        canvas {
-            max-width: 100% !important;
-            height: auto !important;
-            object-fit: contain;
-        }
+        canvas { max-width: 100% !important; height: auto !important; object-fit: contain; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>AndroidVR - Invisible Mirror</h1>
-        <div class="subtitle">Real-time Mirror angle Control with Band Detection & Depth Contrast: 0.1° Precision | 2025-06-08 10:11:04 UTC | User: Angledcrystals</div>
+        <div class="subtitle">Real-time Global S-Coordinate Warping | 2025-06-08 10:25:08 UTC | User: Angledcrystals</div>
 
         <!-- GPU Status Panel -->
         <div class="gpu-status" id="gpuStatus" style="display: none;">
@@ -463,15 +360,13 @@
         </div>
 
         <div class="hadit-info">
-            <div style="color: #ff00ff; font-weight: bold;">⚡ Complete Live Hadit Processing:</div>
-            <div>• Real-time camera feed with advanced Hadit band detection</div>
-            <div>• θ (Theta): 0° to 360° in 0.1° increments for live adjustment</div>
-            <div>• φ (Phi): 0.1° to 179.9° in 0.1° increments for extreme precision</div>
-            <div>• Band detection modes: Auto, Content Analysis, Gradient-Based, Statistical, Manual, Full Image</div>
-            <div>• Depth Contrast control for enhanced depth perception</div>
-            <div>• Band size multiplier and focus controls for precise depth mapping</div>
-            <div>• Parallel stereo view with pixel-perfect offset based on Hadit depth</div>
-            <div>• S-coordinate offsets with bilinear interpolation for smooth rendering</div>
+            <div style="color: #ff00ff; font-weight: bold;">⚡ Global S-Coordinate Warping:</div>
+            <div>• S-coordinates applied across the ENTIRE IMAGE - no band restrictions</div>
+            <div>• Full-image stereographic projection warping based on Hadit reflection</div>
+            <div>• θ (Theta): 0° to 360° - changes global warping direction</div>
+            <div>• φ (Phi): 0.1° to 179.9° - affects warping intensity and pattern</div>
+            <div>• Warp Intensity: Amplifies S-coordinate displacement globally</div>
+            <div>• Every pixel gets S-coordinate transformation regardless of bands</div>
         </div>
 
         <div class="camera-status" id="cameraStatus">
@@ -481,15 +376,9 @@
         <div id="errorPanel" class="error-message" style="display: none;">
             <div style="font-weight: bold;">❌ Camera Error:</div>
             <div id="errorMessage">Unknown error occurred</div>
-            <div style="margin-top: 5px; font-size: 10px;">
-                • Make sure you allow camera permissions<br>
-                • Try switching between front/back camera<br>
-                • Check if another app is using the camera<br>
-                • Refresh the page and try again
-            </div>
         </div>
 
-        <!-- Debug video element (visible for troubleshooting) -->
+        <!-- Debug video element -->
         <div style="text-align: center; margin-bottom: 15px;">
             <div style="font-size: 11px; color: #ffff00; margin-bottom: 5px;">🔍 DEBUG: Raw Camera Feed</div>
             <video id="debugVideo" autoplay playsinline muted class="raw-video" style="display: none;"></video>
@@ -499,12 +388,12 @@
             <!-- Stereo frames optimized for VR headsets -->
             <div class="stereo-view">
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label left-label">Left Eye (Red)</div>
+                    <div class="camera-label left-label">Left Eye (Red) - S-Warped</div>
                     <canvas id="leftCanvas" width="640" height="480" class="left-eye"></canvas>
                     <div class="fps-counter" id="leftFps">0 FPS</div>
                 </div>
                 <div class="camera-feed stereo-frame">
-                    <div class="camera-label right-label">Right Eye (Blue)</div>
+                    <div class="camera-label right-label">Right Eye (Blue) - S-Warped</div>
                     <canvas id="rightCanvas" width="640" height="480" class="right-eye"></canvas>
                     <div class="fps-counter" id="rightFps">0 FPS</div>
                 </div>
@@ -513,7 +402,7 @@
             <!-- Depth map positioned below stereo frames -->
             <div class="depth-view">
                 <div class="camera-feed depth-frame">
-                    <div class="camera-label depth-label">Hadit Depth</div>
+                    <div class="camera-label depth-label">S-Coordinate Magnitude</div>
                     <canvas id="depthCanvas" width="320" height="240" class="depth-map"></canvas>
                     <div class="fps-counter" id="depthFps">0 FPS</div>
                 </div>
@@ -531,13 +420,49 @@
             </div>
 
             <div class="control-group">
-                <label>🔧 Depth Source</label>
-                <select id="depthSource" class="hadit-control">
-                    <option value="brightness">Brightness/Saturation</option>
-                    <option value="sMagnitude">S-Magnitude</option>
-                    <option value="radial">Radial Distance</option>
-                    <option value="angular">Angular Reflection</option>
+                <label>🌊 S-Coordinate Warping Mode</label>
+                <select id="warpMode" class="warp-control">
+                    <option value="global" selected>🌍 Global Full-Image Warp</option>
+                    <option value="pure_s">📐 Pure S-Coordinate Only</option>
+                    <option value="enhanced">⚡ Enhanced S-Magnitude</option>
+                    <option value="stereographic">🔮 Stereographic Projection</option>
                 </select>
+            </div>
+
+            <div class="control-group">
+                <label>🔧 Warp Intensity: <span id="warpIntensityValue">5.0x</span></label>
+                <input type="range" id="warpIntensity" min="0.1" max="20.0" step="0.1" value="5.0" class="warp-control">
+            </div>
+
+            <div class="control-group">
+                <label>🎯 S-Coordinate Scale: <span id="sCoordScaleValue">1.0x</span></label>
+                <input type="range" id="sCoordScale" min="0.1" max="10.0" step="0.1" value="1.0" class="warp-control">
+            </div>
+            
+            <div class="control-group">
+                <label>⚡ Hadit θ (Theta): <span id="haditThetaValue">0.0°</span></label>
+                <div class="dual-input">
+                    <input type="range" id="haditTheta" min="0" max="360" value="0" step="0.1" class="hadit-control">
+                    <input type="number" id="haditThetaNumber" min="0" max="360" step="0.1" value="0" class="hadit-control">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>⚡ Hadit φ (Phi): <span id="haditPhiValue">90.0°</span></label>
+                <div class="dual-input">
+                    <input type="range" id="haditPhi" min="0.1" max="179.9" value="90.0" step="0.1" class="hadit-control">
+                    <input type="number" id="haditPhiNumber" min="0.1" max="179.9" step="0.1" value="90.0" class="hadit-control">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>🌊 Hadit Influence: <span id="haditInfluenceValue">1.0</span></label>
+                <input type="range" id="haditInfluence" min="0" max="3" value="1.0" step="0.1" class="hadit-control">
+            </div>
+            
+            <div class="control-group">
+                <label>👁️ Stereo Separation: <span id="separationValue">8px</span></label>
+                <input type="range" id="separation" min="0" max="50" value="8" step="1" class="stereo-control">
             </div>
             
             <div class="control-group">
@@ -555,79 +480,6 @@
             </div>
 
             <div class="control-group">
-                <label>📡 Band Detection Mode</label>
-                <select id="bandDetectionMode" class="band-control">
-                    <option value="auto_detect" selected>🔍 Auto-Detect Band</option>
-                    <option value="content_analysis">📊 Content Analysis</option>
-                    <option value="gradient_based">🌊 Gradient-Based</option>
-                    <option value="statistical">📈 Statistical Analysis</option>
-                    <option value="manual_range">✋ Manual Range</option>
-                    <option value="full_image">🌍 Full Image Coverage</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label>🔧 Band Size Multiplier: <span id="bandSizeMultiplierValue">10.0x</span></label>
-                <input type="range" id="bandSizeMultiplier" min="0.1" max="10.0" step="0.1" value="10.0" class="band-control">
-            </div>
-
-            <div class="control-group">
-                <label>🎯 Focus Factor: <span id="focusFactorValue">4.0x</span></label>
-                <input type="range" id="focusFactor" min="1.0" max="5.0" step="0.1" value="4.0" class="band-control">
-            </div>
-            
-            <div class="control-group">
-                <label>⚡ Hadit θ (Theta): <span id="haditThetaValue">0.0°</span></label>
-                <div class="dual-input">
-                    <input type="range" id="haditTheta" min="0" max="360" value="0" step="0.1" class="hadit-control">
-                    <input type="number" id="haditThetaNumber" min="0" max="360" step="0.1" value="0" class="hadit-control">
-                </div>
-            </div>
-            
-            <div class="control-group">
-                <label>⚡ Hadit φ (Phi): <span id="haditPhiValue">0.1°</span></label>
-                <div class="dual-input">
-                    <input type="range" id="haditPhi" min="0.1" max="179.9" value="0.1" step="0.1" class="hadit-control">
-                    <input type="number" id="haditPhiNumber" min="0.1" max="179.9" step="0.1" value="0.1" class="hadit-control">
-                </div>
-            </div>
-            
-            <div class="control-group">
-                <label>🌊 Hadit Influence: <span id="haditInfluenceValue">1.0</span></label>
-                <input type="range" id="haditInfluence" min="0" max="2" value="1.0" step="0.1" class="hadit-control">
-            </div>
-            
-            <div class="control-group">
-                <label>👁️ Stereo Separation: <span id="separationValue">8px</span></label>
-                <input type="range" id="separation" min="0" max="50" value="8" step="1" class="stereo-control">
-            </div>
-            
-            <div class="control-group">
-                <label>🗺️ Depth Intensity: <span id="depthIntensityValue">2.0x</span></label>
-                <input type="range" id="depthIntensity" min="0.1" max="5.0" value="2.0" step="0.1" class="depth-control">
-            </div>
-
-            <div class="control-group">
-                <label>🎨 Depth Contrast: <span id="depthContrastValue">0.2x</span></label>
-                <input type="range" id="depthContrast" min="0.1" max="3.0" value="0.2" step="0.1" class="depth-control">
-            </div>
-            
-            <div class="control-group">
-                <label>📐 S Bounds: <span id="sBoundsValue">±20.0</span></label>
-                <input type="range" id="sBounds" min="1.0" max="20.0" step="0.1" value="20.0" class="hadit-control">
-            </div>
-            
-            <div class="control-group">
-                <label>💡 Luminosity Weight: <span id="luminosityWeightValue">0.0</span></label>
-                <input type="range" id="luminosityWeight" min="0" max="1" step="0.05" value="0.0" class="band-control">
-            </div>
-            
-            <div class="control-group">
-                <label>🌈 Saturation Weight: <span id="saturationWeightValue">0.0</span></label>
-                <input type="range" id="saturationWeight" min="0" max="1" step="0.05" value="0.0" class="band-control">
-            </div>
-            
-            <div class="control-group">
                 <label>⚙️ Processing Quality</label>
                 <select id="qualitySelect" class="depth-control">
                     <option value="1.0">Full Quality</option>
@@ -639,7 +491,7 @@
         </div>
 
         <div class="info-panel" id="infoPanel">
-            <div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-08 10:11:04 UTC</div>
+            <div>Status: Global S-Coordinate warping system ready... Angledcrystals | 2025-06-08 10:25:08 UTC</div>
         </div>
 
         <div class="analysis-grid">
@@ -657,21 +509,12 @@
                 </div>
 
                 <div class="control-group">
-                    <label>Depth Presets</label>
+                    <label>Warp Presets</label>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button id="setHighContrast" class="depth-control">🔆 High Contrast</button>
-                        <button id="setLowContrast" class="depth-control">🔅 Low Contrast</button>
-                        <button id="setExtremeDepth" class="depth-control">💥 Extreme Depth</button>
-                        <button id="setSubtleDepth" class="depth-control">🌫️ Subtle Depth</button>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <label>Band Actions</label>
-                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button id="detectBand" class="band-control">📡 Detect Band</button>
-                        <button id="expandBandFull" class="band-control">🌍 Expand Full</button>
-                        <button id="resetBand" class="band-control">🔄 Reset Band</button>
+                        <button id="setExtremeWarp" class="warp-control">💥 Extreme Warp</button>
+                        <button id="setSubtleWarp" class="warp-control">🌫️ Subtle Warp</button>
+                        <button id="setPureS" class="warp-control">📐 Pure S-Coords</button>
+                        <button id="setNoWarp" class="warp-control">⭕ No Warp</button>
                     </div>
                 </div>
                 
@@ -679,35 +522,26 @@
                     <label>Options & Debug</label>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <label><input type="checkbox" id="enableStereo" checked> Enable Stereo</label>
-                        <label><input type="checkbox" id="showDepthMap" checked> Show Depth</label>
-                        <label><input type="checkbox" id="showBandVisualization"> Show Band Viz</label>
-                        <label><input type="checkbox" id="focusOnlyBand"> Focus Only Band</label>
+                        <label><input type="checkbox" id="showSMagnitude" checked> Show S-Magnitude</label>
                         <label><input type="checkbox" id="mirrorCamera"> Mirror Camera</label>
                         <label><input type="checkbox" id="showFPS" checked> Show FPS</label>
                         <label><input type="checkbox" id="debugMode" checked> Debug Mode</label>
                         <label><input type="checkbox" id="showRawFeed"> Show Raw Feed</label>
-                        <label>🔥 GPU Processing</label>
                         <label><input type="checkbox" id="useGPU"> Enable GPU Acceleration</label>
-                        <select id="gpuStereoMode" class="camera-control" disabled>
-                            <option value="cpu">CPU Stereo Only</option>
-                            <option value="gpu_forward">GPU Forward + Hole Fill</option>
-                            <option value="gpu_bidirectional">GPU Bidirectional + Hole Fill</option>
-                        </select>
-                        <small style="color: #888; font-size: 9px;">GPU hole filling uses CPU depth data</small>                  
                     </div>
                 </div>
             </div>
             
             <div class="analysis-panel" id="analysisPanel">
-                <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Band Analysis</div>
-                <div>Ready for live camera processing with band detection...</div>
+                <div style="color: #88ff00; font-weight: bold;">⚡ Global S-Coordinate Warping</div>
+                <div>Ready for full-image stereographic warping...</div>
                 <div>Camera permissions status: checking...</div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== GPU ACCELERATION SYSTEM ====================
+        // ==================== GLOBAL S-COORDINATE WARPING SYSTEM ====================
         
         class WebGLProcessor {
             constructor() {
@@ -744,201 +578,6 @@
                     this.updateGPUStatus(false, 'GPU Acceleration: FAILED ❌');
                     this.gpuEnabled = false;
                     return false;
-                }
-            }
-
-            async createShaders() {
-                const vertexShaderSource = `
-                    attribute vec2 a_position;
-                    attribute vec2 a_texCoord;
-                    varying vec2 v_texCoord;
-                    
-                    void main() {
-                        gl_Position = vec4(a_position, 0.0, 1.0);
-                        v_texCoord = a_texCoord;
-                    }
-                `;
-
-                const fragmentShaderSource = `
-                    precision highp float;
-                    
-                    uniform sampler2D u_image;
-                    uniform float u_haditTheta;
-                    uniform float u_haditPhi;
-                    uniform float u_haditInfluence;
-                    uniform float u_depthContrast;
-                    uniform float u_luminosityWeight;
-                    uniform float u_saturationWeight;
-                    uniform vec2 u_resolution;
-                    
-                    varying vec2 v_texCoord;
-                    
-                    vec3 sphericalToCartesian(float theta, float phi) {
-                        float thetaRad = theta * 3.14159265359 / 180.0;
-                        float phiRad = clamp(phi, 0.1, 179.9) * 3.14159265359 / 180.0;
-                        
-                        return vec3(
-                            sin(phiRad) * cos(thetaRad),
-                            sin(phiRad) * sin(thetaRad),
-                            cos(phiRad)
-                        );
-                    }
-                    
-                    vec3 householderReflection(vec3 g, vec3 hadit) {
-                        vec3 haditUnit = normalize(hadit);
-                        float dotProduct = dot(haditUnit, g);
-                        return g - 2.0 * dotProduct * haditUnit;
-                    }
-                    
-                    vec2 stereographicProjection(vec3 gReflected) {
-                        if (abs(1.0 - gReflected.z) < 1e-10) {
-                            return vec2(0.0, 0.0);
-                        }
-                        return vec2(
-                            gReflected.x / (1.0 - gReflected.z),
-                            gReflected.y / (1.0 - gReflected.z)
-                        );
-                    }
-                    
-                    void main() {
-                        vec4 color = texture2D(u_image, v_texCoord);
-                        
-                        vec2 pixelCoord = v_texCoord * u_resolution;
-                        
-                        float lum = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
-                        float maxCol = max(max(color.r, color.g), color.b);
-                        float minCol = min(min(color.r, color.g), color.b);
-                        float sat = maxCol > 0.0 ? (maxCol - minCol) / maxCol : 0.0;
-                        
-                        float gTheta = (pixelCoord.x / u_resolution.x) * 360.0;
-                        float gPhi = (pixelCoord.y / u_resolution.y) * 180.0;
-                        vec3 G_3d = sphericalToCartesian(gTheta, gPhi);
-                        
-                        vec3 hadit_3d = sphericalToCartesian(u_haditTheta, u_haditPhi);
-                        vec3 G_reflected = householderReflection(G_3d, hadit_3d);
-                        vec2 S_hadit = stereographicProjection(G_reflected);
-                        
-                        float contentModulation = 1.0 + lum * u_luminosityWeight + sat * u_saturationWeight;
-                        vec2 sCoord = S_hadit * contentModulation * u_haditInfluence;
-                        float sMagnitude = length(sCoord);
-                        
-                        float depth = 0.3 + lum * 0.4 + sat * 0.3;
-                        depth = clamp(depth, 0.05, 1.0);
-                        
-                        float centerAdjusted = 0.5;
-                        depth = centerAdjusted + (depth - centerAdjusted) * u_depthContrast;
-                        depth = clamp(depth, 0.05, 1.0);
-                        
-                        gl_FragColor = vec4(depth, depth, depth, 1.0);
-                    }
-                `;
-
-                this.program = this.createShaderProgram(vertexShaderSource, fragmentShaderSource);
-            }
-
-            createShaderProgram(vertexSource, fragmentSource) {
-                const gl = this.gl;
-                
-                const vertexShader = this.createShader(gl.VERTEX_SHADER, vertexSource);
-                const fragmentShader = this.createShader(gl.FRAGMENT_SHADER, fragmentSource);
-                
-                const program = gl.createProgram();
-                gl.attachShader(program, vertexShader);
-                gl.attachShader(program, fragmentShader);
-                gl.linkProgram(program);
-                
-                if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-                    throw new Error('Shader program linking failed');
-                }
-                
-                return program;
-            }
-
-            createShader(type, source) {
-                const gl = this.gl;
-                const shader = gl.createShader(type);
-                gl.shaderSource(shader, source);
-                gl.compileShader(shader);
-                
-                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                    throw new Error('Shader compilation failed');
-                }
-                
-                return shader;
-            }
-
-            createBuffers() {
-                const gl = this.gl;
-                
-                const positions = new Float32Array([
-                    -1, -1,  0, 0,
-                     1, -1,  1, 0,
-                    -1,  1,  0, 1,
-                     1,  1,  1, 1,
-                ]);
-                
-                this.positionBuffer = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-                gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-            }
-
-            processDepthMap(imageData, config) {
-                if (!this.isInitialized || !this.gpuEnabled) {
-                    return null;
-                }
-
-                const gl = this.gl;
-                const { width, height, data } = imageData;
-
-                try {
-                    this.canvas.width = width;
-                    this.canvas.height = height;
-                    gl.viewport(0, 0, width, height);
-
-                    const texture = gl.createTexture();
-                    gl.bindTexture(gl.TEXTURE_2D, texture);
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-                    gl.useProgram(this.program);
-
-                    gl.uniform1f(gl.getUniformLocation(this.program, 'u_haditTheta'), config.haditTheta);
-                    gl.uniform1f(gl.getUniformLocation(this.program, 'u_haditPhi'), config.haditPhi);
-                    gl.uniform1f(gl.getUniformLocation(this.program, 'u_haditInfluence'), config.haditInfluence);
-                    gl.uniform1f(gl.getUniformLocation(this.program, 'u_depthContrast'), config.depthContrast);
-                    gl.uniform1f(gl.getUniformLocation(this.program, 'u_luminosityWeight'), config.luminosityWeight);
-                    gl.uniform1f(gl.getUniformLocation(this.program, 'u_saturationWeight'), config.saturationWeight);
-                    gl.uniform2f(gl.getUniformLocation(this.program, 'u_resolution'), width, height);
-
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, texture);
-                    gl.uniform1i(gl.getUniformLocation(this.program, 'u_image'), 0);
-
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-                    const positionLocation = gl.getAttribLocation(this.program, 'a_position');
-                    const texCoordLocation = gl.getAttribLocation(this.program, 'a_texCoord');
-                    
-                    gl.enableVertexAttribArray(positionLocation);
-                    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 16, 0);
-                    
-                    gl.enableVertexAttribArray(texCoordLocation);
-                    gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 16, 8);
-
-                    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-                    const pixels = new Uint8Array(width * height * 4);
-                    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-
-                    gl.deleteTexture(texture);
-
-                    return pixels;
-
-                } catch (error) {
-                    console.error('GPU processing error:', error);
-                    this.gpuEnabled = false;
-                    this.updateGPUStatus(false, 'GPU Acceleration: ERROR ❌');
-                    return null;
                 }
             }
 
@@ -994,24 +633,27 @@
             };
         }
 
-        function calculateHaditModulatedSCoordinate(px, py, width, height, lum, sat, config) {
+        function calculateGlobalSCoordinate(px, py, width, height, config) {
+            // Map pixel coordinates to spherical coordinates (0-360° theta, 0-180° phi)
             const gTheta = (px / width) * 360;
             const gPhi = (py / height) * 180;
             const G_3d = sphericalToCartesian(gTheta, gPhi);
             
+            // Apply Hadit reflection
             const hadit_3d = sphericalToCartesian(config.haditTheta, config.haditPhi);
             const G_reflected = householderReflection(G_3d, hadit_3d);
+            
+            // Get stereographic projection (S-coordinates)
             const S_hadit = stereographicProjection(G_reflected);
             
-            const contentModulation = 1.0 + lum * config.luminosityWeight + sat * config.saturationWeight;
-            
+            // Apply global scaling and influence
             return {
-                x: S_hadit.x * contentModulation * config.haditInfluence,
-                y: S_hadit.y * contentModulation * config.haditInfluence
+                x: S_hadit.x * config.haditInfluence * config.sCoordScale,
+                y: S_hadit.y * config.haditInfluence * config.sCoordScale
             };
         }
 
-        // ==================== FIXED S-COORDINATE IMPLEMENTATION ====================
+        // ==================== ENHANCED BILINEAR SAMPLING ====================
 
         function sampleBilinear(imageData, x, y, width, height) {
             // Clamp coordinates to image bounds
@@ -1051,86 +693,10 @@
             return { r: Math.round(r), g: Math.round(g), b: Math.round(b), a: Math.round(a) };
         }
 
-        function calculateSCoordOffsetsOptimized(imageData, config) {
-            const { width, height } = imageData;
-            const offsets = new Float32Array(width * height * 2);
-            const depthMap = new Float32Array(width * height);
-            
-            const sBoundsValue = parseFloat(document.getElementById('sBounds').value);
-            const depthSource = document.getElementById('depthSource').value;
-            
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const pixelIndex = (y * width + x) * 4;
-                    const offsetIndex = (y * width + x) * 2;
-                    const depthIndex = y * width + x;
-                    
-                    // Get pixel color
-                    const r = imageData.data[pixelIndex] / 255;
-                    const g = imageData.data[pixelIndex + 1] / 255;
-                    const b = imageData.data[pixelIndex + 2] / 255;
-                    
-                    // Calculate luminosity and saturation
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    const maxCol = Math.max(r, g, b);
-                    const minCol = Math.min(r, g, b);
-                    const sat = maxCol > 0 ? (maxCol - minCol) / maxCol : 0;
-                    
-                    // Calculate S-coordinate for this pixel
-                    const sCoord = calculateHaditModulatedSCoordinate(x, y, width, height, lum, sat, config);
-                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
-                    
-                    // Normalize by S-bounds
-                    const normalizedSMagnitude = Math.min(sMagnitude / sBoundsValue, 1.0);
-                    
-                    // Choose depth source
-                    let depthValue;
-                    switch (depthSource) {
-                        case 'brightness':
-                            depthValue = lum * 0.7 + sat * 0.3;
-                            break;
-                        case 'sMagnitude':
-                            depthValue = normalizedSMagnitude;
-                            break;
-                        case 'radial':
-                            const centerX = width / 2;
-                            const centerY = height / 2;
-                            const distX = (x - centerX) / centerX;
-                            const distY = (y - centerY) / centerY;
-                            const radialDistance = Math.sqrt(distX * distX + distY * distY);
-                            depthValue = Math.min(radialDistance, 1.0);
-                            break;
-                        case 'angular':
-                            const gTheta = (x / width) * 360;
-                            const angleFactor = Math.abs(Math.sin((gTheta - config.haditTheta) * Math.PI / 180));
-                            depthValue = angleFactor * lum + (1 - angleFactor) * sat;
-                            break;
-                        default:
-                            depthValue = lum * 0.7 + sat * 0.3;
-                    }
-                    
-                    // Apply depth contrast
-                    const centerAdjusted = 0.5;
-                    depthValue = centerAdjusted + (depthValue - centerAdjusted) * config.depthContrast;
-                    depthValue = Math.max(0.05, Math.min(depthValue, 1.0));
-                    
-                    // Store depth value
-                    depthMap[depthIndex] = depthValue;
-                    
-                    // Store S-coordinate offsets (scaled by depth and intensity)
-                    offsets[offsetIndex] = sCoord.x * depthValue * config.depthIntensity * 0.1; // Scale down for reasonable offsets
-                    offsets[offsetIndex + 1] = sCoord.y * depthValue * config.depthIntensity * 0.1;
-                }
-            }
-            
-            return { offsets, depthMap };
-        }
+        // ==================== GLOBAL S-COORDINATE WARPING ====================
 
-        function renderStereoFrames(imageData, config) {
+        function renderGlobalSWarpedStereo(imageData, config) {
             const { width, height } = imageData;
-            
-            // Calculate S-coordinate offsets and depth map
-            const { offsets, depthMap } = calculateSCoordOffsetsOptimized(imageData, config);
             
             // Get canvas contexts
             const leftCtx = document.getElementById('leftCanvas').getContext('2d');
@@ -1142,31 +708,54 @@
             
             // Base separation from UI
             const separation = parseInt(document.getElementById('separation').value);
+            const warpIntensity = parseFloat(document.getElementById('warpIntensity').value);
+            const warpMode = document.getElementById('warpMode').value;
             
-            // REVERSE MAPPING: For each destination pixel, find the source pixel
+            // REVERSE MAPPING with GLOBAL S-COORDINATE WARPING
             for (let destY = 0; destY < height; destY++) {
                 for (let destX = 0; destX < width; destX++) {
                     const destIndex = (destY * width + destX) * 4;
-                    const offsetIndex = (destY * width + destX) * 2;
                     
-                    // Get S-coordinate offsets for this destination pixel
-                    const sOffsetX = offsets[offsetIndex];
-                    const sOffsetY = offsets[offsetIndex + 1];
+                    // Calculate S-coordinates for this destination pixel
+                    const sCoord = calculateGlobalSCoordinate(destX, destY, width, height, config);
+                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
                     
-                    // Get depth factor for this pixel
-                    const depthFactor = depthMap[destY * width + destX];
+                    // Apply different warping modes
+                    let warpX, warpY;
+                    switch (warpMode) {
+                        case 'pure_s':
+                            // Pure S-coordinates only
+                            warpX = sCoord.x * warpIntensity;
+                            warpY = sCoord.y * warpIntensity;
+                            break;
+                        case 'enhanced':
+                            // Enhanced with magnitude modulation
+                            const magnitudeBoost = Math.min(sMagnitude * 0.1, 1.0);
+                            warpX = sCoord.x * warpIntensity * (1 + magnitudeBoost);
+                            warpY = sCoord.y * warpIntensity * (1 + magnitudeBoost);
+                            break;
+                        case 'stereographic':
+                            // Direct stereographic projection warping
+                            warpX = sCoord.x * warpIntensity * 0.5;
+                            warpY = sCoord.y * warpIntensity * 0.5;
+                            break;
+                        default: // 'global'
+                            // Global full-image warp
+                            warpX = sCoord.x * warpIntensity;
+                            warpY = sCoord.y * warpIntensity;
+                    }
                     
-                    // Calculate stereo shifts based on depth and separation
-                    const baseShift = separation * (depthFactor - 0.5); // Center around 0.5 depth
+                    // Calculate stereo shifts (small compared to warp)
+                    const stereoShift = separation * 0.1; // Much smaller than warp
                     
                     // Calculate source coordinates for left and right eyes
-                    // LEFT EYE: Sample from shifted position (convergent stereo)
-                    const leftSourceX = destX + baseShift + sOffsetX;
-                    const leftSourceY = destY + sOffsetY;
+                    // LEFT EYE: Apply S-coordinate warp + left stereo shift
+                    const leftSourceX = destX + warpX - stereoShift;
+                    const leftSourceY = destY + warpY;
                     
-                    // RIGHT EYE: Sample from opposite shifted position
-                    const rightSourceX = destX - baseShift - sOffsetX;
-                    const rightSourceY = destY - sOffsetY;
+                    // RIGHT EYE: Apply S-coordinate warp + right stereo shift  
+                    const rightSourceX = destX + warpX + stereoShift;
+                    const rightSourceY = destY + warpY;
                     
                     // Sample pixels with bilinear interpolation
                     const leftPixel = sampleBilinear(imageData, leftSourceX, leftSourceY, width, height);
@@ -1191,36 +780,26 @@
             rightCtx.putImageData(rightImageData, 0, 0);
         }
 
-        function createDepthMap(imageData, config) {
+        function createSMagnitudeMap(imageData, config) {
             const { width, height } = imageData;
-            const depthData = new Uint8Array(width * height);
+            const sMagnitudeData = new Uint8Array(width * height);
             
-            // Try GPU acceleration if enabled
-            if (document.getElementById('useGPU').checked && webGLProcessor.isInitialized) {
-                const gpuDepth = webGLProcessor.processDepthMap(imageData, config);
-                
-                if (gpuDepth) {
-                    // Extract just the first channel (all are the same in grayscale depth)
-                    for (let i = 0; i < width * height; i++) {
-                        depthData[i] = gpuDepth[i * 4];
-                    }
-                    return depthData;
+            // Calculate S-magnitude for each pixel
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const sCoord = calculateGlobalSCoordinate(x, y, width, height, config);
+                    const sMagnitude = Math.sqrt(sCoord.x * sCoord.x + sCoord.y * sCoord.y);
+                    
+                    // Normalize and convert to 0-255 range
+                    const normalizedMagnitude = Math.min(sMagnitude / 10.0, 1.0); // Adjust scale as needed
+                    sMagnitudeData[y * width + x] = Math.round(normalizedMagnitude * 255);
                 }
-                // Fall back to CPU if GPU processing failed
             }
             
-            // Use the optimized calculation that's already done in renderStereoFrames
-            const { depthMap } = calculateSCoordOffsetsOptimized(imageData, config);
-            
-            // Convert to Uint8Array for display
-            for (let i = 0; i < width * height; i++) {
-                depthData[i] = Math.round(depthMap[i] * 255);
-            }
-            
-            return depthData;
+            return sMagnitudeData;
         }
 
-        // ==================== APPLICATION INITIALIZATION ====================
+        // ==================== APPLICATION STATE ====================
 
         const webGLProcessor = new WebGLProcessor();
 
@@ -1238,25 +817,23 @@
             phi: false,
             thetaDirection: 1,
             phiDirection: 1,
-            thetaSpeed: 0.5,
-            phiSpeed: 0.1
+            thetaSpeed: 1.0,
+            phiSpeed: 0.2
         };
 
         const processingConfig = {
             haditTheta: 0.0,
-            haditPhi: 0.1,
+            haditPhi: 90.0,
             haditInfluence: 1.0,
-            depthIntensity: 2.0,
-            depthContrast: 0.2,
-            luminosityWeight: 0.0,
-            saturationWeight: 0.0,
-            bandSizeMultiplier: 10.0,
-            focusFactor: 4.0,
-            sBounds: 20.0,
+            warpIntensity: 5.0,
+            sCoordScale: 1.0,
             separation: 8
         };
 
+        // ==================== CONTROL SYNCHRONIZATION ====================
+
         function synchronizeControls() {
+            // Theta control
             const haditTheta = document.getElementById('haditTheta');
             const haditThetaNumber = document.getElementById('haditThetaNumber');
             const haditThetaValue = document.getElementById('haditThetaValue');
@@ -1272,6 +849,7 @@
             haditTheta.addEventListener('input', (e) => updateTheta(e.target.value));
             haditThetaNumber.addEventListener('input', (e) => updateTheta(e.target.value));
             
+            // Phi control
             const haditPhi = document.getElementById('haditPhi');
             const haditPhiNumber = document.getElementById('haditPhiNumber');
             const haditPhiValue = document.getElementById('haditPhiValue');
@@ -1287,16 +865,12 @@
             haditPhi.addEventListener('input', (e) => updatePhi(e.target.value));
             haditPhiNumber.addEventListener('input', (e) => updatePhi(e.target.value));
             
+            // Other controls
             const controls = [
                 { id: 'haditInfluence', config: 'haditInfluence', format: (v) => v.toFixed(1) },
                 { id: 'separation', config: 'separation', format: (v) => v + 'px' },
-                { id: 'depthIntensity', config: 'depthIntensity', format: (v) => v.toFixed(1) + 'x' },
-                { id: 'depthContrast', config: 'depthContrast', format: (v) => v.toFixed(1) + 'x' },
-                { id: 'sBounds', config: 'sBounds', format: (v) => '±' + v.toFixed(1) },
-                { id: 'luminosityWeight', config: 'luminosityWeight', format: (v) => v.toFixed(2) },
-                { id: 'saturationWeight', config: 'saturationWeight', format: (v) => v.toFixed(2) },
-                { id: 'bandSizeMultiplier', config: 'bandSizeMultiplier', format: (v) => v.toFixed(1) + 'x' },
-                { id: 'focusFactor', config: 'focusFactor', format: (v) => v.toFixed(1) + 'x' }
+                { id: 'warpIntensity', config: 'warpIntensity', format: (v) => v.toFixed(1) + 'x' },
+                { id: 'sCoordScale', config: 'sCoordScale', format: (v) => v.toFixed(1) + 'x' }
             ];
             
             controls.forEach(control => {
@@ -1351,7 +925,7 @@
                 });
                 
                 document.getElementById('cameraStatus').innerHTML = 
-                    '<span class="status-active">📹 Camera active - processing live feed</span>';
+                    '<span class="status-active">📹 Camera active - applying global S-coordinate warping</span>';
                 document.getElementById('startCamera').style.display = 'none';
                 document.getElementById('switchCamera').style.display = 'inline-block';
                 document.getElementById('stopCamera').style.display = 'inline-block';
@@ -1476,14 +1050,12 @@
             config.haditTheta = parseFloat(document.getElementById('haditTheta').value);
             config.haditPhi = parseFloat(document.getElementById('haditPhi').value);
             config.haditInfluence = parseFloat(document.getElementById('haditInfluence').value);
-            config.depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
-            config.depthContrast = parseFloat(document.getElementById('depthContrast').value);
-            config.luminosityWeight = parseFloat(document.getElementById('luminosityWeight').value);
-            config.saturationWeight = parseFloat(document.getElementById('saturationWeight').value);
+            config.warpIntensity = parseFloat(document.getElementById('warpIntensity').value);
+            config.sCoordScale = parseFloat(document.getElementById('sCoordScale').value);
             
-            // Render stereo frames with fixed implementation
+            // Apply global S-coordinate warping
             if (document.getElementById('enableStereo').checked) {
-                renderStereoFrames(imageData, config);
+                renderGlobalSWarpedStereo(imageData, config);
             } else {
                 // Just show the original image in both eyes
                 const leftCtx = leftCanvas.getContext('2d');
@@ -1492,23 +1064,23 @@
                 rightCtx.putImageData(imageData, 0, 0);
             }
             
-            // Render depth map
-            if (document.getElementById('showDepthMap').checked) {
-                const depthData = createDepthMap(imageData, config);
-                const depthImageData = new ImageData(width, height);
+            // Show S-magnitude map
+            if (document.getElementById('showSMagnitude').checked) {
+                const sMagnitudeData = createSMagnitudeMap(imageData, config);
+                const sMagnitudeImageData = new ImageData(width, height);
                 
-                // Convert depth data to visible image
+                // Convert S-magnitude data to visible image
                 for (let i = 0; i < width * height; i++) {
-                    const value = depthData[i];
+                    const value = sMagnitudeData[i];
                     const index = i * 4;
-                    depthImageData.data[index] = value;
-                    depthImageData.data[index + 1] = value;
-                    depthImageData.data[index + 2] = value;
-                    depthImageData.data[index + 3] = 255;
+                    sMagnitudeImageData.data[index] = value;
+                    sMagnitudeImageData.data[index + 1] = value;
+                    sMagnitudeImageData.data[index + 2] = value;
+                    sMagnitudeImageData.data[index + 3] = 255;
                 }
                 
                 const depthCtx = depthCanvas.getContext('2d');
-                depthCtx.putImageData(depthImageData, 0, 0);
+                depthCtx.putImageData(sMagnitudeImageData, 0, 0);
             }
         }
 
@@ -1578,28 +1150,26 @@
             const config = processingConfig;
             
             const analysisInfo = `
-                <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Band Analysis</div>
+                <div style="color: #88ff00; font-weight: bold;">⚡ Global S-Coordinate Warping</div>
                 <div>📐 Current Hadit Position:</div>
                 <div>&nbsp;&nbsp;θ (Theta): ${config.haditTheta.toFixed(1)}°</div>
                 <div>&nbsp;&nbsp;φ (Phi): ${config.haditPhi.toFixed(1)}°</div>
                 <div>&nbsp;&nbsp;Influence: ${config.haditInfluence.toFixed(1)}x</div>
-                <div>🎨 Depth Processing:</div>
-                <div>&nbsp;&nbsp;Source: ${document.getElementById('depthSource').value}</div>
-                <div>&nbsp;&nbsp;Intensity: ${config.depthIntensity.toFixed(1)}x</div>
-                <div>&nbsp;&nbsp;Contrast: ${config.depthContrast.toFixed(1)}x</div>
+                <div>🌊 Warping Configuration:</div>
+                <div>&nbsp;&nbsp;Mode: ${document.getElementById('warpMode').value}</div>
+                <div>&nbsp;&nbsp;Intensity: ${config.warpIntensity.toFixed(1)}x</div>
+                <div>&nbsp;&nbsp;S-Scale: ${config.sCoordScale.toFixed(1)}x</div>
                 <div>👁️ Stereo Configuration:</div>
                 <div>&nbsp;&nbsp;Separation: ${config.separation}px</div>
-                <div>&nbsp;&nbsp;S-Bounds: ±${config.sBounds.toFixed(1)}</div>
                 <div>⚙️ Performance:</div>
                 <div>&nbsp;&nbsp;Left: ${fpsCounters.left.fps} FPS</div>
                 <div>&nbsp;&nbsp;Right: ${fpsCounters.right.fps} FPS</div>
-                <div>&nbsp;&nbsp;Depth: ${fpsCounters.depth.fps} FPS</div>
-                <div>&nbsp;&nbsp;GPU: ${document.getElementById('useGPU').checked ? 'Enabled' : 'Disabled'}</div>
+                <div>&nbsp;&nbsp;S-Magnitude: ${fpsCounters.depth.fps} FPS</div>
                 <div>📡 Animation Status:</div>
                 <div>&nbsp;&nbsp;θ Animation: ${animationStates.theta ? '🌀 Active' : '⏹️ Stopped'}</div>
                 <div>&nbsp;&nbsp;φ Animation: ${animationStates.phi ? '🌊 Active' : '⏹️ Stopped'}</div>
                 <div style="margin-top: 10px; color: #888; font-size: 9px;">
-                    Last updated: ${new Date().toLocaleTimeString()}
+                    Global warping applied to entire image
                 </div>
             `;
             
@@ -1660,66 +1230,39 @@
             document.getElementById('animatePhi').textContent = '🌊 Animate φ';
         });
 
-        // Depth presets
-        document.getElementById('setHighContrast').addEventListener('click', () => {
-            document.getElementById('depthContrast').value = 2.5;
-            document.getElementById('depthContrastValue').textContent = '2.5x';
-            processingConfig.depthContrast = 2.5;
+        // Warp presets
+        document.getElementById('setExtremeWarp').addEventListener('click', () => {
+            document.getElementById('warpIntensity').value = 20.0;
+            document.getElementById('warpIntensityValue').textContent = '20.0x';
+            processingConfig.warpIntensity = 20.0;
         });
 
-        document.getElementById('setLowContrast').addEventListener('click', () => {
-            document.getElementById('depthContrast').value = 0.1;
-            document.getElementById('depthContrastValue').textContent = '0.1x';
-            processingConfig.depthContrast = 0.1;
+        document.getElementById('setSubtleWarp').addEventListener('click', () => {
+            document.getElementById('warpIntensity').value = 0.5;
+            document.getElementById('warpIntensityValue').textContent = '0.5x';
+            processingConfig.warpIntensity = 0.5;
         });
 
-        document.getElementById('setExtremeDepth').addEventListener('click', () => {
-            document.getElementById('depthIntensity').value = 5.0;
-            document.getElementById('depthIntensityValue').textContent = '5.0x';
-            processingConfig.depthIntensity = 5.0;
+        document.getElementById('setPureS').addEventListener('click', () => {
+            document.getElementById('warpMode').value = 'pure_s';
+            document.getElementById('warpIntensity').value = 10.0;
+            document.getElementById('warpIntensityValue').textContent = '10.0x';
+            processingConfig.warpIntensity = 10.0;
         });
 
-        document.getElementById('setSubtleDepth').addEventListener('click', () => {
-            document.getElementById('depthIntensity').value = 0.5;
-            document.getElementById('depthIntensityValue').textContent = '0.5x';
-            processingConfig.depthIntensity = 0.5;
-        });
-
-        // Band detection actions
-        document.getElementById('detectBand').addEventListener('click', () => {
-            document.getElementById('infoPanel').innerHTML = 
-                '<div>🔍 Auto-detecting optimal band parameters...</div>';
-        });
-
-        document.getElementById('expandBandFull').addEventListener('click', () => {
-            document.getElementById('bandSizeMultiplier').value = 10.0;
-            document.getElementById('bandSizeMultiplierValue').textContent = '10.0x';
-            processingConfig.bandSizeMultiplier = 10.0;
-        });
-
-        document.getElementById('resetBand').addEventListener('click', () => {
-            document.getElementById('bandSizeMultiplier').value = 1.0;
-            document.getElementById('bandSizeMultiplierValue').textContent = '1.0x';
-            document.getElementById('focusFactor').value = 1.0;
-            document.getElementById('focusFactorValue').textContent = '1.0x';
-            processingConfig.bandSizeMultiplier = 1.0;
-            processingConfig.focusFactor = 1.0;
+        document.getElementById('setNoWarp').addEventListener('click', () => {
+            document.getElementById('warpIntensity').value = 0.0;
+            document.getElementById('warpIntensityValue').textContent = '0.0x';
+            processingConfig.warpIntensity = 0.0;
         });
 
         // GPU checkbox handler
         document.getElementById('useGPU').addEventListener('change', async function() {
             if (this.checked) {
                 document.getElementById('gpuStatus').style.display = 'block';
-                const success = await webGLProcessor.initialize();
-                if (success) {
-                    document.getElementById('gpuStereoMode').disabled = false;
-                } else {
-                    this.checked = false;
-                    document.getElementById('gpuStereoMode').disabled = true;
-                }
+                await webGLProcessor.initialize();
             } else {
                 document.getElementById('gpuStatus').style.display = 'none';
-                document.getElementById('gpuStereoMode').disabled = true;
             }
         });
 
@@ -1756,27 +1299,23 @@
             
             // Update info panel with current status
             document.getElementById('infoPanel').innerHTML = 
-                '<div>Status: Complete Live Hadit camera system ready... Angledcrystals | 2025-06-08 10:13:58 UTC</div>';
+                '<div>Status: Global S-Coordinate warping system ready... Angledcrystals | 2025-06-08 10:25:08 UTC</div>';
                 
             // Set initial analysis panel content
             document.getElementById('analysisPanel').innerHTML = `
-                <div style="color: #88ff00; font-weight: bold;">⚡ Live Hadit Band Analysis</div>
-                <div>Ready for live camera processing with band detection...</div>
+                <div style="color: #88ff00; font-weight: bold;">⚡ Global S-Coordinate Warping</div>
+                <div>Ready for full-image stereographic warping...</div>
                 <div>Camera permissions status: checking...</div>
-                <div>WebGL GPU acceleration: ${document.getElementById('useGPU').checked ? 'enabled' : 'disabled'}</div>
-                <div>S-coordinate offsets: fully implemented with bilinear interpolation</div>
-                <div>Depth sources: brightness, S-magnitude, radial, angular</div>
-                <div>Stereo rendering: reverse mapping with proper hole filling</div>
-                <div>Black crack fix: applied bilinear sampling</div>
+                <div>S-coordinates: Applied globally across entire image</div>
+                <div>Warping modes: Global, Pure S, Enhanced, Stereographic</div>
+                <div>No band restrictions: Every pixel gets S-coordinate transformation</div>
                 <div style="margin-top: 10px; color: #888; font-size: 9px;">
                     System initialized: ${new Date().toLocaleTimeString()}
                 </div>
             `;
         });
 
-        // ==================== UTILITY FUNCTIONS ====================
-
-        // Add keyboard shortcuts for common operations
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
                 switch (e.key) {
@@ -1801,68 +1340,6 @@
                 }
             }
         });
-
-        // Handle window resize to adjust canvas scaling
-        window.addEventListener('resize', () => {
-            // Force canvas redraw on resize
-            if (isProcessing) {
-                const canvases = ['leftCanvas', 'rightCanvas', 'depthCanvas'];
-                canvases.forEach(id => {
-                    const canvas = document.getElementById(id);
-                    canvas.style.width = '';
-                    canvas.style.height = '';
-                });
-            }
-        });
-
-        // Export configuration for debugging
-        window.exportConfig = () => {
-            const config = {
-                ...processingConfig,
-                depthSource: document.getElementById('depthSource').value,
-                quality: document.getElementById('qualitySelect').value,
-                enableStereo: document.getElementById('enableStereo').checked,
-                showDepthMap: document.getElementById('showDepthMap').checked,
-                useGPU: document.getElementById('useGPU').checked,
-                timestamp: new Date().toISOString()
-            };
-            
-            console.log('Current AndroidVR Configuration:', JSON.stringify(config, null, 2));
-            return config;
-        };
-
-        // Import configuration for debugging
-        window.importConfig = (config) => {
-            if (typeof config === 'string') {
-                config = JSON.parse(config);
-            }
-            
-            Object.keys(config).forEach(key => {
-                if (processingConfig.hasOwnProperty(key)) {
-                    processingConfig[key] = config[key];
-                    
-                    const element = document.getElementById(key);
-                    const valueElement = document.getElementById(key + 'Value');
-                    
-                    if (element) {
-                        element.value = config[key];
-                        if (valueElement) {
-                            if (key.includes('Weight')) {
-                                valueElement.textContent = config[key].toFixed(2);
-                            } else if (key === 'separation') {
-                                valueElement.textContent = config[key] + 'px';
-                            } else if (key.includes('sBounds')) {
-                                valueElement.textContent = '±' + config[key].toFixed(1);
-                            } else {
-                                valueElement.textContent = config[key].toFixed(1) + (key.includes('Theta') || key.includes('Phi') ? '°' : 'x');
-                            }
-                        }
-                    }
-                }
-            });
-            
-            console.log('Configuration imported successfully');
-        };
 
     </script>
 </body>
