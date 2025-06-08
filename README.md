@@ -6,6 +6,8 @@ Rewritten by AI for readability.
 
 Invisible Mirror is my pet project, I'll be rebuilding a LOT as I determine the correct parameters to do a extraction from S-coords...
 
+Hband is good, for imposing S-coords on brightness based depth maps but I want to try to do it purely with S-coords
+
 Invisible Mirror is licensed under the GNU General Public License v3.0 (GPLv3).
 This ensures that all modified versions and redistributions remain free and open.
 ---
