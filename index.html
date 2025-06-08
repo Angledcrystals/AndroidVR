@@ -528,6 +528,16 @@
                 <button id="requestPermissions" class="camera-control">🔑 Request Permissions</button>
                 <button id="toggleDebugVideo" class="camera-control">👁️ Toggle Debug Video</button>
             </div>
+
+    <div class="control-group">
+    <label>🔧 Depth Source</label>
+    <select id="depthSource" class="hadit-control">
+        <option value="brightness">Brightness/Saturation</option>
+        <option value="sMagnitude">S-Magnitude</option>
+        <option value="radial">Radial Distance</option>
+        <option value="angular">Angular Reflection</option>
+    </select>
+</div>
             
             <div class="control-group">
                 <label>📐 Camera Settings</label>
@@ -1343,7 +1353,12 @@
                     const distanceFromBandCenter = Math.abs(sMagnitude - detectedBand.center);
                     const bandPosition = Math.max(0, Math.min(1, (sMagnitude - detectedBand.min) / Math.max(0.001, detectedBand.width)));
                     
-                    let depth = 0.1;
+if (config.useGeometricDepth) {
+    depth = calculateDepthFromSCoords(x, y, width, height, config);
+} else {
+    // Keep existing brightness-based calculation
+    depth = 0.1 + lum * 0.6 + sat * 0.3;
+}
                     let bandCenteredness = 0;
                     
                     if (isInBand) {
@@ -1481,6 +1496,32 @@
             return outputImageData;
         }
 
+function calculateDepthFromSCoords(px, py, width, height, config) {
+    const result = calculateHaditModulatedSCoordinate(px, py, width, height, 0, 0, config);
+    const { sMagnitude } = result;
+    
+    // Normalize S-magnitude to depth range
+    const normalizedS = Math.min(sMagnitude / config.sBounds, 1.0);
+    const depth = 0.2 + (normalizedS * 0.6); // Maps to 0.2-0.8 range
+    
+    return Math.max(0.05, Math.min(1.0, depth));
+}
+
+function calculateAngularDepth(px, py, width, height, config) {
+    const result = calculateHaditModulatedSCoordinate(px, py, width, height, 0, 0, config);
+    const { originalG, reflectedG, haditVector } = result;
+    
+    // Calculate angle between original and reflected vectors
+    const dotProduct = vectorOps.dot(originalG, reflectedG);
+    const angle = Math.acos(Math.max(-1, Math.min(1, dotProduct)));
+    
+    // Larger angles = more depth
+    const normalizedAngle = angle / Math.PI;
+    return 0.1 + (normalizedAngle * 0.8);
+}
+
+
+        
         function visualizeDepthMap(depthBuffer, canvas, config, detectedBand) {
             const ctx = canvas.getContext('2d');
             const { width, height } = canvas;
